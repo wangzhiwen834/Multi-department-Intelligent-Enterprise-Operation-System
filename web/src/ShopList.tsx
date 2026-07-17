@@ -3,12 +3,13 @@ import { api } from './api';
 import type { Shop, User } from './types';
 
 export function ShopList({
-  user, period, onPeriod, onPick, onLogout,
+  user, period, onPeriod, onPick, onDashboard, onLogout,
 }: {
   user: User | null;
   period: string;
   onPeriod: (p: string) => void;
   onPick: (s: Shop) => void;
+  onDashboard: () => void;
   onLogout: () => void;
 }) {
   const [shops, setShops] = useState<Shop[]>([]);
@@ -23,6 +24,7 @@ export function ShopList({
       <header className="flex items-center justify-between border-b border-slate-700 p-4">
         <h1 className="text-lg">店铺列表</h1>
         <div className="flex items-center gap-3 text-sm">
+          <button onClick={onDashboard} className="rounded bg-cyan-500 px-3 py-1 text-slate-900">📊 数据大屏</button>
           <input type="month" value={period} onChange={e => onPeriod(e.target.value)} className="rounded bg-slate-800 px-2 py-1" />
           <span>{user?.name}</span>
           <button onClick={onLogout} className="text-cyan-400">退出</button>

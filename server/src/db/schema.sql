@@ -105,3 +105,6 @@ CREATE TABLE IF NOT EXISTS sheet_lock (
   expires_at TIMESTAMPTZ NOT NULL,
   PRIMARY KEY (workbook_id, sheet_key)
 );
+
+-- 03 大屏:门店月度目标(任务完成进度用)
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS monthly_target NUMERIC NOT NULL DEFAULT 0;

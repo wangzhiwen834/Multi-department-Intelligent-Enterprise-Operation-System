@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, LockStatus, SyncResult, User } from './types';
+import type { Shop, Template, Workbook, LockStatus, SyncResult, User, DashboardOverview } from './types';
 
 const TOKEN_KEY = 'token';
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -46,4 +46,6 @@ export const api = {
     req<SyncResult>(`/api/workbooks/${id}/sync`, { method: 'POST', body: JSON.stringify(body) }),
   ledger: (shopId: number, period: string) =>
     req<{ period: string; days: { date: string; revenue: number; expense: number; running_balance: number }[] }>(`/api/shops/${shopId}/ledger?period=${period}`),
+  dashboardOverview: (period: string, shopId?: number) =>
+    req<DashboardOverview>(`/api/dashboard/overview?period=${period}${shopId ? `&shopId=${shopId}` : ''}`),
 };

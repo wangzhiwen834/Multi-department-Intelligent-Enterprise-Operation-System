@@ -15,3 +15,14 @@ export interface LockStatus {
 export interface SyncError { sheetKey: string; date: string; key: string; msg: string }
 export interface SyncResult { autoSums: Record<string, Record<string, number>>; errors: SyncError[] }
 export interface User { id: number; username: string; name: string; role: string; department: string | null }
+
+export interface DashboardOverview {
+  period: string; shopId: number | null;
+  kpis: { totalRevenue: number; totalCustomers: number; avgCustomerPrice: number; totalRecharge: number };
+  taskProgress: number; timeProgress: number;
+  revenueTrend: { date: string; revenue: number }[];
+  shopRanking: { shopId: number; shopName: string; revenue: number; target: number; taskProgress: number }[];
+  businessStructure: { footbath: number; spa: number; minor: number };
+  paymentChannels: { cash: number; douyin: number; meituan: number; pos: number; alipay: number; wechat: number };
+  expenseBySubject: { subject: string; amount: number }[];
+}

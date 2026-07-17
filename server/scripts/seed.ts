@@ -13,7 +13,7 @@ async function main() {
   // shops
   for (const s of FOOTBATH_SHOPS) {
     await pool.query(
-      "INSERT INTO shop (business_id, code, name) VALUES ($1,$2,$3) ON CONFLICT (code) DO NOTHING",
+      "INSERT INTO shop (business_id, code, name, monthly_target) VALUES ($1,$2,$3,150000) ON CONFLICT (code) DO UPDATE SET name=EXCLUDED.name, monthly_target=EXCLUDED.monthly_target",
       [b.id, s.code, s.name],
     );
   }

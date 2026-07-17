@@ -4,10 +4,11 @@ import type { Shop, User } from './types';
 import { Login } from './Login';
 import { ShopList } from './ShopList';
 import { Workbook } from './Workbook';
+import { Dashboard } from './Dashboard';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<'loading' | 'login' | 'shops' | 'workbook'>('loading');
+  const [view, setView] = useState<'loading' | 'login' | 'shops' | 'workbook' | 'dashboard'>('loading');
   const [shop, setShop] = useState<Shop | null>(null);
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7));
 
@@ -26,12 +27,16 @@ export function App() {
   if (view === 'workbook' && shop) {
     return <Workbook shop={shop} period={period} onPeriod={setPeriod} onBack={() => setView('shops')} />;
   }
+  if (view === 'dashboard') {
+    return <Dashboard period={period} onPeriod={setPeriod} onBack={() => setView('shops')} />;
+  }
   return (
     <ShopList
       user={user}
       period={period}
       onPeriod={setPeriod}
       onPick={s => { setShop(s); setView('workbook'); }}
+      onDashboard={() => setView('dashboard')}
       onLogout={() => { clearToken(); setUser(null); setView('login'); }}
     />
   );
