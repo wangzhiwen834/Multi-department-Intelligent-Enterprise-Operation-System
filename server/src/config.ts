@@ -15,4 +15,5 @@ export const config = {
   doubaoApiKey: process.env.DOUBAO_API_KEY ?? '',
   doubaoModel: process.env.DOUBAO_MODEL ?? 'doubao-seed-2-1-pro-260628',
   doubaoBaseUrl: process.env.DOUBAO_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3',
+  posterModel: process.env.POSTER_MODEL ?? 'doubao-seedream-4-0-250828',
 };

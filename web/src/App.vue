@@ -7,9 +7,10 @@ import ShopList from './views/ShopList.vue';
 import Workbook from './views/Workbook.vue';
 import Dashboard from './views/Dashboard.vue';
 import Chat from './views/Chat.vue';
+import Poster from './views/Poster.vue';
 
 const user = ref<User | null>(null);
-const view = ref<'loading' | 'login' | 'shops' | 'workbook' | 'dashboard' | 'chat'>('loading');
+const view = ref<'loading' | 'login' | 'shops' | 'workbook' | 'dashboard' | 'chat' | 'poster'>('loading');
 const shop = ref<Shop | null>(null);
 const period = ref(new Date().toISOString().slice(0, 7));
 
@@ -32,5 +33,6 @@ const onPick = (s: Shop) => { shop.value = s; view.value = 'workbook'; };
   <Workbook v-else-if="view === 'workbook' && shop" :shop="shop" v-model:period="period" @back="view = 'shops'" />
   <Dashboard v-else-if="view === 'dashboard'" v-model:period="period" @back="view = 'shops'" />
   <Chat v-else-if="view === 'chat'" v-model:period="period" @back="view = 'shops'" />
-  <ShopList v-else :user="user" v-model:period="period" @pick="onPick" @dashboard="view = 'dashboard'" @chat="view = 'chat'" @logout="onLogout" />
+  <Poster v-else-if="view === 'poster'" @back="view = 'shops'" />
+  <ShopList v-else :user="user" v-model:period="period" @pick="onPick" @dashboard="view = 'dashboard'" @chat="view = 'chat'" @poster="view = 'poster'" @logout="onLogout" />
 </template>
