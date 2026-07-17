@@ -6,9 +6,10 @@ import Login from './views/Login.vue';
 import ShopList from './views/ShopList.vue';
 import Workbook from './views/Workbook.vue';
 import Dashboard from './views/Dashboard.vue';
+import Chat from './views/Chat.vue';
 
 const user = ref<User | null>(null);
-const view = ref<'loading' | 'login' | 'shops' | 'workbook' | 'dashboard'>('loading');
+const view = ref<'loading' | 'login' | 'shops' | 'workbook' | 'dashboard' | 'chat'>('loading');
 const shop = ref<Shop | null>(null);
 const period = ref(new Date().toISOString().slice(0, 7));
 
@@ -30,5 +31,6 @@ const onPick = (s: Shop) => { shop.value = s; view.value = 'workbook'; };
   <Login v-else-if="view === 'login'" @login="onLogin" />
   <Workbook v-else-if="view === 'workbook' && shop" :shop="shop" v-model:period="period" @back="view = 'shops'" />
   <Dashboard v-else-if="view === 'dashboard'" v-model:period="period" @back="view = 'shops'" />
-  <ShopList v-else :user="user" v-model:period="period" @pick="onPick" @dashboard="view = 'dashboard'" @logout="onLogout" />
+  <Chat v-else-if="view === 'chat'" v-model:period="period" @back="view = 'shops'" />
+  <ShopList v-else :user="user" v-model:period="period" @pick="onPick" @dashboard="view = 'dashboard'" @chat="view = 'chat'" @logout="onLogout" />
 </template>

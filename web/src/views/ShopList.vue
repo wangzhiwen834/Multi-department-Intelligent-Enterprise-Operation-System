@@ -8,6 +8,7 @@ const emit = defineEmits<{
   (e: 'update:period', p: string): void;
   (e: 'pick', s: Shop): void;
   (e: 'dashboard'): void;
+  (e: 'chat'): void;
   (e: 'logout'): void;
 }>();
 
@@ -25,6 +26,7 @@ onMounted(() => { api.shops().then(r => shops.value = r).catch(e => err.value = 
       </div>
       <div class="flex items-center gap-3 text-sm">
         <button @click="emit('dashboard')" class="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 font-medium text-white shadow transition hover:from-cyan-400 hover:to-blue-400">📊 数据大屏</button>
+        <button @click="emit('chat')" class="rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 font-medium text-white shadow transition hover:from-violet-400 hover:to-fuchsia-400">🤖 AI 助手</button>
         <input type="month" :value="period" @change="emit('update:period', ($event.target as HTMLInputElement).value)" class="rounded-lg bg-slate-800 px-3 py-2" />
         <span class="text-slate-300">{{ user?.name }}</span>
         <button @click="emit('logout')" class="text-cyan-400 hover:text-cyan-300">退出</button>

@@ -48,4 +48,6 @@ export const api = {
     req<{ period: string; days: { date: string; revenue: number; expense: number; running_balance: number }[] }>(`/api/shops/${shopId}/ledger?period=${period}`),
   dashboardOverview: (period: string, shopId?: number) =>
     req<DashboardOverview>(`/api/dashboard/overview?period=${period}${shopId ? `&shopId=${shopId}` : ''}`),
+  aiChat: (message: string, period: string) =>
+    req<{ answer: string; configured: boolean; error?: string }>('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message, period }) }),
 };
