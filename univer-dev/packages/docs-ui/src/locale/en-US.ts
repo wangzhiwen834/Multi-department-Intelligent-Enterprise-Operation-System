@@ -1,0 +1,202 @@
+/**
+ * Copyright 2023-present DreamNum Co., Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+const locale = {
+    'docs-ui': {
+        toolbar: {
+            undo: 'Undo',
+            redo: 'Redo',
+            font: 'Font',
+            fontSize: 'Font size',
+            bold: 'Bold',
+            italic: 'Italic',
+            strikethrough: 'Strikethrough',
+            subscript: 'Subscript',
+            superscript: 'Superscript',
+            underline: 'Underline',
+            textColor: {
+                main: 'Text color',
+            },
+            fillColor: {
+                main: 'Text Background color',
+            },
+            table: {
+                main: 'Table',
+                insert: 'Insert Table',
+                colCount: 'Column count',
+                rowCount: 'Row count',
+            },
+            resetColor: 'Reset',
+            order: 'Ordered list',
+            unorder: 'Unordered list',
+            checklist: 'Task list',
+            documentFlavor: 'Modern Mode',
+            alignLeft: 'Align Left',
+            alignCenter: 'Align Center',
+            alignRight: 'Align Right',
+            alignJustify: 'Justify',
+            horizontalLine: 'Horizontal line',
+            headerFooter: 'Header & Footer',
+            pageSetup: 'Page Setup',
+            heading: {
+                tooltip: 'Heading',
+                normal: 'Normal text',
+                leading1: 'Heading 1',
+                leading2: 'Heading 2',
+                leading3: 'Heading 3',
+                leading4: 'Heading 4',
+                leading5: 'Heading 5',
+                title: 'Title',
+                subTitle: 'Subtitle',
+            },
+        },
+        table: {
+            insert: 'Insert',
+            insertRowAbove: 'Insert row above',
+            insertRowBelow: 'Insert row below',
+            insertColumnLeft: 'Insert column left',
+            insertColumnRight: 'Insert column right',
+            delete: 'Table delete',
+            deleteRows: 'Delete row',
+            deleteColumns: 'Delete column',
+            deleteTable: 'Delete table',
+        },
+        headerFooter: {
+            header: 'Header',
+            footer: 'Footer',
+            panel: 'Header & Footer Settings',
+            linkToPrevious: 'Link to previous',
+            firstPageCheckBox: 'Different first page',
+            oddEvenCheckBox: 'Different odd and even pages',
+            headerTopMargin: 'Header top margin(px)',
+            footerBottomMargin: 'Footer bottom margin(px)',
+            closeHeaderFooter: 'Close header & footer',
+            disableText: 'Header & footer settings are disabled',
+        },
+        placeholder: {
+            heading1: 'Heading 1',
+            heading2: 'Heading 2',
+            heading3: 'Heading 3',
+            heading4: 'Heading 4',
+            heading5: 'Heading 5',
+            normalText: 'Type text or press "/" for commands',
+            listItem: 'Item',
+        },
+        doc: {
+            blockMenu: {
+                dragBlock: 'Drag block',
+            },
+
+            menu: {
+                paragraphSetting: 'Paragraph Settings',
+                sectionSetting: 'Section Settings',
+            },
+            slider: {
+                paragraphSetting: 'Paragraph Settings',
+                sectionSetting: 'Section Settings',
+            },
+            paragraphSetting: {
+                alignment: 'Alignment',
+                indentation: 'Indentation',
+                left: 'Left',
+                right: 'Right',
+                firstLine: 'First Line',
+                hanging: 'Hanging',
+                spacing: 'Spacing',
+                before: 'Before',
+                after: 'After',
+                lineSpace: 'Line Space',
+                multiSpace: 'Multi Space',
+                atLeast: 'At Least (px)',
+                exactly: 'Exactly (px)',
+                fixedValue: 'Fixed Value(px)',
+            },
+            sectionSetting: {
+                selectedSections: '{0} sections selected',
+                columnCount: 'Column count',
+                columnGap: 'Column gap',
+                columnSeparator: 'Separator',
+                none: 'None',
+                betweenColumns: 'Between columns',
+                sectionStart: 'Section start',
+                unspecified: 'Unspecified',
+                continuous: 'Continuous',
+                nextPage: 'Next page',
+                evenPage: 'Even page',
+                oddPage: 'Odd page',
+            },
+        },
+        rightClick: {
+            copy: 'Copy',
+            cut: 'Cut',
+            paste: 'Paste',
+            delete: 'Delete',
+            bulletList: 'Bullet list',
+            orderList: 'Ordered list',
+            checkList: 'Task list',
+            insertBellow: 'Insert below',
+        },
+        paragraphMenu: {
+            alignAndIndent: 'Align and indent',
+            align: 'Align',
+            indent: 'Indent',
+            color: 'Colors',
+            increase: 'Increase',
+            decrease: 'Decrease',
+            increaseIndent: 'Increase indent',
+            decreaseIndent: 'Decrease indent',
+            defaultTextColor: 'Default text color',
+            noBackground: 'No background',
+        },
+        'page-settings': {
+            'document-setting': 'Document Setting',
+            mode: 'Mode',
+            'modern-mode': 'Modern',
+            'classic-mode': 'Classic',
+            'modern-width': 'Content width',
+            'modern-width-narrow': 'Narrow',
+            'modern-width-medium': 'Medium',
+            'modern-width-wide': 'Wide',
+            'paper-size': 'Paper size',
+            'page-size': {
+                main: 'Paper size',
+                a4: 'A4',
+                a3: 'A3',
+                a5: 'A5',
+                b4: 'B4',
+                b5: 'B5',
+                letter: 'Letter',
+                legal: 'Legal',
+                tabloid: 'Tabloid',
+                statement: 'Statement',
+                executive: 'Executive',
+                folio: 'Folio',
+            },
+            orientation: 'Orientation',
+            portrait: 'Portrait',
+            landscape: 'Landscape',
+            'custom-paper-size': 'Custom Paper size',
+            top: 'Top',
+            bottom: 'Bottom',
+            left: 'Left',
+            right: 'Right',
+            cancel: 'Cancel',
+            confirm: 'Confirm',
+        },
+    },
+};
+
+export default locale;
