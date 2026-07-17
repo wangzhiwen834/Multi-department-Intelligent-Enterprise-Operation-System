@@ -65,7 +65,7 @@ describe('rbac 用户管理', () => {
     const opsId = rows[0].id;
     // 经理(财务部)尝试改运营部员工 -> 403
     const mgrT = await login('mgr1');
-    const r = await request(app).patch(`/${opsId}`).set('Authorization', `Bearer ${mgrT}`).send({ name: 'hacked' });
+    const r = await request(app).patch(`/api/users/${opsId}`).set('Authorization', `Bearer ${mgrT}`).send({ name: 'hacked' });
     expect(r.status).toBe(403);
   });
 
@@ -76,7 +76,7 @@ describe('rbac 用户管理', () => {
       .set('Authorization', `Bearer ${mgrT}`)
       .send({ username: 'e3', password: 'pw123', name: 'e3', role: 'employee', department: '财务部' });
     const r = await request(app)
-      .patch(`/${created.body.id}`)
+      .patch(`/api/users/${created.body.id}`)
       .set('Authorization', `Bearer ${mgrT}`)
       .send({ phone: '13800000000' });
     expect(r.status).toBe(200);
