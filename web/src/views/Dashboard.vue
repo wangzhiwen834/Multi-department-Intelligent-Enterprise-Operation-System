@@ -9,7 +9,7 @@ import Chart from '../components/Chart.vue';
 const props = defineProps<{ period: string }>();
 const emit = defineEmits<{ (e: 'update:period', p: string): void; (e: 'back'): void }>();
 
-const themeKey = ref('dark');
+const themeKey = ref('light');
 const theme = computed<Theme>(() => THEMES[themeKey.value]);
 const shops = ref<Shop[]>([]);
 const shopId = ref<number | null>(null);

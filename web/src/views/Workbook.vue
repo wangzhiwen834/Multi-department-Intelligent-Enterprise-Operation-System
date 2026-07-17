@@ -84,22 +84,22 @@ onBeforeUnmount(() => { void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-slate-900 text-slate-100">
-    <header class="flex flex-wrap items-center gap-3 border-b border-slate-700/50 p-3 text-sm">
-      <button @click="emit('back')" class="text-cyan-400 hover:text-cyan-300">← 返回</button>
-      <input type="month" :value="period" @change="emit('update:period', ($event.target as HTMLInputElement).value)" class="rounded-lg bg-slate-800 px-3 py-1.5" />
+  <div class="flex h-full flex-col bg-slate-100 text-slate-900">
+    <header class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white p-3 text-sm">
+      <button @click="emit('back')" class="text-sky-600 hover:text-sky-500">← 返回</button>
+      <input type="month" :value="period" @change="emit('update:period', ($event.target as HTMLInputElement).value)" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-slate-900" />
       <span class="font-medium">{{ shop.name }}</span>
-      <span v-if="editing" class="rounded bg-green-500/20 px-2 py-0.5 text-xs text-green-400">编辑中</span>
-      <span v-else-if="holder" class="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400">只读 · {{ holder }} 正在编辑</span>
-      <span v-else class="rounded bg-slate-700 px-2 py-0.5 text-xs text-slate-300">查看</span>
+      <span v-if="editing" class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">编辑中</span>
+      <span v-else-if="holder" class="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">只读 · {{ holder }} 正在编辑</span>
+      <span v-else class="rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600">查看</span>
       <div class="flex-1"></div>
-      <button v-if="!editing && !holder" @click="startEdit" class="rounded-lg bg-cyan-500 px-4 py-1.5 font-medium text-white hover:bg-cyan-400">编辑</button>
-      <button v-if="editing" @click="endEdit" class="rounded-lg bg-slate-700 px-4 py-1.5 hover:bg-slate-600">退出编辑</button>
+      <button v-if="!editing && !holder" @click="startEdit" class="rounded-lg bg-sky-500 px-4 py-1.5 font-medium text-white hover:bg-sky-400">编辑</button>
+      <button v-if="editing" @click="endEdit" class="rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-slate-700 hover:bg-slate-50">退出编辑</button>
       <button v-if="holder" @click="takeover" class="rounded-lg bg-amber-500 px-4 py-1.5 font-medium text-white hover:bg-amber-400">接管</button>
       <button @click="save" :disabled="!editing || busy" class="rounded-lg bg-green-500 px-4 py-1.5 font-medium text-white hover:bg-green-400 disabled:opacity-40">保存并同步</button>
     </header>
-    <div v-if="msg" class="bg-slate-800/60 px-4 py-1.5 text-sm text-cyan-300">{{ msg }}</div>
-    <div v-if="syncResult?.errors.length" class="bg-red-900/30 px-4 py-2 text-xs text-red-300">
+    <div v-if="msg" class="bg-sky-50 px-4 py-1.5 text-sm text-sky-700">{{ msg }}</div>
+    <div v-if="syncResult?.errors.length" class="bg-red-50 px-4 py-2 text-xs text-red-600">
       校验错误:<span v-for="(e, i) in syncResult.errors" :key="i" class="mr-3">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}</span>
     </div>
     <div ref="containerRef" class="flex-1"></div>

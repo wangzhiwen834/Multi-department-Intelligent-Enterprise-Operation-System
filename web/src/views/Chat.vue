@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref } from 'vue';
+import { nextTick } from 'vue';
 import { api } from '../api';
 
 const props = defineProps<{ period: string }>();
@@ -38,26 +39,26 @@ const ask = (s: string) => { input.value = s; send(); };
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100">
-    <header class="flex items-center gap-3 border-b border-slate-700/50 p-4">
-      <button @click="emit('back')" class="text-cyan-400 hover:text-cyan-300">← 返回</button>
+  <div class="flex h-full flex-col bg-slate-100 text-slate-900">
+    <header class="flex items-center gap-3 border-b border-slate-200 bg-white p-4">
+      <button @click="emit('back')" class="text-sky-600 hover:text-sky-500">← 返回</button>
       <h1 class="text-lg font-medium">🤖 AI 经营助手</h1>
-      <span class="text-sm text-slate-400">上下文月份:{{ period }}</span>
+      <span class="text-sm text-slate-500">上下文月份:{{ period }}</span>
     </header>
     <div ref="listRef" class="flex-1 space-y-4 overflow-auto p-4">
       <div v-for="(m, i) in messages" :key="i" class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">
         <div class="max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5"
-          :class="m.role === 'user' ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-100'">{{ m.content }}</div>
+          :class="m.role === 'user' ? 'bg-sky-500 text-white' : 'border border-slate-200 bg-white text-slate-900'">{{ m.content }}</div>
       </div>
-      <div v-if="loading" class="flex justify-start"><div class="rounded-2xl bg-slate-800 px-4 py-2.5 text-slate-400">思考中…</div></div>
+      <div v-if="loading" class="flex justify-start"><div class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-400">思考中…</div></div>
     </div>
-    <div class="border-t border-slate-700/50 p-3">
+    <div class="border-t border-slate-200 bg-white p-3">
       <div class="mb-2 flex flex-wrap gap-2">
-        <button v-for="s in suggestions" :key="s" @click="ask(s)" class="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300 hover:bg-slate-700">{{ s }}</button>
+        <button v-for="s in suggestions" :key="s" @click="ask(s)" class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 hover:bg-slate-100">{{ s }}</button>
       </div>
       <form @submit.prevent="send" class="flex gap-2">
-        <input v-model="input" class="flex-1 rounded-lg bg-slate-800 px-4 py-2.5 outline-none focus:ring-2 focus:ring-cyan-500" placeholder="问点什么,如:本月客单价多少?" />
-        <button :disabled="loading" class="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-2.5 font-medium text-white disabled:opacity-40">发送</button>
+        <input v-model="input" class="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 outline-none focus:ring-2 focus:ring-sky-400" placeholder="问点什么,如:本月客单价多少?" />
+        <button :disabled="loading" class="rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 px-6 py-2.5 font-medium text-white disabled:opacity-40">发送</button>
       </form>
     </div>
   </div>
