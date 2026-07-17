@@ -8,6 +8,7 @@ import { workbookRouter } from './workbook/workbook.routes.js';
 import { lockRouter } from './lock/lock.routes.js';
 import { syncRouter } from './sync/sync.routes.js';
 import { reportRouter } from './report/report.routes.js';
+import { shopRouter } from './shop/shop.routes.js';
 
 export const app = express();
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use('/api', workbookRouter);   // /api/workbooks
 app.use('/api', lockRouter);       // /api/workbooks/:id/locks/:sheetKey
 app.use('/api', syncRouter);       // /api/workbooks/:id/sync
 app.use('/api', reportRouter);     // /api/shops/:id/ledger
+app.use('/api', shopRouter);       // /api/shops
 
 // 统一错误处理
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
