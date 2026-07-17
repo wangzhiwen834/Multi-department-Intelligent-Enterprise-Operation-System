@@ -26,7 +26,7 @@
 
 ```
 server/   后端(Express + pg + JWT + RBAC + 悲观锁 + 同步 + 台账)
-web/      前端(Vite + React + Univer Sheets Preset + Tailwind)
+web/      前端(Vue 3 + Vite + Univer Sheets Preset + Tailwind + ECharts)
 univer-dev/   上游 Univer SDK 源码(vendored)
 docs/superpowers/   设计文档 + 实现计划
 start.bat / start.sh   一键启动
