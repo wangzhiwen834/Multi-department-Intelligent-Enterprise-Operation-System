@@ -1,0 +1,23 @@
+# 上游 Univer SDK(独立仓库,不纳入本项目)
+univer-dev/
+
+# 依赖
+node_modules/
+
+# Excel 示例(含真实经营数据,默认不入库;如需入库请手动取消忽略)
+Excel_exampel/
+
+# 本地配置
+.claude/settings.local.json
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.log
+*.local
+
+# 构建产物
+dist/
+build/
+.next/
+.turbo/
