@@ -1,5 +1,5 @@
-# 上游 Univer SDK(独立仓库,不纳入本项目)
-univer-dev/
+# 上游 Univer SDK(按用户要求纳入本项目仓库,vendored 源码)
+# univer-dev/  ← 不再忽略
 
 # 依赖
 node_modules/
