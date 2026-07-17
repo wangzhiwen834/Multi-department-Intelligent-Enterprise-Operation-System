@@ -3,9 +3,10 @@ import request from 'supertest';
 import { app } from '../src/index.js';
 import { query } from '../src/db/pool.js';
 import { hashPassword } from '../src/auth/password.js';
+import { resetDb } from './helpers.js';
 
 beforeEach(async () => {
-  await query('DELETE FROM app_user');
+  await resetDb();
   await query(
     `INSERT INTO app_user (username,password_hash,name,role,department)
      VALUES ('boss',$1,'董事长','chairman',NULL)`,

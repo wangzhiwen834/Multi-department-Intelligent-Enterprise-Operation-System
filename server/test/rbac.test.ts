@@ -3,6 +3,7 @@ import request from 'supertest';
 import { app } from '../src/index.js';
 import { query } from '../src/db/pool.js';
 import { hashPassword } from '../src/auth/password.js';
+import { resetDb } from './helpers.js';
 
 async function login(username: string) {
   const r = await request(app).post('/api/auth/login').send({ username, password: 'pw123' });
@@ -17,7 +18,7 @@ async function mkUser(username: string, role: string, dept: string | null, creat
 }
 
 beforeEach(async () => {
-  await query('DELETE FROM app_user');
+  await resetDb();
   await mkUser('boss', 'chairman', null, null);
   await mkUser('mgr1', 'manager', '财务部', null);
 });
