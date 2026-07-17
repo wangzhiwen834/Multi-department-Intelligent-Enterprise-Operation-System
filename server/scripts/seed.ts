@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { pool } from '../src/db/pool.js';
 import { FOOTBATH_BUSINESS_CODE, FOOTBATH_SHOPS, footbathTemplate } from '../src/template/footbath.template.js';
+import { hashPassword } from '../src/auth/password.js';
 
 async function main() {
   // business
@@ -21,7 +22,22 @@ async function main() {
   if (!exists) {
     await pool.query("INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)", [b.id, JSON.stringify(footbathTemplate)]);
   }
-  console.log('seed done: footbath business + 5 shops + template v1');
+  // 默认账号:董事长 boss/boss123,经理 mgr/mgr123(由董事长创建)
+  const bossRow = (await pool.query(
+    `INSERT INTO app_user (username,password_hash,name,role,department)
+     VALUES ('boss',$1,'董事长','chairman',NULL)
+     ON CONFLICT (username) DO NOTHING RETURNING id`,
+    [await hashPassword('boss123')],
+  )).rows[0];
+  const bossId = bossRow?.id ?? (await pool.query("SELECT id FROM app_user WHERE username='boss'")).rows[0].id;
+  await pool.query(
+    `INSERT INTO app_user (username,password_hash,name,role,department,created_by)
+     VALUES ('mgr',$1,'经理','manager','财务部',$2)
+     ON CONFLICT (username) DO NOTHING`,
+    [await hashPassword('mgr123'), bossId],
+  );
+
+  console.log('seed done: footbath + 5 shops + template v1 + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
   await pool.end();
 }
 
