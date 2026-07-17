@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { nextTick } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { api } from '../api';
 
 const props = defineProps<{ period: string }>();
@@ -13,6 +12,8 @@ const messages = ref<Msg[]>([
 const input = ref('');
 const loading = ref(false);
 const listRef = ref<HTMLDivElement | null>(null);
+const model = ref('');
+onMounted(() => { api.aiInfo().then(i => model.value = i.chatModel); });
 
 const scroll = () => nextTick(() => listRef.value?.scrollTo({ top: listRef.value.scrollHeight }));
 
@@ -44,6 +45,7 @@ const ask = (s: string) => { input.value = s; send(); };
       <button @click="emit('back')" class="text-sky-600 hover:text-sky-500">← 返回</button>
       <h1 class="text-lg font-medium">🤖 AI 经营助手</h1>
       <span class="text-sm text-slate-500">上下文月份:{{ period }}</span>
+      <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">🧠 {{ model || '加载中…' }}</span>
     </header>
     <div ref="listRef" class="flex-1 space-y-4 overflow-auto p-4">
       <div v-for="(m, i) in messages" :key="i" class="flex" :class="m.role === 'user' ? 'justify-end' : 'justify-start'">

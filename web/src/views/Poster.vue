@@ -14,9 +14,13 @@ const loading = ref(false);
 const err = ref('');
 const bgImage = ref('');
 const posterDataUrl = ref('');
+const model = ref('');
 
 const shopName = computed(() => shops.value.find(s => s.id === shopId.value)?.name ?? '');
-onMounted(() => { api.shops().then(r => { shops.value = r; if (r[0]) shopId.value = r[0].id; }); });
+onMounted(() => {
+  api.shops().then(r => { shops.value = r; if (r[0]) shopId.value = r[0].id; });
+  api.aiInfo().then(i => model.value = i.posterModel);
+});
 
 const compose = () => {
   if (!bgImage.value) return;
@@ -70,6 +74,7 @@ const download = () => {
     <header class="flex items-center gap-3 border-b border-slate-200 bg-white p-4">
       <button @click="emit('back')" class="text-sky-600 hover:text-sky-500">← 返回</button>
       <h1 class="text-lg font-medium">🎨 文生图海报</h1>
+      <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">🖼 {{ model || '加载中…' }}</span>
     </header>
     <div class="flex flex-col gap-6 p-6 md:flex-row">
       <div class="w-full space-y-3 md:w-80">
