@@ -1,0 +1,14 @@
+{
+  "name": "enterprise-ops",
+  "version": "0.1.0",
+  "private": true,
+  "description": "多部门智能经营系统 - 足浴财务模块(一键启动)",
+  "scripts": {
+    "start": "concurrently -n server,web -c cyan,magenta \"cd server && npm run dev\" \"cd web && npm run dev\"",
+    "setup": "cd server && npm run migrate && npm run seed",
+    "install:all": "cd server && npm install && cd ../web && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
