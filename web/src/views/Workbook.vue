@@ -23,6 +23,9 @@ const busy = ref(false);
 
 const SHEET_KEY = 'daily_ops';
 
+// Univer 表格是否可编辑(仅持有锁时可编辑,否则只读)
+const setEditable = (v: boolean) => { try { (fwb as any)?.setEditable?.(v); } catch { /* ignore */ } };
+
 const stopHeartbeat = () => { if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; } };
 const releaseIfMine = async () => { stopHeartbeat(); try { await api.releaseLock(wbId, SHEET_KEY); } catch { /* ignore */ } };
 
@@ -33,7 +36,7 @@ const startHeartbeat = () => {
       const h = await api.heartbeat(wbId, SHEET_KEY);
       if (!h.renewed) {
         const who = h.heldBy?.user_name ?? '他人';
-        editing.value = false; holder.value = who; stopHeartbeat();
+        editing.value = false; holder.value = who; stopHeartbeat(); setEditable(false);
         msg.value = `被 ${who} 接管,你已失去编辑权`;
       } else if (h.takeoverRequest) {
         // 有人请求接管:先自动保存再让出(保存时仍持有锁,无竞态)
@@ -43,7 +46,7 @@ const startHeartbeat = () => {
         try {
           await performSave();
           await api.yieldLock(wbId, SHEET_KEY);
-          editing.value = false; holder.value = who;
+          editing.value = false; holder.value = who; setEditable(false);
           msg.value = `已保存并让出编辑权,被 ${who} 接管`;
         } catch (e: any) {
           msg.value = `自动保存/让出失败:${e.message}`;
@@ -58,11 +61,11 @@ const startHeartbeat = () => {
 const startEdit = async () => {
   try {
     const r = await api.acquireLock(wbId, SHEET_KEY);
-    if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); }
+    if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); setEditable(true); }
     else holder.value = r.heldBy?.user_name ?? '他人';
   } catch (e: any) { msg.value = e.message; }
 };
-const endEdit = async () => { await releaseIfMine(); editing.value = false; holder.value = null; };
+const endEdit = async () => { await releaseIfMine(); editing.value = false; holder.value = null; setEditable(false); };
 let takeoverPoll: ReturnType<typeof setInterval> | null = null;
 const stopTakeoverPoll = () => { if (takeoverPoll) { clearInterval(takeoverPoll); takeoverPoll = null; } };
 const startTakeoverPoll = () => {
@@ -73,7 +76,7 @@ const startTakeoverPoll = () => {
       if (st.user_name && st.user_name === me?.username) {
         stopTakeoverPoll();
         await mountUniver();  // 重载快照(含被接管者刚保存的数据)
-        editing.value = true; holder.value = null; startHeartbeat();
+        editing.value = true; holder.value = null; startHeartbeat(); setEditable(true);
         msg.value = '已接管,可编辑';
       } else if (st.held === false) {
         // 对方离线、锁已过期 -> 直接占取
@@ -81,7 +84,7 @@ const startTakeoverPoll = () => {
         const r = await api.acquireLock(wbId, SHEET_KEY);
         if (r.acquired) {
           await mountUniver();  // 重载快照
-          editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑';
+          editing.value = true; holder.value = null; startHeartbeat(); setEditable(true); msg.value = '已接管,可编辑';
         }
       }
     } catch { /* 继续轮询 */ }
@@ -121,6 +124,7 @@ const mountUniver = async () => {
   const handle = setupUniver(containerRef.value!);
   univerHandle = handle;
   fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl!.definition, `${props.shop.name} ${props.period}`);
+  setEditable(false);  // 默认只读,持有锁后才可编辑
 };
 onMounted(async () => {
   me = await api.me().catch(() => null);
