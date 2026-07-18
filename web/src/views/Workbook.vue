@@ -110,7 +110,7 @@ const startStatusPoll = () => {
       else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
       else holder.value = null;
     } catch { /* ignore */ }
-  }, 5000);
+  }, 1000);
 };
 const takeover = async () => {
   try {
