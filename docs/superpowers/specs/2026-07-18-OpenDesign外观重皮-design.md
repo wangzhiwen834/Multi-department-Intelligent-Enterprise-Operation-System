@@ -41,7 +41,7 @@ Opendesign/
   ai-poster.html            ← AI 每日海报生成页
   employees.html            ← 员工管理(董事长/经理两态)
   workbook-shell.html       ← Univer 工作簿外壳(表格区为占位)
-  index.html / landing.html ← OpenDesign 额外产物,非应用前端(见 §9 待确认)
+  index.html / landing.html ← OpenDesign 额外产物,不落地(用户已定,见 §9)
   *.artifact.json           ← 每份 HTML 的 manifest(kind=html, renderer=html, exports=[html,pdf,zip])
   .file-versions/ .od-skills/ ← OpenDesign 版本与技能元数据,移植时忽略
 ```
@@ -51,7 +51,7 @@ Opendesign/
 - ✅ 样式全部走 `--od-*` 令牌,无硬编码颜色(白色文字/渐变除外)。
 - ✅ 每份带 `data-od-id` 语义钩子属性,便于移植时映射 Vue 结构与行为绑定点。
 - ✅ `workbook-shell.html` 表格主体为占位横幅("Univer 表格区 · 禁动 · 不在本稿设计"),Univer 边界被尊重;两态锁徽标(被占用+接管 / 可编辑)齐全。
-- ⚠️ OpenDesign 将系统品牌命名为"**静水楼台**企业智能经营系统"(见 design-system.md 标题、login.html)。本项目沿用名是"多部门智能经营系统"。品牌名待用户确认(§9)。
+- ✅ 品牌名沿用 OpenDesign 产出的"**静水楼台**企业智能经营系统"(用户已确认;见 design-system.md、login.html、app-shell.html)。
 
 ---
 
@@ -77,7 +77,7 @@ Opendesign/
 - **路径**:`Opendesign/`(用户指定,扁平结构,无 `screens/` 子目录)。
 - **真相源**:每份 HTML = 对应屏的外观真相;`design-system.md` = 令牌真相。
 - **版本与迭代**:每次在 OpenDesign 重新导出某屏/令牌,覆盖对应文件;移植方按文件改动判断增量移植(令牌改=全站换肤;某屏 HTML 改=重移植该屏)。manifest(`*.artifact.json`)记 `updatedAt` 可作版本参考。
-- **移植忽略**:`.file-versions/`、`.od-skills/`、`index.html`、`landing.html`(除非 §9 另定)。
+- **移植忽略**:`.file-versions/`、`.od-skills/`、`index.html`、`landing.html`(不落地,用户已定)。
 
 ---
 
@@ -88,7 +88,7 @@ Opendesign/
 - 令牌值直接取自 `Opendesign/design-system.md` §1 的 `:root` 块。
 - **与现有 THEMES 共存**:现有 `THEMES` TS 对象保留,供需要 JS 侧取色的场景(如 ECharts 图表配色注入)使用;CSS 表面(视图样式)统一走 `--od-*` 变量,二者由同一份令牌源派生以避免漂移。
 - **还旧账**:把各视图硬编码的 Tailwind 颜色(如 `Login.vue` 的 `from-sky-500`、`text-slate-900`)改成消费 `--od-*` 令牌。
-- 多主题:本期 OpenDesign 只精修浅色一套;原 `dark`(深空科技)/`warm`(暖橙)作为令牌变体保留(令牌化后换肤廉价),后续派生或再做(§9 待确认是否三套都做)。
+- 多主题:本期**只精修浅色一套**(用户已定);原 `dark`/`warm` 暂不实现,令牌结构保留扩展位,后续如需可派生。
 
 ### 5.2 逐屏移植(HTML -> Vue SFC)
 - 每屏:读 `Opendesign/<name>.html`,把 HTML 结构翻成对应 Vue `<template>`;**样式以 scoped CSS 直接镜像 OpenDesign 的样式表(其已用 `--od-*` 令牌),保证还原度;Tailwind 工具类仅用于布局便捷,不得用于颜色/字体/间距的硬编码**。
@@ -128,11 +128,11 @@ Opendesign/
 
 ---
 
-## 9. 待确认(开放项)
+## 9. 已定决策(用户确认)
 
-1. **品牌名**:OpenDesign 用"静水楼台企业智能经营系统";本项目原用"多部门智能经营系统"。是否采用"静水楼台"?(影响登录页/外壳标题文字。)
-2. **多主题**:只精修浅色一套(深空/暖橙留作令牌变体),还是三套都做?
-3. **额外产物**:`Opendesign/index.html`(设计索引)、`landing.html`(营销落地页)是否需要落地为应用的一部分?默认忽略。
+1. **品牌名**:沿用"静水楼台企业智能经营系统"(登录页/外壳标题等统一使用,集中定义为常量避免散落硬编码)。
+2. **多主题**:只精修浅色一套;`dark`/`warm` 暂不实现(令牌结构留扩展位)。
+3. **额外产物**:`Opendesign/index.html`、`landing.html` 不落地进应用。
 
 ---
 
@@ -151,7 +151,7 @@ Opendesign/
 
 1. **Univer 边界**(关键):移植 Workbook 外壳时误动挂载点或锁逻辑 -> 严守 §6 禁动清单,单独验证。
 2. **CSS 现代特性**:OpenDesign 用 `color-mix`/`backdrop-filter`/grid;Vue 移植需保证目标浏览器支持或给降级。
-3. **品牌名/多主题**:§9 未定前避免在多处硬编码品牌串。
+3. **品牌串**:统一为"静水楼台",集中定义为常量,避免多处散落硬编码。
 
 ---
 
