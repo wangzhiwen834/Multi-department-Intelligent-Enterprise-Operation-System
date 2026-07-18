@@ -43,7 +43,7 @@ const rankingOpt = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'axis' },
   xAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
   yAxis: { type: 'category', data: (data.value?.shopRanking || []).map(r => r.shopName), axisLine: { lineStyle: { color: theme.subText } }, axisLabel: { color: theme.text } },
-  series: [{ type: 'bar', data: (data.value?.shopRanking || []).map(r => r.revenue), itemStyle: { color: theme.accent, borderRadius: [0, 6, 6, 0] } }],
+  series: [{ type: 'bar', data: (data.value?.shopRanking || []).map(r => r.revenue), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0, 6, 6, 0] } }],
 }));
 
 const structOpt = computed<EChartsOption>(() => {
