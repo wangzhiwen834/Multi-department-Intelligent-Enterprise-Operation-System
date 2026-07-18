@@ -9,7 +9,7 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers as Record<string, string>) };
   const t = getToken();
   if (t) headers.Authorization = `Bearer ${t}`;
-  const r = await fetch(path, { ...opts, headers });
+  const r = await fetch(path, { ...opts, headers, cache: 'no-store' });
   if (r.status === 401) { clearToken(); throw new Error('未登录或登录已过期'); }
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
@@ -24,7 +24,7 @@ async function reqLock<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers as Record<string, string>) };
   const t = getToken();
   if (t) headers.Authorization = `Bearer ${t}`;
-  const r = await fetch(path, { ...opts, headers });
+  const r = await fetch(path, { ...opts, headers, cache: 'no-store' });
   if (r.status === 401) { clearToken(); throw new Error('未登录或登录已过期'); }
   const body = await r.json().catch(() => ({}));
   if (r.status === 409) return body as T;
