@@ -4,7 +4,8 @@ import type { TokenPayload } from '../auth/jwt.js';
 // 锁 TTL 60s,前端每 5s 心跳续约;断线后约 60s 自动过期可被接管
 const TTL_MS = 60_000;
 
-/** 占锁:先清过期,再尝试插入;被占则返回当前持有者 */
+/** 占锁:先清过期,再尝试插入;被占则返回当前持有者。
+ *  若持有者是自己(如刷新后旧会话锁仍在),直接续期接管,避免自己挡自己。 */
 export const acquireLock = async (wbId: number, sheetKey: string, user: TokenPayload) => {
   await query('DELETE FROM sheet_lock WHERE workbook_id=$1 AND sheet_key=$2 AND expires_at < now()', [wbId, sheetKey]);
   const expires = new Date(Date.now() + TTL_MS);
@@ -20,7 +21,16 @@ export const acquireLock = async (wbId: number, sheetKey: string, user: TokenPay
     'SELECT user_id, user_name, expires_at FROM sheet_lock WHERE workbook_id=$1 AND sheet_key=$2',
     [wbId, sheetKey],
   );
-  return { acquired: false, heldBy: cur.rows[0] ?? null };
+  const holder = cur.rows[0];
+  if (holder && holder.user_id === user.id) {
+    const upd = await query(
+      `UPDATE sheet_lock SET expires_at=$3, acquired_at=now(), request_user_id=NULL, request_user_name=NULL
+       WHERE workbook_id=$1 AND sheet_key=$2 AND user_id=$4 RETURNING *`,
+      [wbId, sheetKey, expires, user.id],
+    );
+    if (upd.rows.length) return { acquired: true, lock: upd.rows[0] };
+  }
+  return { acquired: false, heldBy: holder ?? null };
 };
 
 /** 心跳续约:仅持有者可续;返回 takeoverRequest(有人请求接管) */

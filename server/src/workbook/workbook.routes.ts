@@ -60,6 +60,7 @@ workbookRouter.put('/workbooks/:id/snapshot', async (req, res, next) => {
 workbookRouter.get('/workbooks/:id/snapshot', async (req, res, next) => {
   try {
     const { rows } = await query('SELECT data, updated_at FROM workbook_snapshot WHERE workbook_id=$1', [req.params.id]);
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json(rows[0] ?? null);
   } catch (e) { next(e); }
 });

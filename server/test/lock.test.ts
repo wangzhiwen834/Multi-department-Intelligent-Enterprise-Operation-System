@@ -37,6 +37,13 @@ describe('悲观锁(工作表级)', () => {
     expect(r.body.acquired).toBe(true);
   });
 
+  it('同一用户可重新占取自己的锁(刷新后旧会话锁仍在)', async () => {
+    await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
+    const r = await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(201);
+    expect(r.body.acquired).toBe(true);
+  });
+
   it('他人占用时返回 heldBy(409)', async () => {
     await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
     const r = await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${mgrT}`);
