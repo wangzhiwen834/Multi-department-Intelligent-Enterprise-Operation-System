@@ -31,7 +31,11 @@ const startHeartbeat = () => {
   heartbeatTimer = setInterval(async () => {
     try {
       const h = await api.heartbeat(wbId, SHEET_KEY);
-      if (!h.renewed) { editing.value = false; holder.value = '他人'; stopHeartbeat(); msg.value = '锁已失效,请重新获取'; }
+      if (!h.renewed) {
+        const who = h.heldBy?.user_name ?? '他人';
+        editing.value = false; holder.value = who; stopHeartbeat();
+        msg.value = `被 ${who} 接管,你已失去编辑权`;
+      }
     } catch {
       stopHeartbeat(); editing.value = false; msg.value = '心跳失败,锁可能已失效';
     }
@@ -49,8 +53,8 @@ const endEdit = async () => { await releaseIfMine(); editing.value = false; hold
 const takeover = async () => {
   try {
     const r = await api.takeoverLock(wbId, SHEET_KEY);
-    if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); }
-    else holder.value = r.heldBy?.user_name ?? '他人';
+    if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑'; }
+    else { holder.value = r.heldBy?.user_name ?? '他人'; msg.value = '对方仍持有,暂无法接管'; }
   } catch (e: any) { msg.value = e.message; }
 };
 const save = async () => {
