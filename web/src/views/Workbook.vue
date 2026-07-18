@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../api';
 import { setupUniver, buildFromTemplate, extractForSync } from '../univer';
 import type { Shop, Template, SyncResult, User } from '../types';
@@ -25,6 +25,12 @@ const SHEET_KEY = 'daily_ops';
 
 // Univer 表格是否可编辑(仅持有锁时可编辑,否则只读)
 const setEditable = (v: boolean) => { try { (fwb as any)?.setEditable?.(v); } catch { /* ignore */ } };
+// editing 变化时同步 Univer 可编辑态;并取消挂载时延迟设只读的定时器(避免与编辑冲突)
+let initReadOnlyTimer: ReturnType<typeof setTimeout> | null = null;
+watch(editing, (v) => {
+  if (initReadOnlyTimer) { clearTimeout(initReadOnlyTimer); initReadOnlyTimer = null; }
+  setEditable(v);
+});
 
 const stopHeartbeat = () => { if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; } };
 const releaseIfMine = async () => { stopHeartbeat(); try { await api.releaseLock(wbId, SHEET_KEY); } catch { /* ignore */ } };
@@ -124,7 +130,8 @@ const mountUniver = async () => {
   const handle = setupUniver(containerRef.value!);
   univerHandle = handle;
   fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl!.definition, `${props.shop.name} ${props.period}`);
-  setEditable(false);  // 默认只读,持有锁后才可编辑
+  // Univer 创建后异步初始化可编辑权限(默认 true),延迟到初始化后再设只读;若用户先点编辑则 watch 会取消此定时器
+  initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(false); }, 150);
 };
 onMounted(async () => {
   me = await api.me().catch(() => null);
@@ -137,7 +144,7 @@ onMounted(async () => {
   else if ((st as any).user_name && (st as any).user_name !== me?.username) holder.value = (st as any).user_name;
   else holder.value = null;
 });
-onBeforeUnmount(() => { stopTakeoverPoll(); void releaseIfMine(); univerHandle?.dispose(); });
+onBeforeUnmount(() => { stopTakeoverPoll(); if (initReadOnlyTimer) clearTimeout(initReadOnlyTimer); void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>
