@@ -72,13 +72,17 @@ const startTakeoverPoll = () => {
       const st: any = await api.lockStatus(wbId, SHEET_KEY);
       if (st.user_name && st.user_name === me?.username) {
         stopTakeoverPoll();
+        await mountUniver();  // 重载快照(含被接管者刚保存的数据)
         editing.value = true; holder.value = null; startHeartbeat();
         msg.value = '已接管,可编辑';
       } else if (st.held === false) {
         // 对方离线、锁已过期 -> 直接占取
         stopTakeoverPoll();
         const r = await api.acquireLock(wbId, SHEET_KEY);
-        if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑'; }
+        if (r.acquired) {
+          await mountUniver();  // 重载快照
+          editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑';
+        }
       }
     } catch { /* 继续轮询 */ }
   }, 3000);
@@ -111,15 +115,19 @@ const save = async () => {
   } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 };
 
+const mountUniver = async () => {
+  const snap = await api.getSnapshot(wbId);
+  if (univerHandle) univerHandle.dispose();
+  const handle = setupUniver(containerRef.value!);
+  univerHandle = handle;
+  fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl!.definition, `${props.shop.name} ${props.period}`);
+};
 onMounted(async () => {
   me = await api.me().catch(() => null);
   const wb = await api.createWorkbook(props.shop.id, props.period);
   wbId = wb.id;
   tpl = await api.template(props.shop.business_code);
-  const snap = await api.getSnapshot(wb.id);
-  const handle = setupUniver(containerRef.value!);
-  univerHandle = handle;
-  fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl.definition, `${props.shop.name} ${props.period}`);
+  await mountUniver();
   const st = await api.lockStatus(wb.id, SHEET_KEY);
   if ((st as any).held === false) { holder.value = null; editing.value = false; }
   else if ((st as any).user_name && (st as any).user_name !== me?.username) holder.value = (st as any).user_name;
