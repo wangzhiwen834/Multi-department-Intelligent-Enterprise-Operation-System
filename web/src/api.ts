@@ -53,4 +53,11 @@ export const api = {
   aiInfo: () => req<{ chatModel: string; posterModel: string; configured: boolean }>('/api/ai/info'),
   posterGenerate: (prompt: string, size?: string) =>
     req<{ image: string }>('/api/poster/generate', { method: 'POST', body: JSON.stringify({ prompt, size }) }),
+  listUsers: () => req<User[]>('/api/users'),
+  createUser: (b: { username: string; password: string; name: string; role: 'manager' | 'employee'; department?: string | null; phone?: string }) =>
+    req<User>('/api/users', { method: 'POST', body: JSON.stringify(b) }),
+  updateUser: (id: number, b: { name?: string; phone?: string; status?: 'active' | 'disabled'; department?: string | null }) =>
+    req<User>(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  disableUser: (id: number) =>
+    req<{ ok: boolean }>(`/api/users/${id}`, { method: 'DELETE' }),
 };

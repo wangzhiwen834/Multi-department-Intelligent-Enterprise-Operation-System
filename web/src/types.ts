@@ -14,7 +14,7 @@ export interface LockStatus {
 }
 export interface SyncError { sheetKey: string; date: string; key: string; msg: string }
 export interface SyncResult { autoSums: Record<string, Record<string, number>>; errors: SyncError[] }
-export interface User { id: number; username: string; name: string; role: string; department: string | null }
+export interface User { id: number; username: string; name: string; role: string; department: string | null; phone?: string; status?: 'active' | 'disabled'; created_at?: string; }
 
 export interface DashboardOverview {
   period: string; shopId: number | null;
