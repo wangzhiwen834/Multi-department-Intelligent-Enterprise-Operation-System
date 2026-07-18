@@ -30,6 +30,7 @@ let initReadOnlyTimer: ReturnType<typeof setTimeout> | null = null;
 watch(editing, (v) => {
   if (initReadOnlyTimer) { clearTimeout(initReadOnlyTimer); initReadOnlyTimer = null; }
   setEditable(v);
+  if (v) stopStatusPoll(); else startStatusPoll();
 });
 
 const stopHeartbeat = () => { if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; } };
@@ -96,6 +97,21 @@ const startTakeoverPoll = () => {
     } catch { /* 继续轮询 */ }
   }, 3000);
 };
+// 查看态(未编辑)轮询锁状态,让旁观者及时看到"XXX 编辑中"
+let statusPoll: ReturnType<typeof setInterval> | null = null;
+const stopStatusPoll = () => { if (statusPoll) { clearInterval(statusPoll); statusPoll = null; } };
+const startStatusPoll = () => {
+  stopStatusPoll();
+  statusPoll = setInterval(async () => {
+    if (editing.value || takeoverPoll) return;
+    try {
+      const st: any = await api.lockStatus(wbId, SHEET_KEY);
+      if (st.held === false) holder.value = null;
+      else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
+      else holder.value = null;
+    } catch { /* ignore */ }
+  }, 5000);
+};
 const takeover = async () => {
   try {
     const r = await api.takeoverLock(wbId, SHEET_KEY);
@@ -143,8 +159,9 @@ onMounted(async () => {
   if ((st as any).held === false) { holder.value = null; editing.value = false; }
   else if ((st as any).user_name && (st as any).user_name !== me?.username) holder.value = (st as any).user_name;
   else holder.value = null;
+  startStatusPoll();
 });
-onBeforeUnmount(() => { stopTakeoverPoll(); if (initReadOnlyTimer) clearTimeout(initReadOnlyTimer); void releaseIfMine(); univerHandle?.dispose(); });
+onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTimer) clearTimeout(initReadOnlyTimer); void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>
