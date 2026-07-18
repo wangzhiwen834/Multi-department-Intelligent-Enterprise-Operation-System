@@ -7,6 +7,7 @@ const emit = defineEmits<{ (e: 'login', u: User, t: string): void }>();
 const username = ref('');
 const password = ref('');
 const err = ref('');
+const showPwd = ref(false);
 
 const submit = async () => {
   try {
@@ -94,8 +95,8 @@ const submit = async () => {
             <label>密码</label>
             <div class="input-wrap">
               <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-              <input v-model="password" type="password" class="input pwd" placeholder="请输入密码" data-od-id="login-password">
-              <button type="button" class="eye" aria-label="显示密码">
+              <input v-model="password" :type="showPwd ? 'text' : 'password'" class="input pwd" :class="{ error: !!err }" placeholder="请输入密码" data-od-id="login-password">
+              <button type="button" class="eye" aria-label="显示密码" @click="showPwd = !showPwd">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
