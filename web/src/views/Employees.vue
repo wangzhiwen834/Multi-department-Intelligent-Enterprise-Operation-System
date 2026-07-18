@@ -251,7 +251,7 @@ const roleLabel = (r: string) => r === 'chairman' ? '董事长' : r === 'manager
 
 .od-modal-mask {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(15, 23, 42, .45); backdrop-filter: blur(1px);
+  background: var(--od-scrim); backdrop-filter: blur(1px);
   display: flex; align-items: center; justify-content: center; padding: var(--od-space-5);
 }
 .od-modal {

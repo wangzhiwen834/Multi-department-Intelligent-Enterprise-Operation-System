@@ -4,6 +4,7 @@
   --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
   --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
   --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-scrim:rgba(15,23,42,.45);
   --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
   --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
   --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;

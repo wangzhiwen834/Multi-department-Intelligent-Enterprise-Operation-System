@@ -67,6 +67,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
         <h1 class="od-module-title">{{ activeLabel }}</h1>
         <div class="od-top-right">
           <input type="month" :value="period"
+            v-if="!(module === 'ops' && shop)"
             @change="period = ($event.target as HTMLInputElement).value" class="od-month" />
           <span class="od-user">{{ user?.name }} · {{ user?.role === 'chairman' ? '董事长' : user?.role === 'manager' ? '经理' : '员工' }}</span>
           <button class="od-logout" @click="onLogout">退出</button>
