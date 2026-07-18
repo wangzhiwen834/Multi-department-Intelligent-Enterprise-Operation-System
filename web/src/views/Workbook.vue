@@ -84,24 +84,177 @@ onBeforeUnmount(() => { void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-slate-100 text-slate-900">
-    <header class="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white p-3 text-sm">
-      <button @click="emit('back')" class="text-sky-600 hover:text-sky-500">← 返回</button>
-      <input type="month" :value="period" @change="emit('update:period', ($event.target as HTMLInputElement).value)" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-slate-900" />
-      <span class="font-medium">{{ shop.name }}</span>
-      <span v-if="editing" class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">编辑中</span>
-      <span v-else-if="holder" class="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">只读 · {{ holder }} 正在编辑</span>
-      <span v-else class="rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600">查看</span>
-      <div class="flex-1"></div>
-      <button v-if="!editing && !holder" @click="startEdit" class="rounded-lg bg-sky-500 px-4 py-1.5 font-medium text-white hover:bg-sky-400">编辑</button>
-      <button v-if="editing" @click="endEdit" class="rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-slate-700 hover:bg-slate-50">退出编辑</button>
-      <button v-if="holder" @click="takeover" class="rounded-lg bg-amber-500 px-4 py-1.5 font-medium text-white hover:bg-amber-400">接管</button>
-      <button @click="save" :disabled="!editing || busy" class="rounded-lg bg-green-500 px-4 py-1.5 font-medium text-white hover:bg-green-400 disabled:opacity-40">保存并同步</button>
-    </header>
-    <div v-if="msg" class="bg-sky-50 px-4 py-1.5 text-sm text-sky-700">{{ msg }}</div>
-    <div v-if="syncResult?.errors.length" class="bg-red-50 px-4 py-2 text-xs text-red-600">
-      校验错误:<span v-for="(e, i) in syncResult.errors" :key="i" class="mr-3">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}</span>
+  <div class="od-wb">
+    <!-- 顶栏:结构取 workbook-shell.html -->
+    <div class="od-wb-topbar">
+      <div class="od-tb-left">
+        <button class="od-icon-btn" @click="emit('back')" title="返回">←</button>
+        <div class="od-store"><span class="od-store-sw">{{ shop.name.slice(0,1) }}</span>
+          <div><div class="od-nm">{{ shop.name }}</div><div class="od-biz">{{ shop.business_name }}</div></div></div>
+      </div>
+      <div class="od-tb-right">
+        <!-- 锁徽标两态,绑现有 editing/holder -->
+        <span v-if="editing" class="od-lock-editable">● 编辑中</span>
+        <span v-else-if="holder" class="od-lock-occupied">🔒 {{ holder }} 编辑中</span>
+        <span v-else class="od-lock-view">查看</span>
+        <button v-if="!editing && !holder" class="od-btn-primary" @click="startEdit">编辑</button>
+        <button v-if="editing" class="od-btn-ghost" @click="endEdit">退出编辑</button>
+        <button v-if="holder" class="od-btn-takeover" @click="takeover">接管</button>
+        <button class="od-btn-ghost" @click="save" :disabled="!editing || busy">保存并同步</button>
+      </div>
     </div>
-    <div ref="containerRef" class="flex-1"></div>
+    <div v-if="msg" class="od-wb-msg">{{ msg }}</div>
+    <div v-if="syncResult?.errors.length" class="od-wb-err">
+      校验错误:<span v-for="(e,i) in syncResult.errors" :key="i">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}; </span>
+    </div>
+    <!-- Univer 挂载点:禁动 -->
+    <div ref="containerRef" class="od-wb-grid"></div>
   </div>
 </template>
+
+<style scoped>
+.od-wb *,
+.od-wb *::before,
+.od-wb *::after { box-sizing: border-box; }
+
+/* 外壳容器:卡片化,填满内容区,flex 列让顶栏在上、表格填满剩余 */
+.od-wb {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--od-surface);
+  border: 1px solid var(--od-border);
+  border-radius: var(--od-radius-lg);
+  box-shadow: var(--od-shadow-sm);
+  overflow: hidden;
+  color: var(--od-text);
+  font-family: var(--od-font-sans);
+}
+
+/* 顶栏 */
+.od-wb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px var(--od-space-4);
+  border-bottom: 1px solid var(--od-border);
+  background: var(--od-surface);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.od-tb-left { display: flex; align-items: center; gap: var(--od-space-3); }
+.od-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.od-icon-btn {
+  width: 34px; height: 34px;
+  border-radius: var(--od-radius-md);
+  display: grid; place-items: center;
+  color: var(--od-text);
+  border: 1px solid var(--od-border);
+  background: var(--od-surface);
+  transition: all .15s;
+  font-size: var(--od-text-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.od-icon-btn:hover { background: var(--od-surface-2); border-color: color-mix(in oklab, var(--od-border), black 8%); }
+
+.od-store { display: flex; align-items: center; gap: 8px; font-size: var(--od-text-base); }
+.od-store-sw {
+  width: 28px; height: 28px;
+  border-radius: var(--od-radius-sm);
+  background: var(--od-palette-1);
+  display: grid; place-items: center;
+  color: #fff; font-size: 13px; font-weight: var(--od-weight-semibold);
+}
+.od-nm { font-weight: var(--od-weight-semibold); }
+.od-biz { font-size: var(--od-text-xs); color: var(--od-text-muted); }
+
+/* 锁徽标 -- 编辑中 */
+.od-lock-editable {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border-radius: var(--od-radius-md);
+  background: var(--od-primary-soft);
+  color: var(--od-primary-hover);
+  font-size: var(--od-text-sm);
+  font-weight: var(--od-weight-medium);
+}
+/* 锁徽标 -- 被他人占用 */
+.od-lock-occupied {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border-radius: var(--od-radius-md);
+  background: var(--od-surface-2);
+  border: 1px solid var(--od-border);
+  color: var(--od-warning);
+  font-size: var(--od-text-sm);
+  font-weight: var(--od-weight-medium);
+}
+/* 锁徽标 -- 查看 */
+.od-lock-view {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 12px;
+  border-radius: var(--od-radius-md);
+  background: var(--od-surface-2);
+  border: 1px solid var(--od-border);
+  color: var(--od-text-muted);
+  font-size: var(--od-text-sm);
+  font-weight: var(--od-weight-medium);
+}
+
+/* 按钮 */
+.od-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--od-radius-md);
+  font-size: var(--od-text-sm); font-weight: var(--od-weight-medium);
+  transition: all .15s;
+  background: var(--od-primary); color: #fff; border: none; cursor: pointer;
+}
+.od-btn-primary:hover { background: var(--od-primary-hover); }
+
+.od-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--od-radius-md);
+  font-size: var(--od-text-sm); font-weight: var(--od-weight-medium);
+  transition: all .15s;
+  background: var(--od-surface); border: 1px solid var(--od-border); color: var(--od-text); cursor: pointer;
+}
+.od-btn-ghost:hover { background: var(--od-surface-2); border-color: color-mix(in oklab, var(--od-border), black 8%); }
+.od-btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
+
+.od-btn-takeover {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px;
+  border-radius: var(--od-radius-md);
+  font-size: var(--od-text-sm); font-weight: var(--od-weight-medium);
+  transition: all .15s;
+  background: var(--od-warning); color: #fff; border: none; cursor: pointer;
+}
+.od-btn-takeover:hover { filter: brightness(.95); }
+
+/* 消息 / 校验错误条 */
+.od-wb-msg {
+  padding: 6px var(--od-space-4);
+  background: var(--od-primary-soft);
+  color: var(--od-primary-hover);
+  font-size: var(--od-text-sm);
+  border-bottom: 1px solid var(--od-border);
+}
+.od-wb-err {
+  padding: 6px var(--od-space-4);
+  background: var(--od-danger-soft);
+  color: var(--od-danger);
+  font-size: var(--od-text-xs);
+  border-bottom: 1px solid var(--od-border);
+}
+
+/* Univer 挂载点:填满剩余空间(禁动容器,仅类名) */
+.od-wb-grid { flex: 1; min-height: 0; }
+
+@media (max-width: 760px) {
+  .od-biz { display: none; }
+}
+</style>
