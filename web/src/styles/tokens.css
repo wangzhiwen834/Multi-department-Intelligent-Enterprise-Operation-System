@@ -1,0 +1,17 @@
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+  --od-sidebar-w:232px;--od-sidebar-w-collapsed:64px;--od-topbar-h:56px;
+}

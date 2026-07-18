@@ -15,10 +15,10 @@ export const THEMES: Record<string, Theme> = {
   },
   light: {
     key: 'light', label: '商务浅色',
-    bg: '#F1F5F9', cardBg: '#FFFFFF', cardBorder: '#E2E8F0',
-    text: '#0F172A', subText: '#64748B', accent: '#0EA5E9', gold: '#F59E0B',
-    palette: ['#0EA5E9', '#F59E0B', '#8B5CF6', '#10B981', '#3B82F6', '#EF4444'],
-    success: '#10B981', warning: '#F59E0B', danger: '#EF4444',
+    bg: '#f7f9fc', cardBg: '#ffffff', cardBorder: '#e2e8f0',
+    text: '#0f172a', subText: '#64748b', accent: '#2563eb', gold: '#d4a017',
+    palette: ['#0ea5e9', '#3b82f6', '#14b8a6', '#8b5cf6', '#f59e0b'],
+    success: '#16a34a', warning: '#f59e0b', danger: '#ef4444',
   },
   warm: {
     key: 'warm', label: '暖橙',
