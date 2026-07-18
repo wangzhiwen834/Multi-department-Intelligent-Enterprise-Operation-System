@@ -68,16 +68,24 @@ describe('悲观锁(工作表级)', () => {
     expect(r.body.lock.user_name).toBe('mgr1');
   });
 
-  it('未过期时强制接管成功(夺权,201),原持有者心跳失败', async () => {
+  it('未过期时请求接管登记为 pending,持有者心跳可见请求并让出转交', async () => {
     await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
     const r = await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops/takeover`).set('Authorization', `Bearer ${mgrT}`);
-    expect(r.status).toBe(201);
-    expect(r.body.acquired).toBe(true);
-    expect(r.body.lock.user_name).toBe('mgr1');
-    // 原持有者 boss 不再持有:心跳 renewed=false 且 heldBy=mgr1(驱动"被 mgr1 接管"提示)
+    expect(r.status).toBe(200);
+    expect(r.body.acquired).toBe(false);
+    expect(r.body.pending).toBe(true);
+    expect(r.body.heldBy.user_name).toBe('boss');
+    // 持有者心跳能看到接管请求
     const hb = await request(app).put(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
-    expect(hb.body.renewed).toBe(false);
-    expect(hb.body.heldBy.user_name).toBe('mgr1');
+    expect(hb.body.renewed).toBe(true);
+    expect(hb.body.takeoverRequest.user_name).toBe('mgr1');
+    // 持有者让出 -> 锁转给 mgr1
+    const y = await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops/yield`).set('Authorization', `Bearer ${bossT}`);
+    expect(y.body.yielded).toBe(true);
+    expect(y.body.lock.user_name).toBe('mgr1');
+    // boss 不再持有:心跳失败
+    const hb2 = await request(app).put(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${bossT}`);
+    expect(hb2.body.renewed).toBe(false);
   });
 
   it('非持有者保存快照被拒(409,防被接管者覆盖数据)', async () => {

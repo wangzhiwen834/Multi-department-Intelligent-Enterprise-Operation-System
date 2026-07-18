@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authRequired } from '../auth/auth.middleware.js';
-import { acquireLock, heartbeat, releaseLock, takeoverLock, getLockStatus } from './lock.service.js';
+import { acquireLock, heartbeat, releaseLock, requestTakeover, yieldLock, getLockStatus } from './lock.service.js';
 
 export const lockRouter = Router();
 lockRouter.use(authRequired);
@@ -37,10 +37,18 @@ lockRouter.delete('/workbooks/:id/locks/:sheetKey', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// 强制接管
+// 请求接管(两阶段:登记请求,原持有者保存后让出)
 lockRouter.post('/workbooks/:id/locks/:sheetKey/takeover', async (req, res, next) => {
   try {
-    const r = await takeoverLock(Number(req.params.id), req.params.sheetKey, req.user!);
-    res.status(r.acquired ? 201 : 409).json(r);
+    const r = await requestTakeover(Number(req.params.id), req.params.sheetKey, req.user!);
+    res.status(r.acquired ? 201 : 200).json(r);
+  } catch (e) { next(e); }
+});
+
+// 让出(持有者保存后让给接管请求者)
+lockRouter.post('/workbooks/:id/locks/:sheetKey/yield', async (req, res, next) => {
+  try {
+    const r = await yieldLock(Number(req.params.id), req.params.sheetKey, req.user!);
+    res.status(r.yielded ? 200 : 409).json(r);
   } catch (e) { next(e); }
 });

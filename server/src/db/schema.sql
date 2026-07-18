@@ -106,5 +106,9 @@ CREATE TABLE IF NOT EXISTS sheet_lock (
   PRIMARY KEY (workbook_id, sheet_key)
 );
 
+-- 02 悲观锁:接管请求字段(两阶段交接--持有者保存后让出)
+ALTER TABLE sheet_lock ADD COLUMN IF NOT EXISTS request_user_id INT REFERENCES app_user(id);
+ALTER TABLE sheet_lock ADD COLUMN IF NOT EXISTS request_user_name TEXT;
+
 -- 03 大屏:门店月度目标(任务完成进度用)
 ALTER TABLE shop ADD COLUMN IF NOT EXISTS monthly_target NUMERIC NOT NULL DEFAULT 0;

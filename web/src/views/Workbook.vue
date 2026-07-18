@@ -35,11 +35,24 @@ const startHeartbeat = () => {
         const who = h.heldBy?.user_name ?? '他人';
         editing.value = false; holder.value = who; stopHeartbeat();
         msg.value = `被 ${who} 接管,你已失去编辑权`;
+      } else if (h.takeoverRequest) {
+        // 有人请求接管:先自动保存再让出(保存时仍持有锁,无竞态)
+        stopHeartbeat();
+        const who = h.takeoverRequest.user_name;
+        msg.value = `${who} 请求接管,正在保存…`;
+        try {
+          await performSave();
+          await api.yieldLock(wbId, SHEET_KEY);
+          editing.value = false; holder.value = who;
+          msg.value = `已保存并让出编辑权,被 ${who} 接管`;
+        } catch (e: any) {
+          msg.value = `自动保存/让出失败:${e.message}`;
+        }
       }
     } catch {
       stopHeartbeat(); editing.value = false; msg.value = '心跳失败,锁可能已失效';
     }
-  }, 15000);
+  }, 5000);
 };
 
 const startEdit = async () => {
@@ -50,22 +63,50 @@ const startEdit = async () => {
   } catch (e: any) { msg.value = e.message; }
 };
 const endEdit = async () => { await releaseIfMine(); editing.value = false; holder.value = null; };
+let takeoverPoll: ReturnType<typeof setInterval> | null = null;
+const stopTakeoverPoll = () => { if (takeoverPoll) { clearInterval(takeoverPoll); takeoverPoll = null; } };
+const startTakeoverPoll = () => {
+  stopTakeoverPoll();
+  takeoverPoll = setInterval(async () => {
+    try {
+      const st: any = await api.lockStatus(wbId, SHEET_KEY);
+      if (st.user_name && st.user_name === me?.username) {
+        stopTakeoverPoll();
+        editing.value = true; holder.value = null; startHeartbeat();
+        msg.value = '已接管,可编辑';
+      } else if (st.held === false) {
+        // 对方离线、锁已过期 -> 直接占取
+        stopTakeoverPoll();
+        const r = await api.acquireLock(wbId, SHEET_KEY);
+        if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑'; }
+      }
+    } catch { /* 继续轮询 */ }
+  }, 3000);
+};
 const takeover = async () => {
   try {
     const r = await api.takeoverLock(wbId, SHEET_KEY);
     if (r.acquired) { editing.value = true; holder.value = null; startHeartbeat(); msg.value = '已接管,可编辑'; }
-    else { holder.value = r.heldBy?.user_name ?? '他人'; msg.value = '对方仍持有,暂无法接管'; }
+    else if (r.pending) {
+      holder.value = r.heldBy?.user_name ?? '他人';
+      msg.value = `已请求接管,等待 ${holder.value} 保存…`;
+      startTakeoverPoll();
+    } else { holder.value = r.heldBy?.user_name ?? '他人'; msg.value = '对方仍持有,暂无法接管'; }
   } catch (e: any) { msg.value = e.message; }
+};
+const performSave = async () => {
+  const snapshot = fwb.save();
+  await api.putSnapshot(wbId, snapshot);
+  const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
+  const res = await api.sync(wbId, { dailyMetrics, expenses });
+  syncResult.value = res;
+  return res;
 };
 const save = async () => {
   if (!editing.value) { msg.value = '请先进入编辑(获取锁)'; return; }
   busy.value = true; msg.value = '';
   try {
-    const snapshot = fwb.save();
-    await api.putSnapshot(wbId, snapshot);
-    const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
-    const res = await api.sync(wbId, { dailyMetrics, expenses });
-    syncResult.value = res;
+    const res = await performSave();
     msg.value = `已保存并同步${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`;
   } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 };
@@ -84,7 +125,7 @@ onMounted(async () => {
   else if ((st as any).user_name && (st as any).user_name !== me?.username) holder.value = (st as any).user_name;
   else holder.value = null;
 });
-onBeforeUnmount(() => { void releaseIfMine(); univerHandle?.dispose(); });
+onBeforeUnmount(() => { stopTakeoverPoll(); void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>

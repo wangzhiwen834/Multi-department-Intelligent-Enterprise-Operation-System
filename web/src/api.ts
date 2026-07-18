@@ -51,11 +51,13 @@ export const api = {
   acquireLock: (id: number, sheetKey: string) =>
     reqLock<{ acquired: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}`, { method: 'POST' }),
   heartbeat: (id: number, sheetKey: string) =>
-    reqLock<{ renewed: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}`, { method: 'PUT' }),
+    reqLock<{ renewed: boolean; lock?: unknown; heldBy?: { user_name: string }; takeoverRequest?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}`, { method: 'PUT' }),
   releaseLock: (id: number, sheetKey: string) =>
     req<{ released: boolean }>(`/api/workbooks/${id}/locks/${sheetKey}`, { method: 'DELETE' }),
   takeoverLock: (id: number, sheetKey: string) =>
-    reqLock<{ acquired: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}/takeover`, { method: 'POST' }),
+    reqLock<{ acquired: boolean; pending?: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}/takeover`, { method: 'POST' }),
+  yieldLock: (id: number, sheetKey: string) =>
+    reqLock<{ yielded: boolean }>(`/api/workbooks/${id}/locks/${sheetKey}/yield`, { method: 'POST' }),
   sync: (id: number, body: { dailyMetrics: unknown[]; expenses: unknown[] }) =>
     req<SyncResult>(`/api/workbooks/${id}/sync`, { method: 'POST', body: JSON.stringify(body) }),
   ledger: (shopId: number, period: string) =>
