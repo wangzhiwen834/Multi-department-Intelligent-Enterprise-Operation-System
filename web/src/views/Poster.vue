@@ -10,6 +10,14 @@ const shopId = ref<number | null>(null);
 const prompt = ref('足浴店周末养生特惠,温馨暖色调,顶部底部留白');
 const date = ref(new Date().toISOString().slice(0, 10));
 const caption = ref('健康养生 · 舒缓身心');
+const style = ref('商务蓝');
+const styles = [
+  { key: '商务蓝', kw: '商务蓝色调,专业稳重', sw: 'linear-gradient(135deg,var(--od-palette-1),color-mix(in oklab,var(--od-palette-1),black 20%))' },
+  { key: '暖金', kw: '暖金色调,温馨高端', sw: 'linear-gradient(135deg,var(--od-warning),var(--od-gold))' },
+  { key: '极简黑', kw: '极简黑白,留白大气', sw: 'linear-gradient(135deg,var(--od-text),color-mix(in oklab,var(--od-text),white 25%))' },
+  { key: '喜庆红', kw: '喜庆红色调,热闹欢快', sw: 'linear-gradient(135deg,color-mix(in oklab,var(--od-danger),black 12%),var(--od-warning))' },
+];
+const styleKw = computed(() => styles.find(s => s.key === style.value)?.kw ?? '');
 const loading = ref(false);
 const err = ref('');
 const bgImage = ref('');
@@ -52,7 +60,7 @@ const compose = () => {
 const generate = async () => {
   loading.value = true; err.value = '';
   try {
-    const r = await api.posterGenerate(prompt.value);
+    const r = await api.posterGenerate(`${prompt.value},${styleKw.value}`);
     bgImage.value = r.image;
     compose();
   } catch (e: any) { err.value = e.message; } finally { loading.value = false; }
@@ -98,14 +106,14 @@ const download = () => {
         </div>
 
         <div class="field">
-          <label>风格 <span class="opt-tag">视觉参考</span></label>
+          <label>风格</label>
           <div class="style-grid">
-            <div class="style-opt active"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-palette-1),color-mix(in oklab,var(--od-palette-1),black 20%))"></span>商务蓝</div>
-            <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-warning),var(--od-gold))"></span>暖金</div>
-            <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-text),color-mix(in oklab,var(--od-text),white 25%))"></span>极简黑</div>
-            <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,color-mix(in oklab,var(--od-danger),black 12%),var(--od-warning))"></span>喜庆红</div>
+            <div v-for="s in styles" :key="s.key" class="style-opt" :class="{ active: style === s.key }"
+              role="button" tabindex="0" @click="style = s.key" @keydown.enter="style = s.key">
+              <span class="style-sw" :style="{ background: s.sw }"></span>{{ s.key }}
+            </div>
           </div>
-          <div class="hint-txt">风格仅作视觉参考,实际背景由提示词驱动。</div>
+          <div class="hint-txt">风格色调会追加到提示词,影响背景。</div>
         </div>
 
         <div class="field">
@@ -127,7 +135,7 @@ const download = () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M5 20l.7-2M19 20l-.7-2M12 19v.01"/></svg>
           {{ loading ? '生成中…' : '生成海报' }}
         </button>
-        <div class="hint-txt" style="text-align:center;margin-top:8px">预计耗时 8-15 秒 · 消耗 1 次生成额度</div>
+        <div class="hint-txt" style="text-align:center;margin-top:8px">预计耗时约 10-30 秒</div>
       </div>
 
       <!-- 右:预览区 -->
@@ -191,7 +199,6 @@ const download = () => {
   -webkit-font-smoothing: antialiased;
 }
 .od-poster * { box-sizing: border-box; }
-.num { font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
 /* 页头 */
@@ -216,7 +223,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .field { margin-bottom: var(--od-space-4); }
 .field label { display: block; font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); margin-bottom: 6px; }
 .field .hint-txt { font-size: var(--od-text-xs); color: var(--od-text-muted); margin-top: 5px; }
-.opt-tag { display: inline-block; font-size: 10px; font-weight: var(--od-weight-medium); color: var(--od-text-muted); background: var(--od-surface-2); border-radius: var(--od-radius-sm); padding: 1px 6px; margin-left: 4px; vertical-align: 1px; }
 
 .select, .input { width: 100%; height: 40px; padding: 0 12px; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-md); font-size: var(--od-text-base); color: var(--od-text); font-family: inherit; transition: all .15s; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; }
 .select:hover, .input:hover { border-color: color-mix(in oklab, var(--od-border), black 8%); }
