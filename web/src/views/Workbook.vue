@@ -124,6 +124,7 @@ const takeover = async () => {
   } catch (e: any) { msg.value = e.message; }
 };
 const performSave = async () => {
+  try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前正在编辑的单元格,无编辑则忽略 */ }
   const snapshot = fwb.save();
   await api.putSnapshot(wbId, snapshot);
   const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
