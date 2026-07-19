@@ -12,6 +12,8 @@
     "@univerjs/preset-sheets-core": "1.0.0-alpha.3",
     "@univerjs/presets": "1.0.0-alpha.3",
     "echarts": "^5.5.1",
+    "fabric": "^6.9.1",
+    "marked": "^18.0.6",
     "vue": "^3.5.13"
   },
   "devDependencies": {

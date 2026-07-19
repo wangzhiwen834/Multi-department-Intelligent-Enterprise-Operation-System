@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 每日海报 · 生成页</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.page-title{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold);margin-bottom:4px}
+.page-sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+
+.layout{display:grid;grid-template-columns:380px 1fr;gap:var(--od-space-5);max-width:1180px;margin:0 auto;align-items:start}
+@media(max-width:920px){.layout{grid-template-columns:1fr}}
+
+.card{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);box-shadow:var(--od-shadow-sm);padding:var(--od-space-5)}
+.card-h{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold);margin-bottom:var(--od-space-2)}
+.card-desc{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-5)}
+
+.field{margin-bottom:var(--od-space-4)}
+.field label{display:block;font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);margin-bottom:6px}
+.field .hint-txt{font-size:var(--od-text-xs);color:var(--od-text-muted);margin-top:5px}
+.select,.input{width:100%;height:40px;padding:0 12px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-base);color:var(--od-text);font-family:inherit;transition:all .15s;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.select:hover,.input:hover{border-color:color-mix(in oklab,var(--od-border),black 8%)}
+.select:focus,.input:focus{outline:none;border-color:var(--od-primary);box-shadow:0 0 0 3px var(--od-primary-soft)}
+textarea.input{height:auto;padding:10px 12px;background-image:none;padding-right:12px;resize:vertical;min-height:84px;line-height:1.6}
+
+/* 风格选择 */
+.style-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.style-opt{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--od-border);border-radius:var(--od-radius-md);cursor:pointer;font-size:var(--od-text-sm);transition:all .15s}
+.style-opt:hover{border-color:color-mix(in oklab,var(--od-border),black 8%);background:var(--od-surface-2)}
+.style-opt.active{border-color:var(--od-primary);background:var(--od-primary-soft);color:var(--od-primary-hover);font-weight:var(--od-weight-medium)}
+.style-sw{width:18px;height:18px;border-radius:var(--od-radius-sm);flex-shrink:0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;border-radius:var(--od-radius-md);font-size:var(--od-text-base);font-weight:var(--od-weight-semibold);transition:all .15s;width:100%}
+.btn-primary{background:var(--od-primary);color:#fff;box-shadow:var(--od-shadow-sm)}
+.btn-primary:hover{background:var(--od-primary-hover);box-shadow:var(--od-shadow-md)}
+.btn-ghost{background:var(--od-surface);border:1px solid var(--od-border);color:var(--od-text);height:38px}
+.btn-ghost:hover{background:var(--od-surface-2);border-color:color-mix(in oklab,var(--od-border),black 8%)}
+
+.divider{height:1px;background:var(--od-border);margin:var(--od-space-5) 0}
+
+/* 预览区 */
+.preview-area{display:flex;flex-direction:column;gap:var(--od-space-5)}
+.preview-block{position:relative}
+.preview-label{display:inline-flex;align-items:center;gap:6px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);letter-spacing:.08em;text-transform:uppercase;color:var(--od-primary);background:var(--od-primary-soft);padding:4px 10px;border-radius:var(--od-radius-full);margin-bottom:var(--od-space-3)}
+
+.poster-row{display:flex;gap:var(--od-space-6);flex-wrap:wrap;align-items:flex-start}
+.poster-cell{display:flex;flex-direction:column;align-items:center;gap:var(--od-space-3)}
+
+/* 海报 9:16 */
+.poster{width:300px;height:533px;border-radius:var(--od-radius-lg);overflow:hidden;position:relative;box-shadow:var(--od-shadow-lg);border:1px solid var(--od-border)}
+.poster .p-brand{position:absolute;top:18px;left:18px;right:18px;display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;font-weight:var(--od-weight-semibold);z-index:2}
+.poster .p-brand .m{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:14px;backdrop-filter:blur(4px)}
+.poster .p-date{position:absolute;top:18px;right:18px;font-size:11px;color:rgba(255,255,255,.85);font-family:var(--od-font-mono);z-index:2}
+.poster .p-body{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;color:#fff;z-index:2}
+.poster .p-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.8);margin-bottom:6px}
+.poster .p-store{font-size:26px;font-weight:var(--od-weight-bold);letter-spacing:-.01em;margin-bottom:14px}
+.poster .p-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.poster .p-m{background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:9px 11px}
+.poster .p-m .v{font-size:18px;font-weight:var(--od-weight-bold);font-family:var(--od-font-mono)}
+.poster .p-m .l{font-size:10px;color:rgba(255,255,255,.8);margin-top:2px}
+.poster .p-slogan{font-size:15px;font-weight:var(--od-weight-medium);line-height:1.5;border-left:3px solid rgba(255,255,255,.6);padding-left:10px}
+.poster .p-foot{position:absolute;bottom:14px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:rgba(255,255,255,.7);z-index:2}
+
+/* 完成态背景(大河坎 sky) */
+.poster.done{background:linear-gradient(160deg,var(--od-palette-1) 0%,color-mix(in oklab,var(--od-palette-1),black 18%) 55%,color-mix(in oklab,var(--od-palette-1),black 32%) 100%)}
+.poster.done::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);top:-120px;right:-80px}
+.poster.done::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10),transparent 70%);bottom:-60px;left:-40px}
+
+/* 生成中骨架 */
+.poster.loading{background:var(--od-surface-2)}
+.poster.loading .skel{position:absolute;background:linear-gradient(100deg,var(--od-surface-2) 30%,color-mix(in oklab,var(--od-surface-2),white 35%) 50%,var(--od-surface-2) 70%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:var(--od-radius-sm)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.poster.loading .s1{top:60px;left:24px;right:24px;height:14px}
+.poster.loading .s2{top:84px;left:24px;width:120px;height:22px}
+.poster.loading .s3{bottom:160px;left:24px;right:24px;height:60px;border-radius:var(--od-radius-md)}
+.poster.loading .s4{bottom:90px;left:24px;right:24px;height:36px;border-radius:var(--od-radius-md)}
+.poster.loading .s5{bottom:30px;left:24px;right:80px;height:12px}
+.loading-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);padding:14px 18px;box-shadow:var(--od-shadow-lg);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:3;min-width:200px}
+.spinner{width:30px;height:30px;border:3px solid var(--od-surface-2);border-top-color:var(--od-primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-badge .lt{font-size:var(--od-text-sm);font-weight:var(--od-weight-medium)}
+.progress-track{width:100%;height:5px;background:var(--od-surface-2);border-radius:3px;overflow:hidden}
+.progress-track i{display:block;height:100%;width:62%;background:var(--od-primary);border-radius:3px;transition:width .3s}
+.loading-badge .lp{font-size:var(--od-text-xs);color:var(--od-text-muted);font-family:var(--od-font-mono)}
+
+.poster-actions{display:flex;gap:10px}
+.poster-cap{font-size:var(--od-text-xs);color:var(--od-text-muted);text-align:center}
+.poster-cap b{color:var(--od-text);font-weight:var(--od-weight-medium)}
+</style>
+</head>
+<body>
+<h1 class="page-title">AI 每日海报 · 生成页</h1>
+<p class="page-sub">左配置区 + 右预览区(竖版 1080×1920)。下方展示生成完成态与生成中态。</p>
+
+<div class="layout">
+  <!-- 左:配置区 -->
+  <div class="card" data-od-id="poster-config">
+    <div class="card-h">海报配置</div>
+    <div class="card-desc">选择店铺与日期,AI 自动取数生成每日经营海报。</div>
+
+    <div class="field">
+      <label>店铺</label>
+      <select class="select" data-od-id="poster-store">
+        <option>大河坎店</option>
+        <option>旗舰店</option>
+        <option>中心店</option>
+        <option>北区店</option>
+        <option>南区店</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>日期</label>
+      <input type="date" class="input" value="2025-06-18">
+    </div>
+
+    <div class="field">
+      <label>风格</label>
+      <div class="style-grid">
+        <div class="style-opt active"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-palette-1),color-mix(in oklab,var(--od-palette-1),black 20%))"></span>商务蓝</div>
+        <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-warning),var(--od-gold))"></span>暖金</div>
+        <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,var(--od-text),color-mix(in oklab,var(--od-text),white 25%))"></span>极简黑</div>
+        <div class="style-opt"><span class="style-sw" style="background:linear-gradient(135deg,color-mix(in oklab,var(--od-danger),black 12%),var(--od-warning))"></span>喜庆红</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>提示词(可选)</label>
+      <textarea class="input" placeholder="补充文案重点,如:突出充值活动、强调客流增长…">突出本月营收与充值转化,语调专业稳健。</textarea>
+      <div class="hint-txt">留空则由 AI 自动生成文案。</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="btn btn-primary" data-od-id="poster-generate">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M5 20l.7-2M19 20l-.7-2M12 19v.01"/></svg>
+      生成海报
+    </button>
+    <div class="hint-txt" style="text-align:center;margin-top:8px">预计耗时 8-15 秒 · 消耗 1 次生成额度</div>
+  </div>
+
+  <!-- 右:预览区 -->
+  <div class="preview-area">
+    <div class="preview-block" data-od-id="poster-done">
+      <span class="preview-label">生成完成态</span>
+      <div class="poster-row">
+        <div class="poster-cell">
+          <div class="poster done" data-od-id="poster-preview-done">
+            <div class="p-brand"><div class="m"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 10.5 5.5 15.2a6.5 6.5 0 0 0 13 0C18.5 10.5 12 3 12 3Z" fill="#ffffff"/></svg></div>足浴经营系统</div>
+            <div class="p-date">2025.06.18</div>
+            <div class="p-body">
+              <div class="p-eyebrow">每日经营海报 · DAILY</div>
+              <div class="p-store">大河坎店</div>
+              <div class="p-metrics">
+                <div class="p-m"><div class="v">¥54.6万</div><div class="l">月营收</div></div>
+                <div class="p-m"><div class="v">3,210</div><div class="l">月客流</div></div>
+                <div class="p-m"><div class="v">¥128</div><div class="l">客单价</div></div>
+                <div class="p-m"><div class="v">¥9.2万</div><div class="l">充值</div></div>
+              </div>
+              <div class="p-slogan">稳健前行,蓄力增长<br>持续优化体验,服务每一刻。</div>
+            </div>
+            <div class="p-foot"><span>AI 生成 · 经营分析大模型 v2.1</span><span>扫码看详情</span></div>
+          </div>
+          <div class="poster-actions">
+            <button class="btn btn-ghost" style="flex:1">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              下载
+            </button>
+            <button class="btn btn-ghost" style="flex:1">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
+              重生成
+            </button>
+          </div>
+          <div class="poster-cap">竖版 <b>1080 × 1920</b> · 适合朋友圈 / 群发</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-block" data-od-id="poster-loading">
+      <span class="preview-label">生成中态 · 骨架 + 进度</span>
+      <div class="poster-row">
+        <div class="poster-cell">
+          <div class="poster loading" data-od-id="poster-preview-loading">
+            <div class="skel s1"></div>
+            <div class="skel s2"></div>
+            <div class="skel s3"></div>
+            <div class="skel s4"></div>
+            <div class="skel s5"></div>
+            <div class="loading-badge">
+              <div class="spinner"></div>
+              <div class="lt">生成中…</div>
+              <div class="progress-track"><i></i></div>
+              <div class="lp">62% · 正在合成文案与图表</div>
+            </div>
+          </div>
+          <div class="poster-cap">骨架占位 · 完成后替换为正式海报</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

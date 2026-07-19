@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, LockStatus, SyncResult, User, DashboardOverview } from './types';
+import type { Shop, Template, Workbook, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage } from './types';
 
 const TOKEN_KEY = 'token';
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -76,4 +76,9 @@ export const api = {
     req<User>(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   disableUser: (id: number) =>
     req<{ ok: boolean }>(`/api/users/${id}`, { method: 'DELETE' }),
+  auditLogs: (params: { page?: number; pageSize?: number; action?: string; result?: string; q?: string; from?: string; to?: string }) => {
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '' && v !== null) sp.set(k, String(v));
+    return req<AuditLogPage>(`/api/audit/logs?${sp.toString()}`);
+  },
 };

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 数据分析助手 · 对话页</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.page-title{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold);margin-bottom:4px}
+.page-sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+.demo-block{margin-bottom:var(--od-space-8)}
+.demo-label{display:inline-flex;align-items:center;gap:6px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);letter-spacing:.08em;text-transform:uppercase;color:var(--od-primary);background:var(--od-primary-soft);padding:4px 10px;border-radius:var(--od-radius-full);margin-bottom:var(--od-space-3)}
+
+/* 对话容器 */
+.chat{max-width:820px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);box-shadow:var(--od-shadow-sm);overflow:hidden;display:flex;flex-direction:column;height:560px}
+
+/* 模型标识条 */
+.model-bar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--od-space-5);background:linear-gradient(90deg,var(--od-primary-soft),color-mix(in oklab,var(--od-primary-soft),white 35%));border-bottom:1px solid var(--od-border)}
+.model-tag{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm)}
+.model-dot{width:8px;height:8px;border-radius:50%;background:var(--od-primary);box-shadow:0 0 0 3px var(--od-primary-soft)}
+.model-tag b{font-weight:var(--od-weight-semibold)}
+.model-tag .ver{font-family:var(--od-font-mono);font-size:var(--od-text-xs);color:var(--od-primary-hover);background:var(--od-surface);border:1px solid var(--od-border);padding:1px 7px;border-radius:var(--od-radius-sm)}
+.model-meta{font-size:var(--od-text-xs);color:var(--od-text-muted);display:flex;align-items:center;gap:10px}
+
+/* 消息流 */
+.stream{flex:1;overflow-y:auto;padding:var(--od-space-5);display:flex;flex-direction:column;gap:var(--od-space-5)}
+.msg{display:flex;gap:var(--od-space-3);max-width:88%}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.av{width:32px;height:32px;border-radius:var(--od-radius-full);display:grid;place-items:center;flex-shrink:0;font-size:14px}
+.av.ai{background:linear-gradient(135deg,var(--od-primary),var(--od-palette-1));color:#fff}
+.av.user{background:var(--od-surface-2);color:var(--od-text)}
+.bubble{padding:11px 14px;border-radius:var(--od-radius-lg);font-size:var(--od-text-sm);line-height:1.6}
+.msg.ai .bubble{background:var(--od-surface-2);border-top-left-radius:4px}
+.msg.user .bubble{background:var(--od-primary);color:#fff;border-top-right-radius:4px}
+.bubble p+p{margin-top:6px}
+
+/* 经营简报卡 */
+.brief{margin-top:10px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-md);overflow:hidden;box-shadow:var(--od-shadow-sm)}
+.brief-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(90deg,var(--od-gold-soft),var(--od-surface));border-bottom:1px solid var(--od-border)}
+.brief-head .t{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm);font-weight:var(--od-weight-semibold);color:color-mix(in oklab,var(--od-warning),black 25%)}
+.brief-head .sub{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+.brief-body{padding:12px 14px;font-size:var(--od-text-sm)}
+.brief-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--od-border)}
+.brief-row:last-child{border-bottom:none}
+.brief-row .k{width:64px;color:var(--od-text-muted);flex-shrink:0;font-size:var(--od-text-xs);padding-top:2px}
+.brief-row .v{flex:1}
+.brief-row .v b{color:var(--od-text)}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0}
+.metric{background:var(--od-surface-2);border-radius:var(--od-radius-sm);padding:8px 10px;text-align:center}
+.metric .mv{font-size:var(--od-text-lg);font-weight:var(--od-weight-bold);font-family:var(--od-font-mono);color:var(--od-danger)}
+.metric .mv.up{color:var(--od-success)}
+.metric .ml{font-size:var(--od-text-xs);color:var(--od-text-muted);margin-top:2px}
+.brief-suggest{background:var(--od-primary-soft);border-radius:var(--od-radius-sm);padding:9px 11px;margin-top:8px;font-size:var(--od-text-sm);color:var(--od-primary-hover);display:flex;gap:8px}
+.brief-suggest b{font-weight:var(--od-weight-semibold)}
+
+/* 加载态 */
+.loading-bubble{display:flex;align-items:center;gap:5px;padding:14px 16px;background:var(--od-surface-2);border-radius:var(--od-radius-lg);border-top-left-radius:4px;width:fit-content}
+.loading-bubble i{width:7px;height:7px;border-radius:50%;background:var(--od-text-muted);animation:blink 1.4s infinite both}
+.loading-bubble i:nth-child(2){animation-delay:.2s}
+.loading-bubble i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.loading-meta{font-size:var(--od-text-xs);color:var(--od-text-muted);margin-left:10px}
+
+/* 空态欢迎 */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--od-space-6);text-align:center;gap:var(--od-space-4)}
+.empty-ico{width:56px;height:56px;border-radius:var(--od-radius-lg);background:linear-gradient(135deg,var(--od-primary),var(--od-palette-1));display:grid;place-items:center;color:#fff;font-size:26px;box-shadow:var(--od-shadow-md)}
+.empty h2{font-size:var(--od-text-xl);font-weight:var(--od-weight-semibold)}
+.empty p{font-size:var(--od-text-sm);color:var(--od-text-muted);max-width:420px}
+.suggest-q{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin-top:var(--od-space-2)}
+.sq{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);text-align:left;cursor:pointer;transition:all .15s}
+.sq:hover{border-color:var(--od-primary);background:var(--od-primary-soft);color:var(--od-primary-hover)}
+.sq .sq-ico{width:28px;height:28px;border-radius:var(--od-radius-sm);background:var(--od-primary-soft);color:var(--od-primary);display:grid;place-items:center;flex-shrink:0}
+.sq .sq-go{margin-left:auto;color:var(--od-text-muted)}
+
+/* 输入框 */
+.composer{border-top:1px solid var(--od-border);padding:var(--od-space-3) var(--od-space-4);background:var(--od-surface)}
+.composer-inner{display:flex;align-items:flex-end;gap:var(--od-space-2);background:var(--od-surface-2);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);padding:6px 6px 6px 14px;transition:all .15s}
+.composer-inner:focus-within{border-color:var(--od-primary);box-shadow:0 0 0 3px var(--od-primary-soft);background:var(--od-surface)}
+.composer-inner input{flex:1;border:none;background:none;outline:none;font-family:inherit;font-size:var(--od-text-sm);color:var(--od-text);padding:8px 0;resize:none}
+.composer-inner input::placeholder{color:color-mix(in oklab,var(--od-text-muted),white 18%)}
+.send-btn{width:36px;height:36px;border-radius:var(--od-radius-md);background:var(--od-primary);color:#fff;display:grid;place-items:center;flex-shrink:0;transition:all .15s}
+.send-btn:hover{background:var(--od-primary-hover)}
+.composer-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:var(--od-text-xs);color:var(--od-text-muted)}
+.tool-btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:var(--od-radius-sm);color:var(--od-text-muted);font-size:var(--od-text-xs)}
+.tool-btn:hover{background:var(--od-surface-2);color:var(--od-text)}
+</style>
+</head>
+<body>
+<div style="max-width:1180px;margin:0 auto">
+  <h1 class="page-title">AI 数据分析助手 · 对话页</h1>
+  <p class="page-sub">顶部模型标识条 + 消息流 + 底部输入框。下方依次展示:空态、加载态、示例问答(含经营简报卡)。</p>
+
+  <!-- 空态 -->
+  <div class="demo-block" data-od-id="state-empty">
+    <span class="demo-label">空态 · 欢迎语 + 示例问题</span>
+    <div class="chat">
+      <div class="model-bar">
+        <div class="model-tag"><span class="model-dot"></span>当前模型<b>经营分析大模型</b><span class="ver">v2.1</span></div>
+        <div class="model-meta"><span>上下文:本月 5 店全量数据</span><span>·</span><span>已索引 06-01 ~ 06-18</span></div>
+      </div>
+      <div class="stream">
+        <div class="empty">
+          <div class="empty-ico">✦</div>
+          <h2>你好,我是 AI 经营分析助手</h2>
+          <p>我可以基于本月 5 店实时数据,回答经营问题、生成简报、定位异常。试试下面的问题,或直接输入你想知道的。</p>
+          <div class="suggest-q">
+            <button class="sq"><span class="sq-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 7-7"/><path d="M21 8v5h-5"/></svg></span>大河坎店为什么落后?<span class="sq-go">→</span></button>
+            <button class="sq"><span class="sq-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>本月各店充值转化率排名<span class="sq-go">→</span></button>
+            <button class="sq"><span class="sq-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></span>生成今日经营简报<span class="sq-go">→</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="composer-inner">
+          <input placeholder="输入你的经营问题,如:大河坎店本周客流为什么下滑?">
+          <button class="tool-btn" title="选择门店范围"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>大河坎店</button>
+          <button class="send-btn" aria-label="发送"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+        </div>
+        <div class="composer-foot"><span>AI 基于历史数据生成,关键决策请结合实际核对</span><span>Enter 发送 · Shift+Enter 换行</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加载态 -->
+  <div class="demo-block" data-od-id="state-loading">
+    <span class="demo-label">加载态 · AI 思考中</span>
+    <div class="chat" style="height:340px">
+      <div class="model-bar">
+        <div class="model-tag"><span class="model-dot"></span>当前模型<b>经营分析大模型</b><span class="ver">v2.1</span></div>
+        <div class="model-meta"><span>正在检索 06-18 数据…</span></div>
+      </div>
+      <div class="stream">
+        <div class="msg user">
+          <div class="av user">张</div>
+          <div class="bubble">大河坎店为什么落后?</div>
+        </div>
+        <div class="msg ai">
+          <div class="av ai">✦</div>
+          <div>
+            <div class="loading-bubble"><i></i><i></i><i></i></div>
+            <div class="loading-meta">正在分析大河坎店任务进度、客流、客单价与同比…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 示例问答 -->
+  <div class="demo-block" data-od-id="state-qa">
+    <span class="demo-label">示例问答 · 经营简报</span>
+    <div class="chat" style="height:auto">
+      <div class="model-bar">
+        <div class="model-tag"><span class="model-dot"></span>当前模型<b>经营分析大模型</b><span class="ver">v2.1</span></div>
+        <div class="model-meta"><span>已生成简报 · 06-18</span></div>
+      </div>
+      <div class="stream">
+        <div class="msg user">
+          <div class="av user">张</div>
+          <div class="bubble">大河坎店为什么落后?</div>
+        </div>
+        <div class="msg ai">
+          <div class="av ai">✦</div>
+          <div class="bubble">
+            <p>大河坎店本月任务进度 <b>41%</b>,低于时间进度 <b>60%</b>,落后 <b>19</b> 个百分点,是 5 店中唯一落后门店。主要原因如下:</p>
+            <div class="brief">
+              <div class="brief-head">
+                <div class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>大河坎店 · 经营简报</div>
+                <div class="sub">2025-06-18</div>
+              </div>
+              <div class="brief-body">
+                <div class="metric-grid">
+                  <div class="metric"><div class="mv">-12%</div><div class="ml">客流同比</div></div>
+                  <div class="metric"><div class="mv">¥128</div><div class="ml">客单价(低 17%)</div></div>
+                  <div class="metric"><div class="mv">9%</div><div class="ml">新客转化(低 6pt)</div></div>
+                </div>
+                <div class="brief-row"><div class="k">根因</div><div class="v">周边新开 2 家竞品分流到店客流;门店主力项目"足浴基础"占比过高(71%),高客单 SPA 上钟率仅 14%,拉低客单价;新客到店后缺乏二次触达,复购弱。</div></div>
+                <div class="brief-row"><div class="k">影响</div><div class="v">按当前节奏,月末预计完成 <b>¥72 万</b>,缺口 <b>¥28 万</b>,达成率 72%。</div></div>
+                <div class="brief-suggest">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>
+                  <div><b>建议</b> ① 推"足浴+SPA"组合套餐提升高客单占比;② 对 06 月到店未复购新客发定向券;③ 下周复盘排班,保障高峰时段接待。</div>
+                </div>
+              </div>
+            </div>
+            <p style="margin-top:10px">需要我生成一份大河坎店整改行动计划,或对比去年同期数据吗?</p>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="composer-inner">
+          <input placeholder="继续追问,或输入新的经营问题…">
+          <button class="tool-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>大河坎店</button>
+          <button class="send-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+        </div>
+        <div class="composer-foot"><span>AI 基于历史数据生成,关键决策请结合实际核对</span><span>Enter 发送</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

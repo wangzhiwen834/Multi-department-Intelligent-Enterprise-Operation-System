@@ -12,6 +12,7 @@ import { shopRouter } from './shop/shop.routes.js';
 import { dashboardRouter } from './dashboard/dashboard.routes.js';
 import { aiRouter } from './ai/ai.routes.js';
 import { posterRouter } from './poster/poster.routes.js';
+import { auditRouter } from './audit/audit.routes.js';
 
 export const app = express();
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use('/api', shopRouter);       // /api/shops
 app.use('/api', dashboardRouter);  // /api/dashboard/overview
 app.use('/api', aiRouter);         // /api/ai/chat
 app.use('/api', posterRouter);     // /api/poster/generate
+app.use('/api/audit', auditRouter); // /api/audit/logs (董事长/经理)
 
 // 统一错误处理
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

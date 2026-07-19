@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query } from '../db/pool.js';
 import { authRequired } from '../auth/auth.middleware.js';
 import { isLockHolder } from '../lock/lock.service.js';
+import { auditLog } from '../audit/audit.middleware.js';
 
 export const workbookRouter = Router();
 workbookRouter.use(authRequired);
@@ -40,8 +41,8 @@ workbookRouter.get('/workbooks', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// 存快照
-workbookRouter.put('/workbooks/:id/snapshot', async (req, res, next) => {
+// 存快照(表格编辑保存)
+workbookRouter.put('/workbooks/:id/snapshot', auditLog('workbook.save'), async (req, res, next) => {
   try {
     if (!await isLockHolder(Number(req.params.id), req.user!.id))
       return res.status(409).json({ error: '锁已丢失(被他人接管或过期),保存被拒绝,请重载工作簿' });

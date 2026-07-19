@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>员工管理 · 董事长/经理两态</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.page-title{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold);margin-bottom:4px}
+.page-sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+.demo-block{margin-bottom:var(--od-space-8)}
+.demo-label{display:inline-flex;align-items:center;gap:6px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);letter-spacing:.08em;text-transform:uppercase;color:var(--od-primary);background:var(--od-primary-soft);padding:4px 10px;border-radius:var(--od-radius-full);margin-bottom:var(--od-space-3)}
+
+.card{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);box-shadow:var(--od-shadow-sm);overflow:hidden}
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:var(--od-space-4) var(--od-space-5);border-bottom:1px solid var(--od-border);flex-wrap:wrap;gap:10px}
+.toolbar-left{display:flex;align-items:center;gap:var(--od-space-3)}
+.tb-title{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold)}
+.tb-meta{font-size:var(--od-text-sm);color:var(--od-text-muted)}
+.search{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:var(--od-surface-2);border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);width:220px}
+.search input{border:none;background:none;outline:none;font-family:inherit;font-size:var(--od-text-sm);flex:1;color:var(--od-text)}
+.filter-sel{height:36px;padding:0 30px 0 12px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 10px center}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--od-radius-md);font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);transition:all .15s}
+.btn-primary{background:var(--od-primary);color:#fff}
+.btn-primary:hover{background:var(--od-primary-hover)}
+.btn-ghost{background:var(--od-surface);border:1px solid var(--od-border);color:var(--od-text)}
+.btn-ghost:hover{background:var(--od-surface-2);border-color:color-mix(in oklab,var(--od-border),black 8%)}
+.btn-link{height:auto;padding:4px 8px;color:var(--od-primary);font-size:var(--od-text-sm)}
+.btn-link:hover{background:var(--od-primary-soft);border-radius:var(--od-radius-sm)}
+.btn-link.danger{color:var(--od-danger)}
+.btn-link.danger:hover{background:var(--od-danger-soft)}
+
+table{width:100%;border-collapse:collapse;font-size:var(--od-text-sm)}
+thead th{text-align:left;font-weight:var(--od-weight-medium);color:var(--od-text-muted);font-size:var(--od-text-xs);padding:11px var(--od-space-5);background:var(--od-surface-2);border-bottom:1px solid var(--od-border);white-space:nowrap}
+tbody td{padding:12px var(--od-space-5);border-bottom:1px solid var(--od-border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--od-surface-2)}
+.user-cell{display:flex;align-items:center;gap:10px}
+.u-av{width:32px;height:32px;border-radius:var(--od-radius-full);display:grid;place-items:center;color:#fff;font-size:12px;font-weight:var(--od-weight-semibold);flex-shrink:0}
+.u-name{font-weight:var(--od-weight-medium)}
+.role-tag{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:var(--od-radius-full);font-size:var(--od-text-xs);font-weight:var(--od-weight-medium)}
+.role-boss{background:var(--od-gold-soft);color:color-mix(in oklab,var(--od-warning),black 25%)}
+.role-mgr{background:var(--od-primary-soft);color:var(--od-primary-hover)}
+.role-staff{background:var(--od-surface-2);color:var(--od-text-muted)}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:var(--od-text-xs);font-weight:var(--od-weight-medium)}
+.status.on{color:color-mix(in oklab,var(--od-success),black 20%)}
+.status.off{color:color-mix(in oklab,var(--od-danger),black 20%)}
+.status .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.dept-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.ops{display:flex;gap:4px;white-space:nowrap}
+
+/* 弹窗 */
+.modal-stage{position:relative;background:var(--od-bg);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);padding:48px;min-height:420px;overflow:hidden}
+.modal-stage::before{content:"";position:absolute;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(1px)}
+.modal{position:relative;width:440px;max-width:100%;background:var(--od-surface);border-radius:var(--od-radius-xl);box-shadow:var(--od-shadow-lg);margin:0 auto;z-index:1;overflow:hidden}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:var(--od-space-5) var(--od-space-6);border-bottom:1px solid var(--od-border)}
+.modal-h h3{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold)}
+.modal-h .x{width:30px;height:30px;border-radius:var(--od-radius-sm);display:grid;place-items:center;color:var(--od-text-muted)}
+.modal-h .x:hover{background:var(--od-surface-2);color:var(--od-text)}
+.modal-b{padding:var(--od-space-5) var(--od-space-6)}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--od-space-3) var(--od-space-4)}
+.field{margin-bottom:var(--od-space-3)}
+.field.full{grid-column:1/-1}
+.field label{display:block;font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);margin-bottom:6px}
+.field label .req{color:var(--od-danger);margin-left:2px}
+.input,.select{width:100%;height:38px;padding:0 11px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);color:var(--od-text);font-family:inherit;transition:all .15s}
+.select{appearance:none;padding-right:30px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 10px center}
+.input:focus,.select:focus{outline:none;border-color:var(--od-primary);box-shadow:0 0 0 3px var(--od-primary-soft)}
+.input.disabled{background:var(--od-surface-2);color:var(--od-text-muted);cursor:not-allowed}
+.help{font-size:var(--od-text-xs);color:var(--od-text-muted);margin-top:4px}
+.modal-f{display:flex;justify-content:flex-end;gap:10px;padding:var(--od-space-4) var(--od-space-6);border-top:1px solid var(--od-border);background:var(--od-surface-2)}
+
+/* 禁用确认弹窗 */
+.modal.confirm{width:380px;text-align:center}
+.modal.confirm .modal-b{padding:var(--od-space-6);text-align:center}
+.warn-ico{width:52px;height:52px;border-radius:50%;background:var(--od-danger-soft);display:grid;place-items:center;margin:0 auto var(--od-space-4);color:var(--od-danger)}
+.modal.confirm h3{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold);margin-bottom:6px}
+.modal.confirm p{font-size:var(--od-text-sm);color:var(--od-text-muted);line-height:1.6;margin-bottom:var(--od-space-5)}
+.modal.confirm p b{color:var(--od-text)}
+.modal.confirm .modal-f{justify-content:center}
+
+.role-note{font-size:var(--od-text-xs);color:var(--od-text-muted);background:var(--od-warning-soft);border-radius:var(--od-radius-sm);padding:8px 10px;margin-top:8px;display:flex;gap:6px;align-items:flex-start}
+</style>
+</head>
+<body>
+<div style="max-width:1180px;margin:0 auto">
+  <h1 class="page-title">员工管理 · 董事长 / 经理两态</h1>
+  <p class="page-sub">董事长态管全部用户(含经理);经理态只看本部门。下方含两态表 + 新建弹窗 + 禁用确认弹窗。</p>
+
+  <!-- 董事长态 -->
+  <div class="demo-block" data-od-id="state-chairman">
+    <span class="demo-label">董事长态 · 管全部用户(含经理)</span>
+    <div class="card">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div>
+            <div class="tb-title">员工管理</div>
+            <div class="tb-meta">当前登录:<b style="color:var(--od-text)">张总 · 董事长</b> · 可见全部 8 名用户</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input placeholder="搜索姓名/账号"></div>
+          <select class="filter-sel"><option>全部部门</option><option>总部</option><option>旗舰店</option><option>大河坎店</option></select>
+          <select class="filter-sel"><option>全部角色</option><option>董事长</option><option>经理</option><option>员工</option></select>
+          <button class="btn btn-primary" data-od-id="new-user-chairman"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新建</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>姓名</th><th>账号</th><th>角色</th><th>部门</th><th>手机</th><th>状态</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-gold),color-mix(in oklab,var(--od-gold),black 25%))">张</div><div><div class="u-name">张明</div></div></div></td><td class="num">zhangming</td><td><span class="role-tag role-boss">董事长</span></td><td><span class="dept-dot" style="background:var(--od-text-muted)"></span>总部</td><td class="num">138****6688</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><span style="color:var(--od-border)">|</span><button class="btn-link">重置密码</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-1),color-mix(in oklab,var(--od-palette-1),black 20%))">李</div><div class="u-name">李华</div></div></td><td class="num">lihua</td><td><span class="role-tag role-mgr">经理</span></td><td><span class="dept-dot" style="background:var(--od-palette-1)"></span>大河坎店</td><td class="num">139****2233</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-2),var(--od-primary-hover))">王</div><div class="u-name">王芳</div></div></td><td class="num">wangfang</td><td><span class="role-tag role-mgr">经理</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">137****8899</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-3),color-mix(in oklab,var(--od-palette-3),black 20%))">陈</div><div class="u-name">陈强</div></div></td><td class="num">chenqiang</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">135****4471</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-4),color-mix(in oklab,var(--od-palette-4),black 20%))">刘</div><div class="u-name">刘洋</div></div></td><td class="num">liuyang</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-3)"></span>中心店</td><td class="num">136****5520</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-5),color-mix(in oklab,var(--od-warning),black 25%))">赵</div><div class="u-name">赵敏</div></div></td><td class="num">zhaomin</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-1)"></span>大河坎店</td><td class="num">133****7765</td><td><span class="status off"><span class="d"></span>禁用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link">启用</button></div></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 经理态 -->
+  <div class="demo-block" data-od-id="state-manager">
+    <span class="demo-label">经理态 · 仅本部门员工</span>
+    <div class="card">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div>
+            <div class="tb-title">员工管理</div>
+            <div class="tb-meta">当前登录:<b style="color:var(--od-text)">王芳 · 经理</b> · 仅可见 旗舰店 4 名员工</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input placeholder="搜索姓名/账号"></div>
+          <select class="filter-sel"><option>全部角色</option><option>员工</option></select>
+          <button class="btn btn-primary" data-od-id="new-user-manager"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>新建</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>姓名</th><th>账号</th><th>角色</th><th>部门</th><th>手机</th><th>状态</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-2),var(--od-primary-hover))">王</div><div class="u-name">王芳 <span style="font-size:var(--od-text-xs);color:var(--od-text-muted)">(我)</span></div></div></td><td class="num">wangfang</td><td><span class="role-tag role-mgr">经理</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">137****8899</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><span style="font-size:var(--od-text-xs);color:var(--od-text-muted)">不可操作</span></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-3),color-mix(in oklab,var(--od-palette-3),black 20%))">陈</div><div class="u-name">陈强</div></div></td><td class="num">chenqiang</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">135****4471</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-4),color-mix(in oklab,var(--od-palette-4),black 20%))">孙</div><div class="u-name">孙伟</div></div></td><td class="num">sunwei</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">138****9912</td><td><span class="status on"><span class="d"></span>启用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">禁用</button></div></td></tr>
+          <tr><td><div class="user-cell"><div class="u-av" style="background:linear-gradient(135deg,var(--od-palette-5),color-mix(in oklab,var(--od-warning),black 25%))">周</div><div class="u-name">周婷</div></div></td><td class="num">zhouting</td><td><span class="role-tag role-staff">员工</span></td><td><span class="dept-dot" style="background:var(--od-palette-2)"></span>旗舰店</td><td class="num">139****3344</td><td><span class="status off"><span class="d"></span>禁用</span></td><td style="text-align:right"><div class="ops"><button class="btn-link">编辑</button><button class="btn-link">启用</button></div></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建弹窗(董事长态:角色含 经理/员工) -->
+  <div class="demo-block" data-od-id="modal-new">
+    <span class="demo-label">新建用户弹窗 · 董事长态(角色含 经理 / 员工)</span>
+    <div class="modal-stage">
+      <div class="modal">
+        <div class="modal-h"><h3>新建用户</h3><button class="x"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="modal-b">
+          <div class="modal-grid">
+            <div class="field"><label>姓名<span class="req">*</span></label><input class="input" placeholder="请输入姓名" value="吴磊"></div>
+            <div class="field"><label>账号<span class="req">*</span></label><input class="input" placeholder="登录账号" value="wulei"></div>
+            <div class="field"><label>密码<span class="req">*</span></label><input class="input" placeholder="初始密码" value="••••••"></div>
+            <div class="field"><label>角色<span class="req">*</span></label>
+              <select class="select"><option>经理</option><option>员工</option></select>
+            </div>
+            <div class="field"><label>部门<span class="req">*</span></label>
+              <select class="select"><option>大河坎店</option><option>旗舰店</option><option>中心店</option><option>北区店</option><option>南区店</option><option>总部</option></select>
+            </div>
+            <div class="field full"><label>手机</label><input class="input" placeholder="11 位手机号" value="138****0023"></div>
+          </div>
+          <div class="role-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>董事长可创建 <b>经理 / 员工</b>;<b>经理态</b>新建时角色下拉仅 <b>员工</b>,部门固定为本人所在门店(不可改)。</span></div>
+        </div>
+        <div class="modal-f"><button class="btn btn-ghost">取消</button><button class="btn btn-primary">创建</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 禁用确认弹窗 -->
+  <div class="demo-block" data-od-id="modal-disable">
+    <span class="demo-label">禁用确认弹窗</span>
+    <div class="modal-stage">
+      <div class="modal confirm">
+        <div class="modal-b">
+          <div class="warn-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <h3>确认禁用该用户?</h3>
+          <p>禁用后,<b>赵敏</b>(账号 zhaomin)将无法登录系统,但其历史操作记录保留。<br>您可随时在员工管理中重新启用。</p>
+        </div>
+        <div class="modal-f"><button class="btn btn-ghost">取消</button><button class="btn" style="background:var(--od-danger);color:#fff">确认禁用</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

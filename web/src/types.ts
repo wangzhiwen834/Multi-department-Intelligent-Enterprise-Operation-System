@@ -16,6 +16,19 @@ export interface SyncError { sheetKey: string; date: string; key: string; msg: s
 export interface SyncResult { autoSums: Record<string, Record<string, number>>; errors: SyncError[] }
 export interface User { id: number; username: string; name: string; role: string; department: string | null; phone?: string; status?: 'active' | 'disabled'; created_at?: string; }
 
+export interface AuditLogEntry {
+  id: number;
+  user_id: number | null;
+  user_name: string | null;
+  ip: string;
+  action: string;
+  target: string | null;
+  detail: Record<string, unknown>;
+  result: 'success' | 'failed' | string;
+  created_at: string;
+}
+export interface AuditLogPage { items: AuditLogEntry[]; total: number; page: number; pageSize: number }
+
 export interface DashboardOverview {
   period: string; shopId: number | null;
   kpis: { totalRevenue: number; totalCustomers: number; avgCustomerPrice: number; totalRecharge: number };

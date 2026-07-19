@@ -18,7 +18,7 @@ posterRouter.post('/poster/generate', auditLog('poster.generate'), async (req, r
     const r = await fetch(`${config.doubaoBaseUrl}/images/generations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.doubaoApiKey}` },
-      body: JSON.stringify({ model: config.posterModel, prompt, response_format: 'url', size: size || '1024x1536' }),
+      body: JSON.stringify({ model: config.posterModel, prompt, response_format: 'url', size: size || '1024x1536', watermark: false }),
     });
     if (!r.ok) return res.status(502).json({ error: `文生图失败:${(await r.text()).slice(0, 300)}` });
     const data: any = await r.json();

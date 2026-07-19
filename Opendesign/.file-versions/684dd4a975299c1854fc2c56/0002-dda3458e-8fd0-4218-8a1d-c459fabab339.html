@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>公司经营 · drill 选择页</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+  --od-sidebar-w:232px;--od-sidebar-w-collapsed:64px;--od-topbar-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.page-title{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold);margin-bottom:4px}
+.page-sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+
+.demo-block{margin-bottom:var(--od-space-8)}
+.demo-label{display:inline-flex;align-items:center;gap:6px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);letter-spacing:.08em;text-transform:uppercase;color:var(--od-primary);background:var(--od-primary-soft);padding:4px 10px;border-radius:var(--od-radius-full);margin-bottom:var(--od-space-3)}
+
+/* 复用外壳的精简版 */
+.shell{display:grid;grid-template-columns:var(--od-sidebar-w) 1fr;height:560px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);overflow:hidden;box-shadow:var(--od-shadow-sm)}
+.sidebar{background:var(--od-surface);border-right:1px solid var(--od-border);display:flex;flex-direction:column}
+.sb-head{height:var(--od-topbar-h);display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--od-border)}
+.sb-logo{width:30px;height:30px;border-radius:var(--od-radius-sm);background:linear-gradient(135deg,var(--od-primary),var(--od-palette-1));display:grid;place-items:center;font-size:16px}
+.sb-brand{font-size:var(--od-text-base);font-weight:var(--od-weight-semibold)}
+.nav{flex:1;padding:var(--od-space-3) 10px}
+.nav-item{display:flex;align-items:center;gap:12px;height:40px;padding:0 10px;border-radius:var(--od-radius-md);font-size:var(--od-text-base);font-weight:var(--od-weight-medium);margin-bottom:2px;position:relative;white-space:nowrap;color:var(--od-text)}
+.nav-item.active{background:var(--od-primary-soft);color:var(--od-primary-hover);font-weight:var(--od-weight-semibold)}
+.nav-item.active::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--od-primary)}
+.nav-ico{width:20px;height:20px;flex-shrink:0}
+
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{height:var(--od-topbar-h);border-bottom:1px solid var(--od-border);display:flex;align-items:center;justify-content:space-between;padding:0 var(--od-space-6);background:var(--od-surface)}
+.month-picker{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);font-weight:var(--od-weight-medium)}
+.avatar{width:28px;height:28px;border-radius:var(--od-radius-full);background:linear-gradient(135deg,var(--od-palette-4),var(--od-primary));display:grid;place-items:center;color:#fff;font-size:12px;font-weight:var(--od-weight-semibold)}
+.user{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm)}
+
+.content{flex:1;padding:var(--od-space-6);background:var(--od-bg);overflow:auto}
+
+/* 面包屑 */
+.crumb{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm);margin-bottom:var(--od-space-5);color:var(--od-text-muted)}
+.crumb a{color:var(--od-text-muted)}
+.crumb a:hover{color:var(--od-primary)}
+.crumb b{color:var(--od-text);font-weight:var(--od-weight-semibold)}
+.crumb .sep{color:color-mix(in oklab,var(--od-border),black 8%)}
+.content-h{font-size:var(--od-text-xl);font-weight:var(--od-weight-semibold);margin-bottom:var(--od-space-2)}
+.content-desc{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+
+/* 卡片网格 */
+.grid{display:grid;gap:var(--od-space-4)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-5{grid-template-columns:repeat(3,1fr)}
+@media(max-width:900px){.grid-2,.grid-5{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid-2,.grid-5{grid-template-columns:1fr}}
+
+.biz-card{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);padding:var(--od-space-6);box-shadow:var(--od-shadow-sm);cursor:pointer;transition:all .18s ease;display:flex;flex-direction:column;gap:var(--od-space-4);position:relative;overflow:hidden}
+.biz-card:hover{box-shadow:var(--od-shadow-md);transform:translateY(-2px);border-color:var(--od-primary)}
+.biz-card .top{display:flex;align-items:flex-start;justify-content:space-between}
+.biz-ico{width:48px;height:48px;border-radius:var(--od-radius-md);display:grid;place-items:center;font-size:24px}
+.go-arrow{width:32px;height:32px;border-radius:var(--od-radius-full);background:var(--od-surface-2);display:grid;place-items:center;color:var(--od-text-muted);transition:all .18s}
+.biz-card:hover .go-arrow{background:var(--od-primary);color:#fff}
+.biz-card h3{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold)}
+.biz-card .biz-name{font-size:var(--od-text-sm);color:var(--od-text-muted)}
+.biz-stats{display:flex;gap:var(--od-space-6);padding-top:var(--od-space-4);border-top:1px solid var(--od-border)}
+.biz-stat .v{font-size:var(--od-text-lg);font-weight:var(--od-weight-bold);font-family:var(--od-font-mono)}
+.biz-stat .l{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+
+/* 虚线占位卡 */
+.placeholder-card{border:2px dashed var(--od-border);border-radius:var(--od-radius-lg);padding:var(--od-space-6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--od-text-muted);min-height:200px;background:transparent;cursor:default}
+.placeholder-card:hover{border-color:color-mix(in oklab,var(--od-border),black 8%);background:var(--od-surface-2)}
+.placeholder-card .ph-ico{width:44px;height:44px;border-radius:var(--od-radius-md);background:var(--od-surface-2);display:grid;place-items:center}
+.placeholder-card h4{font-size:var(--od-text-base);color:var(--od-text);font-weight:var(--od-weight-medium)}
+.placeholder-card p{font-size:var(--od-text-xs)}
+
+/* 店铺卡 */
+.store-card{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);padding:var(--od-space-5);box-shadow:var(--od-shadow-sm);cursor:pointer;transition:all .18s ease;display:flex;align-items:center;gap:var(--od-space-4)}
+.store-card:hover{box-shadow:var(--od-shadow-md);transform:translateY(-2px);border-color:var(--od-primary)}
+.store-sw{width:44px;height:44px;border-radius:var(--od-radius-md);display:grid;place-items:center;flex-shrink:0;color:#fff;font-size:18px}
+.store-info{flex:1;min-width:0}
+.store-info h4{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold);display:flex;align-items:center;gap:8px}
+.store-info .biz{font-size:var(--od-text-sm);color:var(--od-text-muted);display:flex;align-items:center;gap:8px;margin-top:2px}
+.store-meta{font-size:var(--od-text-xs);color:var(--od-text-muted);margin-top:6px;display:flex;gap:14px}
+.store-meta .num{color:var(--od-text);font-weight:var(--od-weight-semibold)}
+.store-go{width:34px;height:34px;border-radius:var(--od-radius-full);background:var(--od-surface-2);display:grid;place-items:center;color:var(--od-text-muted);transition:all .18s;flex-shrink:0}
+.store-card:hover .store-go{background:var(--od-primary);color:#fff}
+.late-flag{font-size:var(--od-text-xs);background:var(--od-danger-soft);color:color-mix(in oklab,var(--od-danger),black 20%);padding:2px 7px;border-radius:var(--od-radius-full);font-weight:var(--od-weight-medium)}
+</style>
+</head>
+<body>
+<div style="max-width:1180px;margin:0 auto">
+  <h1 class="page-title">公司经营 · drill 选择页</h1>
+  <p class="page-sub">两级钻取:业务模块 → 店铺列表 → 进入 Univer 工作簿。下方两态以分隔标注区分。</p>
+
+  <!-- 状态A:业务模块 -->
+  <div class="demo-block" data-od-id="state-a-modules">
+    <span class="demo-label">状态 A · 业务模块</span>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="sb-head"><div class="sb-logo"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 10.5 5.5 15.2a6.5 6.5 0 0 0 13 0C18.5 10.5 12 3 12 3Z" fill="#ffffff"/></svg></div><div class="sb-brand">足浴经营系统</div></div>
+        <nav class="nav">
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>数据大屏</div>
+          <div class="nav-item active"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>公司经营</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>AI 分析</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/></svg>AI 每日海报</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/></svg>员工管理</div>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div class="crumb" style="margin:0">公司经营</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="month-picker">2025 年 6 月 ▾</div>
+            <div class="user"><div class="avatar">张</div>张总 · 董事长</div>
+          </div>
+        </header>
+        <div class="content">
+          <nav class="crumb" aria-label="breadcrumb">
+            <b>公司经营</b>
+          </nav>
+          <div class="content-h">业务模块</div>
+          <div class="content-desc">选择业务模块查看下属门店。点击门店卡进入 Univer 经营报表。</div>
+          <div class="grid grid-2">
+            <div class="biz-card" data-od-id="biz-footbath" style="background:linear-gradient(135deg,color-mix(in oklab,var(--od-primary-soft),white 45%),var(--od-surface-2))">
+              <div class="top">
+                <div class="biz-ico" style="background:var(--od-primary-soft);color:var(--od-primary)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 10.5 5.5 15.2a6.5 6.5 0 0 0 13 0C18.5 10.5 12 3 12 3Z" fill="currentColor"/></svg></div>
+                <div class="go-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+              </div>
+              <div>
+                <h3>足浴店</h3>
+                <div class="biz-name">足浴 / SPA / 小项综合经营</div>
+              </div>
+              <div class="biz-stats">
+                <div class="biz-stat"><div class="v">5</div><div class="l">门店数</div></div>
+                <div class="biz-stat"><div class="v">¥380.2万</div><div class="l">本月营收</div></div>
+                <div class="biz-stat"><div class="v">24,560</div><div class="l">本月客流</div></div>
+              </div>
+            </div>
+            <div class="placeholder-card" data-od-id="biz-placeholder">
+              <div class="ph-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+              <h4>后续新增业务</h4>
+              <p>如:餐饮 / 零售 / 美容 — 即将上线</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态B:店铺列表 -->
+  <div class="demo-block" data-od-id="state-b-stores">
+    <span class="demo-label">状态 B · 店铺列表(足浴店)</span>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="sb-head"><div class="sb-logo"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 10.5 5.5 15.2a6.5 6.5 0 0 0 13 0C18.5 10.5 12 3 12 3Z" fill="#ffffff"/></svg></div><div class="sb-brand">足浴经营系统</div></div>
+        <nav class="nav">
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>数据大屏</div>
+          <div class="nav-item active"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>公司经营</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>AI 分析</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/></svg>AI 每日海报</div>
+          <div class="nav-item"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/></svg>员工管理</div>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div class="month-picker">2025 年 6 月 ▾</div>
+          <div class="user"><div class="avatar">张</div>张总 · 董事长</div>
+        </header>
+        <div class="content">
+          <nav class="crumb" aria-label="breadcrumb">
+            <a>公司经营</a><span class="sep">/</span><b>足浴店</b>
+          </nav>
+          <div class="content-h">足浴店 · 5 家门店</div>
+          <div class="content-desc">点击门店进入该店 Univer 经营报表(经营报表 / 收入对账 / 费用明细 / 资金台账)。</div>
+          <div class="grid grid-5">
+            <div class="store-card" data-od-id="store-qj">
+              <div class="store-sw" style="background:var(--od-palette-2)">旗</div>
+              <div class="store-info">
+                <h4>旗舰店<span class="late-flag" style="background:var(--od-success-soft);color:color-mix(in oklab,var(--od-success),black 20%)">营收第一</span></h4>
+                <div class="biz">足浴 · SPA · 小项</div>
+                <div class="store-meta"><span>营收 <span class="num">¥98.6万</span></span><span>客流 <span class="num">6,420</span></span></div>
+              </div>
+              <div class="store-go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="store-card">
+              <div class="store-sw" style="background:var(--od-palette-3)">中</div>
+              <div class="store-info">
+                <h4>中心店</h4>
+                <div class="biz">足浴 · SPA · 小项</div>
+                <div class="store-meta"><span>营收 <span class="num">¥86.4万</span></span><span>客流 <span class="num">5,610</span></span></div>
+              </div>
+              <div class="store-go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="store-card">
+              <div class="store-sw" style="background:var(--od-palette-4)">北</div>
+              <div class="store-info">
+                <h4>北区店</h4>
+                <div class="biz">足浴 · SPA · 小项</div>
+                <div class="store-meta"><span>营收 <span class="num">¥72.1万</span></span><span>客流 <span class="num">4,830</span></span></div>
+              </div>
+              <div class="store-go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="store-card">
+              <div class="store-sw" style="background:var(--od-palette-5)">南</div>
+              <div class="store-info">
+                <h4>南区店</h4>
+                <div class="biz">足浴 · SPA · 小项</div>
+                <div class="store-meta"><span>营收 <span class="num">¥68.5万</span></span><span>客流 <span class="num">4,490</span></span></div>
+              </div>
+              <div class="store-go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="store-card" data-od-id="store-dhk">
+              <div class="store-sw" style="background:var(--od-palette-1)">大</div>
+              <div class="store-info">
+                <h4>大河坎店<span class="late-flag">落后</span></h4>
+                <div class="biz">足浴 · SPA · 小项</div>
+                <div class="store-meta"><span>营收 <span class="num">¥54.6万</span></span><span>客流 <span class="num">3,210</span></span></div>
+              </div>
+              <div class="store-go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

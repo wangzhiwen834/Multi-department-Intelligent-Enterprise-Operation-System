@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "workbook-shell.html",
+  "entry": "workbook-shell.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-18T05:27:00.172Z",
+  "updatedAt": "2026-07-18T05:27:00.172Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

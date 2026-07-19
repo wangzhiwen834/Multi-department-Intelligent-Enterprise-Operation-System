@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fileName": "index.html",
+  "entries": [
+    {
+      "id": "45c18b01-8a2d-4f75-a696-9e63dad3319c",
+      "fileName": "index.html",
+      "version": 1,
+      "label": "Version 1",
+      "createdAt": 1784353175269,
+      "source": "ai",
+      "prompt": "https://cloud.tencent.com/login?s_url=https%3A%2F%2Fcloud.tencent.com%2Fact%2Fpro%2Ffeatured-202607%3FfromSource%3Dgwzcw.12021631.12021631.12021631%26utm_medium%3Dcpc%26utm_id%3Dgwzcw.12021631.12021631.12021631%26msclkid%3D27dc6d751db91e7182a5072e175691c4登录页和这个差不多，并且所有的emoj图标换成svg图片，不要卡通风的",
+      "size": 15331,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0001-45c18b01-8a2d-4f75-a696-9e63dad3319c.html",
+      "promptSource": "message"
+    },
+    {
+      "id": "e5199b98-898d-4b1a-8973-439099cae586",
+      "fileName": "index.html",
+      "version": 2,
+      "label": "Version 2",
+      "createdAt": 1784353594531,
+      "source": "ai",
+      "prompt": "系统名称改为静水楼台企业智能经营系统",
+      "size": 15376,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0002-e5199b98-898d-4b1a-8973-439099cae586.html",
+      "promptSource": "message"
+    },
+    {
+      "id": "46613832-6459-4d6c-b634-9c4a217f526e",
+      "fileName": "index.html",
+      "version": 3,
+      "label": "Version 3",
+      "createdAt": 1784359269724,
+      "source": "ai",
+      "prompt": "从已停止或未完成的回合继续处理。先阅读当前对话、项目文件和可见错误，再执行下一个具体步骤。如果主产物已经存在，就在原文件上更新；否则创建缺失的主产物，并简要总结改了什么。",
+      "size": 16058,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0003-46613832-6459-4d6c-b634-9c4a217f526e.html",
+      "promptSource": "message"
+    }
+  ]
+}

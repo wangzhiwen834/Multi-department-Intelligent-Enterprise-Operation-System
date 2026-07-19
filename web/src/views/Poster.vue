@@ -1,78 +1,90 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, useTemplateRef, watch } from 'vue';
 import { api } from '../api';
 import type { Shop } from '../types';
+import PosterEditor from './PosterEditor.vue';
+import PosterLoading from './PosterLoading.vue';
 
 const emit = defineEmits<{ (e: 'back'): void }>();
 
 const shops = ref<Shop[]>([]);
 const shopId = ref<number | null>(null);
-const prompt = ref('足浴店周末养生特惠,温馨暖色调,顶部底部留白');
+const prompt = ref('足浴店周末养生特惠海报,温馨暖色调,画面中央木质足浴桶与袅袅热气,周围点缀艾草和绿植,顶部底部留白用于文字,柔和暖光,高清摄影质感');
 const date = ref(new Date().toISOString().slice(0, 10));
-const caption = ref('健康养生 · 舒缓身心');
-const style = ref('商务蓝');
+// 风格可选:'' 表示无风格(不追加色调关键词)。预设按足浴店性质:养生 / 温暖 / 高端 / 喜庆 / 草本。
+const style = ref('');
 const styles = [
-  { key: '商务蓝', kw: '商务蓝色调,专业稳重', sw: 'linear-gradient(135deg,var(--od-palette-1),color-mix(in oklab,var(--od-palette-1),black 20%))' },
-  { key: '暖金', kw: '暖金色调,温馨高端', sw: 'linear-gradient(135deg,var(--od-warning),var(--od-gold))' },
-  { key: '极简黑', kw: '极简黑白,留白大气', sw: 'linear-gradient(135deg,var(--od-text),color-mix(in oklab,var(--od-text),white 25%))' },
-  { key: '喜庆红', kw: '喜庆红色调,热闹欢快', sw: 'linear-gradient(135deg,color-mix(in oklab,var(--od-danger),black 12%),var(--od-warning))' },
+  { key: '养生禅意', kw: '禅意养生,原木米色调,绿色点缀,宁静留白', sw: 'linear-gradient(135deg,#6b8e6b,#c2b280)' },
+  { key: '温暖柔和', kw: '温暖柔和,暖橙暖黄调,温馨光晕', sw: 'linear-gradient(135deg,#e8915a,#f2c572)' },
+  { key: '高端会所', kw: '高端会所,黑金奢华,深色质感', sw: 'linear-gradient(135deg,#2a2a2a,#c9a227)' },
+  { key: '节日喜庆', kw: '节日喜庆,中国红金,热闹氛围', sw: 'linear-gradient(135deg,#c0392b,#e67e22)' },
+  { key: '清新草本', kw: '清新草本,浅绿淡雅,自然通透', sw: 'linear-gradient(135deg,#7bb661,#a8d5a2)' },
 ];
 const styleKw = computed(() => styles.find(s => s.key === style.value)?.kw ?? '');
+// 提示词模板:本机 localStorage 持久化,支持自定义增删改。首次加载若无存档则写入默认模板。
+interface PromptTemplate { name: string; text: string; }
+const TPL_KEY = 'poster.promptTemplates';
+const DEFAULT_TEMPLATES: PromptTemplate[] = [
+  { name: '周末养生特惠', text: '足浴店周末养生特惠海报,温馨暖色调,画面中央木质足浴桶与袅袅热气,周围点缀艾草和绿植,顶部底部留白用于文字,柔和暖光,高清摄影质感' },
+  { name: '节日促销', text: '足浴店节日促销海报,喜庆暖红金色调,木桶足浴与灯笼艾草元素,热闹节日氛围,顶部底部留白用于文字,高清质感' },
+  { name: '会员招募', text: '足浴店会员招募海报,高端会所质感,深色背景金色点缀,足浴与养生草本,顶部底部留白用于文字,奢华光感' },
+  { name: '新店开业', text: '足浴店新店开业海报,明亮温馨色调,整洁足浴空间与绿植盆栽,开业喜庆氛围,顶部底部留白用于文字,高清摄影' },
+  { name: '节气养生', text: '足浴店节气养生海报,自然清新色调,艾草木桶与节气元素,宁静养生氛围,顶部底部留白用于文字,柔和光晕' },
+];
+function loadTemplates(): PromptTemplate[] {
+  try {
+    const raw = localStorage.getItem(TPL_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as PromptTemplate[];
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_TEMPLATES.slice();
+}
+const templates = ref<PromptTemplate[]>(loadTemplates());
+watch(templates, v => { try { localStorage.setItem(TPL_KEY, JSON.stringify(v)); } catch { /* ignore */ } }, { deep: true });
+
+const promptTpl = ref('');
+const applyTpl = () => { if (promptTpl.value) prompt.value = promptTpl.value; };
+const showTplMgr = ref(false);
+const newTplName = ref('');
+const newTplText = ref('');
+const addTpl = () => {
+  const n = newTplName.value.trim();
+  const t = newTplText.value.trim();
+  if (!n || !t) return;
+  templates.value.push({ name: n, text: t });
+  newTplName.value = '';
+  newTplText.value = '';
+};
+const removeTpl = (i: number) => { templates.value.splice(i, 1); };
 const loading = ref(false);
 const err = ref('');
 const bgImage = ref('');
-const posterDataUrl = ref('');
 const model = ref('');
+const editorRef = useTemplateRef<InstanceType<typeof PosterEditor>>('editorRef');
 
 const shopName = computed(() => shops.value.find(s => s.id === shopId.value)?.name ?? '');
 onMounted(() => {
-  api.shops().then(r => { shops.value = r; if (r[0]) shopId.value = r[0].id; });
+  api.shops().then(r => { shops.value = r; });
   api.aiInfo().then(i => model.value = i.posterModel);
 });
-
-const compose = () => {
-  if (!bgImage.value) return;
-  const img = new Image();
-  img.onload = () => {
-    const W = 1024, H = 1536;
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    const ctx = c.getContext('2d')!;
-    ctx.drawImage(img, 0, 0, W, H);
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(0, 0, W, 220);
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 72px sans-serif';
-    ctx.fillText(shopName.value || '足浴店', W / 2, 110);
-    ctx.font = '36px sans-serif';
-    ctx.fillText(date.value, W / 2, 175);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, H - 180, W, 180);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 52px sans-serif';
-    ctx.fillText(caption.value || '', W / 2, H - 90);
-    posterDataUrl.value = c.toDataURL('image/jpeg', 0.92);
-  };
-  img.src = bgImage.value;
-};
 
 const generate = async () => {
   loading.value = true; err.value = '';
   try {
-    const r = await api.posterGenerate(`${prompt.value},${styleKw.value}`);
+    const full = styleKw.value ? `${prompt.value},${styleKw.value}` : prompt.value;
+    const r = await api.posterGenerate(full);
     bgImage.value = r.image;
-    compose();
   } catch (e: any) { err.value = e.message; } finally { loading.value = false; }
 };
 
-watch([shopName, date, caption], () => { if (bgImage.value) compose(); });
-
 const download = () => {
-  if (!posterDataUrl.value) return;
+  const url = editorRef.value?.exportJpeg();
+  if (!url) return;
   const a = document.createElement('a');
-  a.href = posterDataUrl.value;
-  a.download = `海报_${shopName.value}_${date.value}.jpg`;
+  a.href = url;
+  a.download = `海报_${shopName.value || '通用'}_${date.value || '无日期'}.jpg`;
   a.click();
 };
 </script>
@@ -82,7 +94,7 @@ const download = () => {
     <div class="page-head">
       <div>
         <h1 class="page-title">AI 每日海报</h1>
-        <p class="page-sub">选择店铺与日期,AI 生成文生图背景,Canvas 叠加店名 / 日期 / 文案。</p>
+        <p class="page-sub">选填店铺与日期,AI 生成文生图背景,生成后可在图上编辑文字、裁剪、加图层。</p>
       </div>
       <div class="model-tag"><span class="model-dot"></span>模型 <b>{{ model || '加载中…' }}</b></div>
     </div>
@@ -91,40 +103,52 @@ const download = () => {
       <!-- 左:配置区 -->
       <div class="card">
         <div class="card-h">海报配置</div>
-        <div class="card-desc">提示词驱动文生图背景,店名 / 日期 / 文案由 Canvas 叠加,文字清晰可编辑。</div>
+        <div class="card-desc">提示词驱动文生图背景,生成后在画布上直接编辑店名 / 日期,可新增文字、裁剪、调层级。</div>
 
         <div class="field">
-          <label>店铺</label>
+          <label>店铺 <span class="opt-tag">选填</span></label>
           <select v-model="shopId" class="select">
+            <option :value="null">通用(不选店铺)</option>
             <option v-for="s in shops" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
+          <div class="hint-txt">不选店铺时,店名文字可在生成后的图上自行编辑或删除。</div>
         </div>
 
         <div class="field">
-          <label>日期</label>
-          <input v-model="date" type="date" class="input" />
+          <label>日期 <span class="opt-tag">选填</span></label>
+          <div class="date-row">
+            <input v-model="date" type="date" class="input" />
+            <button v-if="date" class="clear-btn" type="button" @click="date = ''" title="清除日期">×</button>
+          </div>
+          <div class="hint-txt">不选日期时图上不显示日期文字。</div>
         </div>
 
         <div class="field">
-          <label>风格</label>
+          <label>风格 <span class="opt-tag">选填</span></label>
           <div class="style-grid">
+            <div class="style-opt" :class="{ active: style === '' }" role="button" tabindex="0"
+                 @click="style = ''" @keydown.enter="style = ''">
+              <span class="style-sw style-sw-none"></span>无风格
+            </div>
             <div v-for="s in styles" :key="s.key" class="style-opt" :class="{ active: style === s.key }"
               role="button" tabindex="0" @click="style = s.key" @keydown.enter="style = s.key">
               <span class="style-sw" :style="{ background: s.sw }"></span>{{ s.key }}
             </div>
           </div>
-          <div class="hint-txt">风格色调会追加到提示词,影响背景。</div>
+          <div class="hint-txt">可选;选中风格的色调会追加到提示词,影响背景。</div>
         </div>
 
         <div class="field">
           <label>提示词</label>
-          <textarea v-model="prompt" class="input" rows="4" placeholder="补充背景主视觉重点,如:温馨暖色调、顶部底部留白…"></textarea>
-          <div class="hint-txt">留空则使用默认提示词。</div>
-        </div>
-
-        <div class="field">
-          <label>底部文案</label>
-          <input v-model="caption" class="input" placeholder="如:健康养生 · 舒缓身心" />
+          <div class="tpl-bar">
+            <select v-model="promptTpl" class="select" @change="applyTpl">
+              <option value="">选择提示词模板…</option>
+              <option v-for="(t, i) in templates" :key="i" :value="t.text">{{ t.name }}</option>
+            </select>
+            <button class="btn btn-ghost tpl-mgr-btn" type="button" @click="showTplMgr = true">管理</button>
+          </div>
+          <textarea v-model="prompt" class="input" rows="4" style="margin-top:8px" placeholder="描述背景主视觉,如:足浴店周末养生特惠,温馨暖色调,木质足浴桶与艾草,顶部底部留白…"></textarea>
+          <div class="hint-txt">可从模板载入完整示例后再微调;点「管理」可自定义增删改模板。</div>
         </div>
 
         <div v-if="err" class="err-box">{{ err }}</div>
@@ -141,36 +165,30 @@ const download = () => {
       <!-- 右:预览区 -->
       <div class="preview-area">
         <div class="preview-block">
-          <span class="preview-label">海报预览 · 竖版 1080 × 1920</span>
+          <span class="preview-label">海报编辑 · 竖版 1080 × 1920</span>
           <div class="poster-row">
             <div class="poster-cell">
-              <!-- 占位 -->
-              <div v-if="!posterDataUrl && !loading" class="poster placeholder">
-                <div class="ph">
-                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                  <div class="ph-t">填写左侧配置并点"生成海报"</div>
-                  <div class="ph-s">竖版 1080 × 1920 · 适合朋友圈 / 群发</div>
-                </div>
+              <!-- 首次:占位 / 生成中骨架(尚无图) -->
+              <div v-if="!bgImage" class="poster" :class="loading ? 'loading' : 'placeholder'">
+                <template v-if="!loading">
+                  <div class="ph">
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <div class="ph-t">填写左侧配置并点"生成海报"</div>
+                    <div class="ph-s">生成后可在图上编辑文字、裁剪</div>
+                  </div>
+                </template>
+                <template v-else>
+                  <PosterLoading />
+                </template>
               </div>
 
-              <!-- 生成中骨架 -->
-              <div v-else-if="loading" class="poster loading">
-                <div class="skel s1"></div>
-                <div class="skel s2"></div>
-                <div class="skel s3"></div>
-                <div class="skel s4"></div>
-                <div class="skel s5"></div>
-                <div class="loading-badge">
-                  <div class="spinner"></div>
-                  <div class="lt">生成中…</div>
-                  <div class="lp">文生图 + Canvas 合成</div>
-                </div>
-              </div>
-
-              <!-- 生成完成 -->
+              <!-- 编辑器(已生成过;再次生成时叠加遮罩,保留文字编辑) -->
               <template v-else>
-                <div class="poster done">
-                  <img :src="posterDataUrl" class="p-img" alt="每日海报" />
+                <div class="pe-host">
+                  <PosterEditor ref="editorRef" :bg-image="bgImage" :shop-name="shopName" :date="date" />
+                  <div v-if="loading" class="gen-overlay">
+                    <PosterLoading />
+                  </div>
                 </div>
                 <div class="poster-actions">
                   <button class="btn btn-ghost" style="flex:1" @click="download">
@@ -183,6 +201,31 @@ const download = () => {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 提示词模板管理弹窗(本机 localStorage 持久化,自定义增删改) -->
+    <div v-if="showTplMgr" class="tpl-mask" @click.self="showTplMgr = false">
+      <div class="tpl-modal" role="dialog" aria-modal="true">
+        <div class="tpl-head">
+          <span>管理提示词模板</span>
+          <button class="tpl-close" type="button" @click="showTplMgr = false" aria-label="关闭">×</button>
+        </div>
+        <div class="tpl-list">
+          <div v-for="(t, i) in templates" :key="i" class="tpl-row">
+            <input v-model="t.name" class="input tpl-name" placeholder="模板名" />
+            <textarea v-model="t.text" class="input tpl-text" rows="2" placeholder="提示词内容"></textarea>
+            <button class="tpl-del" type="button" @click="removeTpl(i)" title="删除该模板">删除</button>
+          </div>
+          <div v-if="!templates.length" class="tpl-empty">暂无模板,可在下方新增。</div>
+        </div>
+        <div class="tpl-new">
+          <div class="tpl-new-title">新增模板</div>
+          <input v-model="newTplName" class="input tpl-name" placeholder="模板名" />
+          <textarea v-model="newTplText" class="input tpl-text" rows="2" placeholder="提示词内容"></textarea>
+          <button class="btn btn-primary tpl-add" type="button" @click="addTpl">添加</button>
+        </div>
+        <div class="tpl-foot">模板保存在本机浏览器(localStorage),修改即时保存;不同浏览器/设备不共享。</div>
       </div>
     </div>
   </div>
@@ -235,6 +278,10 @@ textarea.input { height: auto; padding: 10px 12px; background-image: none; paddi
 .style-opt:hover { border-color: color-mix(in oklab, var(--od-border), black 8%); background: var(--od-surface-2); }
 .style-opt.active { border-color: var(--od-primary); background: var(--od-primary-soft); color: var(--od-primary-hover); font-weight: var(--od-weight-medium); }
 .style-sw { width: 18px; height: 18px; border-radius: var(--od-radius-sm); flex-shrink: 0; }
+.style-sw-none { background: var(--od-surface-2); border: 1px dashed var(--od-text-muted); position: relative; }
+.style-sw-none::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 44%, var(--od-text-muted) 44%, var(--od-text-muted) 56%, transparent 56%); border-radius: var(--od-radius-sm); }
+
+.opt-tag { display: inline-block; font-size: var(--od-text-xs); font-weight: var(--od-weight-medium); color: var(--od-text-muted); background: var(--od-surface-2); border: 1px solid var(--od-border); border-radius: var(--od-radius-full); padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
 
 /* 按钮 */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: var(--od-radius-md); font-size: var(--od-text-base); font-weight: var(--od-weight-semibold); transition: all .15s; width: 100%; }
@@ -258,7 +305,7 @@ textarea.input { height: auto; padding: 10px 12px; background-image: none; paddi
 .poster-cell { display: flex; flex-direction: column; align-items: center; gap: var(--od-space-3); }
 
 /* 海报 9:16(1080×1920 比例) */
-.poster { width: 300px; height: 533px; border-radius: var(--od-radius-lg); overflow: hidden; position: relative; box-shadow: var(--od-shadow-lg); border: 1px solid var(--od-border); }
+.poster { width: 100%; max-width: 540px; aspect-ratio: 9 / 16; border-radius: var(--od-radius-lg); overflow: hidden; position: relative; box-shadow: var(--od-shadow-lg); border: 1px solid var(--od-border); }
 
 /* 占位态 */
 .poster.placeholder { background: var(--od-surface-2); display: grid; place-items: center; }
@@ -266,26 +313,46 @@ textarea.input { height: auto; padding: 10px 12px; background-image: none; paddi
 .poster.placeholder .ph-t { font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); color: var(--od-text); }
 .poster.placeholder .ph-s { font-size: var(--od-text-xs); }
 
-/* 完成态:实际生成的图片填满海报框 */
-.poster.done { background: var(--od-surface-2); }
-.poster.done .p-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 生成中:居中加载卡(PosterLoading 组件) */
+.poster.loading { background: var(--od-surface-2); display: grid; place-items: center; }
 
-/* 生成中骨架 */
-.poster.loading { background: var(--od-surface-2); }
-.poster.loading .skel { position: absolute; background: linear-gradient(100deg, var(--od-surface-2) 30%, color-mix(in oklab, var(--od-surface-2), white 35%) 50%, var(--od-surface-2) 70%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: var(--od-radius-sm); }
-@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
-.poster.loading .s1 { top: 60px; left: 24px; right: 24px; height: 14px; }
-.poster.loading .s2 { top: 84px; left: 24px; width: 120px; height: 22px; }
-.poster.loading .s3 { bottom: 160px; left: 24px; right: 24px; height: 60px; border-radius: var(--od-radius-md); }
-.poster.loading .s4 { bottom: 90px; left: 24px; right: 24px; height: 36px; border-radius: var(--od-radius-md); }
-.poster.loading .s5 { bottom: 30px; left: 24px; right: 80px; height: 12px; }
-.loading-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); padding: 14px 18px; box-shadow: var(--od-shadow-lg); display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 3; min-width: 200px; }
-.spinner { width: 30px; height: 30px; border: 3px solid var(--od-surface-2); border-top-color: var(--od-primary); border-radius: 50%; animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-badge .lt { font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); }
-.loading-badge .lp { font-size: var(--od-text-xs); color: var(--od-text-muted); font-family: var(--od-font-mono); }
-
-.poster-actions { display: flex; gap: 10px; width: 300px; }
+.poster-actions { display: flex; gap: 10px; width: 100%; max-width: 540px; }
 .poster-cap { font-size: var(--od-text-xs); color: var(--od-text-muted); text-align: center; }
 .poster-cap b { color: var(--od-text); font-weight: var(--od-weight-medium); }
+
+/* 编辑器宿主 + 再生成遮罩 */
+.pe-host { position: relative; width: 540px; max-width: 100%; }
+.gen-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(15, 23, 42, 0.45); border-radius: var(--od-radius-lg); z-index: 5; }
+
+/* 日期清除 */
+.date-row { display: flex; gap: 8px; align-items: center; }
+.date-row .input { flex: 1; }
+.clear-btn { flex-shrink: 0; width: 32px; height: 40px; border: 1px solid var(--od-border); border-radius: var(--od-radius-md); background: var(--od-surface); color: var(--od-text-muted); font-size: 18px; line-height: 1; cursor: pointer; transition: all .15s; }
+.clear-btn:hover { background: var(--od-surface-2); color: var(--od-danger); border-color: color-mix(in oklab, var(--od-danger), white 30%); }
+
+/* 提示词模板栏 + 管理按钮 */
+.tpl-bar { display: flex; gap: 8px; }
+.tpl-bar .select { flex: 1; }
+.tpl-mgr-btn { width: auto; min-width: 64px; padding: 0 14px; flex-shrink: 0; }
+
+/* 模板管理弹窗 */
+.tpl-mask { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: grid; place-items: center; z-index: 100; padding: 20px; }
+.tpl-modal { width: 100%; max-width: 560px; max-height: 85vh; display: flex; flex-direction: column; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-lg); overflow: hidden; }
+.tpl-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--od-border); font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); }
+.tpl-close { width: 28px; height: 28px; border: none; background: none; color: var(--od-text-muted); font-size: 20px; line-height: 1; cursor: pointer; border-radius: var(--od-radius-sm); }
+.tpl-close:hover { background: var(--od-surface-2); color: var(--od-text); }
+.tpl-list { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.tpl-row { display: grid; grid-template-columns: 140px 1fr auto; gap: 8px; align-items: start; }
+.tpl-row .tpl-name { height: 40px; }
+.tpl-row .tpl-text { height: auto; min-height: 60px; padding: 8px 12px; background-image: none; padding-right: 12px; resize: vertical; line-height: 1.5; }
+.tpl-del { height: 40px; padding: 0 12px; border: 1px solid color-mix(in oklab, var(--od-danger), white 30%); border-radius: var(--od-radius-md); background: var(--od-danger-soft); color: var(--od-danger); font-size: var(--od-text-sm); cursor: pointer; white-space: nowrap; }
+.tpl-del:hover { background: color-mix(in oklab, var(--od-danger-soft), var(--od-danger) 15%); }
+.tpl-empty { font-size: var(--od-text-sm); color: var(--od-text-muted); text-align: center; padding: 16px 0; }
+.tpl-new { border-top: 1px solid var(--od-border); padding: 14px 18px; display: grid; grid-template-columns: 140px 1fr auto; gap: 8px; align-items: start; }
+.tpl-new-title { grid-column: 1 / -1; font-size: var(--od-text-sm); font-weight: var(--od-weight-semibold); margin-bottom: 2px; }
+.tpl-new .tpl-name { height: 40px; }
+.tpl-new .tpl-text { height: auto; min-height: 60px; padding: 8px 12px; background-image: none; padding-right: 12px; resize: vertical; line-height: 1.5; }
+.tpl-add { height: 40px; width: auto; padding: 0 16px; }
+.tpl-foot { padding: 10px 18px; border-top: 1px solid var(--od-border); font-size: var(--od-text-xs); color: var(--od-text-muted); background: var(--od-surface-2); }
+@media (max-width: 560px) { .tpl-row, .tpl-new { grid-template-columns: 1fr; } .tpl-add, .tpl-del { width: 100%; } }
 </style>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>足浴经营系统 · 主框架外壳</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+  --od-sidebar-w:232px;--od-sidebar-w-collapsed:64px;--od-topbar-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:32px 28px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+
+.page-title{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold);margin-bottom:4px}
+.page-sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-6)}
+
+/* 演示外壳容器 */
+.demo-label{display:inline-flex;align-items:center;gap:6px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);letter-spacing:.08em;text-transform:uppercase;color:var(--od-primary);background:var(--od-primary-soft);padding:4px 10px;border-radius:var(--od-radius-full);margin:0 0 var(--od-space-3) 0}
+.demo-block{margin-bottom:var(--od-space-8)}
+
+/* App 外壳 */
+.app{display:grid;grid-template-columns:var(--od-sidebar-w) 1fr;height:620px;background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);overflow:hidden;box-shadow:var(--od-shadow-sm)}
+.app.collapsed{grid-template-columns:var(--od-sidebar-w-collapsed) 1fr}
+
+/* 侧边栏 */
+.sidebar{background:var(--od-surface);border-right:1px solid var(--od-border);display:flex;flex-direction:column;transition:all .2s ease}
+.sb-head{height:var(--od-topbar-h);display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--od-border)}
+.sb-logo{width:30px;height:30px;border-radius:var(--od-radius-sm);background:linear-gradient(135deg,var(--od-primary),var(--od-palette-1));display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.sb-brand{font-size:var(--od-text-base);font-weight:var(--od-weight-semibold);white-space:nowrap;overflow:hidden}
+.app.collapsed .sb-brand,.app.collapsed .nav-label,.app.collapsed .nav-tag,.app.collapsed .nav-section,.app.collapsed .sb-foot-label{opacity:0;width:0;overflow:hidden}
+.nav{flex:1;padding:var(--od-space-3) 10px;overflow-y:auto}
+.nav-section{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--od-text-muted);padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:12px;height:40px;padding:0 10px;border-radius:var(--od-radius-md);color:var(--od-text);font-size:var(--od-text-base);font-weight:var(--od-weight-medium);margin-bottom:2px;cursor:pointer;position:relative;transition:all .15s ease;white-space:nowrap}
+.nav-item:hover{background:var(--od-surface-2)}
+.nav-item.active{background:var(--od-primary-soft);color:var(--od-primary-hover);font-weight:var(--od-weight-semibold)}
+.nav-item.active::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--od-primary)}
+.nav-ico{width:20px;height:20px;flex-shrink:0}
+.nav-label{flex:1;overflow:hidden}
+.nav-tag{font-size:10px;background:var(--od-warning-soft);color:color-mix(in oklab,var(--od-warning),black 25%);padding:2px 6px;border-radius:var(--od-radius-full);font-weight:var(--od-weight-medium);white-space:nowrap}
+.nav-badge{font-size:10px;background:var(--od-danger);color:#fff;border-radius:var(--od-radius-full);padding:1px 6px;font-weight:var(--od-weight-semibold)}
+
+.sb-foot{border-top:1px solid var(--od-border);padding:10px}
+.collapse-btn{width:100%;height:36px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--od-radius-md);color:var(--od-text-muted);font-size:var(--od-text-sm);transition:all .15s}
+.collapse-btn:hover{background:var(--od-surface-2);color:var(--od-text)}
+.app.collapsed .collapse-btn svg{transform:rotate(180deg)}
+
+/* 主区 */
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{height:var(--od-topbar-h);border-bottom:1px solid var(--od-border);display:flex;align-items:center;justify-content:space-between;padding:0 var(--od-space-6);background:var(--od-surface)}
+.tb-left{display:flex;align-items:center;gap:var(--od-space-4)}
+.month-picker{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid var(--od-border);border-radius:var(--od-radius-md);background:var(--od-surface);font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);cursor:pointer}
+.month-picker:hover{border-color:var(--od-primary)}
+.crumb{font-size:var(--od-text-sm);color:var(--od-text-muted)}
+.crumb b{color:var(--od-text);font-weight:var(--od-weight-medium)}
+.tb-right{display:flex;align-items:center;gap:var(--od-space-3)}
+.user{display:flex;align-items:center;gap:8px}
+.avatar{width:30px;height:30px;border-radius:var(--od-radius-full);background:linear-gradient(135deg,var(--od-palette-4),var(--od-primary));display:grid;place-items:center;color:#fff;font-size:12px;font-weight:var(--od-weight-semibold)}
+.user-name{font-size:var(--od-text-sm);font-weight:var(--od-weight-medium)}
+.user-role{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+.btn-ghost{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--od-border);border-radius:var(--od-radius-md);font-size:var(--od-text-sm);color:var(--od-text);transition:all .15s}
+.btn-ghost:hover{background:var(--od-surface-2);border-color:color-mix(in oklab,var(--od-border),black 8%)}
+.btn-ghost.danger:hover{color:var(--od-danger);border-color:var(--od-danger)}
+
+.content{flex:1;padding:var(--od-space-6);background:var(--od-bg);overflow:auto}
+.content-placeholder{height:100%;border:1px dashed var(--od-border);border-radius:var(--od-radius-lg);background:var(--od-surface);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--od-text-muted);gap:8px}
+.content-placeholder .ph-ico{width:48px;height:48px;border-radius:var(--od-radius-md);background:var(--od-surface-2);display:grid;place-items:center;color:var(--od-text-muted)}
+.content-placeholder h3{font-size:var(--od-text-lg);color:var(--od-text);font-weight:var(--od-weight-semibold)}
+</style>
+</head>
+<body>
+<div style="max-width:1200px;margin:0 auto">
+  <h1 class="page-title">主框架外壳 app-shell</h1>
+  <p class="page-sub">左侧边栏 + 顶栏 + 右侧内容区。下方并排展示两个状态:① 模块激活态(展开);② 侧边栏折叠态。</p>
+
+  <!-- 状态①:展开 + 某模块激活 -->
+  <div class="demo-block" data-od-id="app-shell-expanded">
+    <span class="demo-label">状态 ① · 展开 · 数据大屏激活</span>
+    <div class="app" data-od-id="app-shell-1">
+      <aside class="sidebar">
+        <div class="sb-head">
+          <div class="sb-logo">🦶</div>
+          <div class="sb-brand">足浴经营系统</div>
+        </div>
+        <nav class="nav">
+          <div class="nav-section">经营</div>
+          <div class="nav-item active" data-od-id="nav-dashboard">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span class="nav-label">数据大屏</span>
+          </div>
+          <div class="nav-item" data-od-id="nav-company">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+            <span class="nav-label">公司经营</span>
+          </div>
+          <div class="nav-section">智能</div>
+          <div class="nav-item" data-od-id="nav-ai">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18 16l.8 2 .2.8 2 .2-2 .2-.2 2-.8-2-2-.2 2-.2z"/></svg>
+            <span class="nav-label">AI 分析</span>
+          </div>
+          <div class="nav-item" data-od-id="nav-poster">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/></svg>
+            <span class="nav-label">AI 每日海报</span>
+            <span class="nav-badge">新</span>
+          </div>
+          <div class="nav-section">管理</div>
+          <div class="nav-item" data-od-id="nav-employees">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M15 20c0-2.5 1.8-4 4-4"/></svg>
+            <span class="nav-label">员工管理</span>
+            <span class="nav-tag" title="仅董事长/经理可见">仅董事长/经理</span>
+          </div>
+        </nav>
+        <div class="sb-foot">
+          <button class="collapse-btn" data-od-id="collapse-toggle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            <span class="sb-foot-label">收起菜单</span>
+          </button>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div class="tb-left">
+            <span class="crumb">经营 / <b>数据大屏</b></span>
+          </div>
+          <div class="tb-right">
+            <div class="month-picker" data-od-id="month-picker">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+              2025 年 6 月
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="user" data-od-id="current-user">
+              <div class="avatar">张</div>
+              <div>
+                <div class="user-name">张总</div>
+                <div class="user-role">董事长</div>
+              </div>
+            </div>
+            <button class="btn-ghost danger" data-od-id="logout">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+              退出
+            </button>
+          </div>
+        </header>
+        <div class="content">
+          <div class="content-placeholder" data-od-id="module-content">
+            <div class="ph-ico">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            </div>
+            <h3>数据大屏</h3>
+            <p style="font-size:var(--od-text-sm)">模块内容区占位 -- 实际内容见 dashboard.html</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态②:折叠 -->
+  <div class="demo-block" data-od-id="app-shell-collapsed">
+    <span class="demo-label">状态 ② · 折叠 · 公司经营激活</span>
+    <div class="app collapsed" data-od-id="app-shell-2">
+      <aside class="sidebar">
+        <div class="sb-head" style="justify-content:center">
+          <div class="sb-logo">🦶</div>
+        </div>
+        <nav class="nav" style="padding:var(--od-space-3) 8px">
+          <div class="nav-item" style="justify-content:center" title="数据大屏">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          </div>
+          <div class="nav-item active" style="justify-content:center" title="公司经营" data-od-id="nav-company-collapsed">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+          </div>
+          <div class="nav-item" style="justify-content:center" title="AI 分析">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
+          </div>
+          <div class="nav-item" style="justify-content:center" title="AI 每日海报">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/></svg>
+          </div>
+          <div class="nav-item" style="justify-content:center" title="员工管理 · 仅董事长/经理可见">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/></svg>
+          </div>
+        </nav>
+        <div class="sb-foot">
+          <button class="collapse-btn" title="展开菜单">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div class="tb-left">
+            <span class="crumb">经营 / <b>公司经营</b></span>
+          </div>
+          <div class="tb-right">
+            <div class="month-picker">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+              2025 年 6 月
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="user">
+              <div class="avatar">张</div>
+              <div><div class="user-name">张总</div><div class="user-role">董事长</div></div>
+            </div>
+            <button class="btn-ghost danger">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+              退出
+            </button>
+          </div>
+        </header>
+        <div class="content">
+          <div class="content-placeholder">
+            <div class="ph-ico">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+            </div>
+            <h3>公司经营</h3>
+            <p style="font-size:var(--od-text-sm)">模块内容区占位 -- 实际内容见 company-ops.html</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

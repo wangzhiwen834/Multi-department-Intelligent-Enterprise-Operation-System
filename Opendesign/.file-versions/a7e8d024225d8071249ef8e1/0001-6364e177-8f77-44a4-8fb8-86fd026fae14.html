@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>足浴经营驾驶舱 · 数据大屏</title>
+<style>
+:root{
+  --od-bg:#f7f9fc;--od-surface:#ffffff;--od-surface-2:#f1f5f9;--od-border:#e2e8f0;
+  --od-text:#0f172a;--od-text-muted:#64748b;--od-primary:#2563eb;--od-primary-hover:#1d4ed8;
+  --od-gold:#d4a017;--od-success:#16a34a;--od-warning:#f59e0b;--od-danger:#ef4444;
+  --od-palette-1:#0ea5e9;--od-palette-2:#3b82f6;--od-palette-3:#14b8a6;--od-palette-4:#8b5cf6;--od-palette-5:#f59e0b;
+  --od-primary-soft:#dbeafe;--od-success-soft:#dcfce7;--od-warning-soft:#fef3c7;--od-danger-soft:#fee2e2;--od-gold-soft:#fef3c7;
+  --od-font-sans:"Inter","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --od-font-mono:"JetBrains Mono","SF Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --od-text-xs:12px;--od-text-sm:13px;--od-text-base:14px;--od-text-lg:16px;--od-text-xl:18px;--od-text-2xl:24px;
+  --od-weight-normal:400;--od-weight-medium:500;--od-weight-semibold:600;--od-weight-bold:700;
+  --od-space-1:4px;--od-space-2:8px;--od-space-3:12px;--od-space-4:16px;--od-space-5:20px;--od-space-6:24px;--od-space-7:32px;--od-space-8:40px;
+  --od-radius-sm:6px;--od-radius-md:8px;--od-radius-lg:12px;--od-radius-xl:16px;--od-radius-full:9999px;
+  --od-shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.06);
+  --od-shadow-md:0 4px 12px rgba(15,23,42,.06),0 2px 4px rgba(15,23,42,.04);
+  --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--od-font-sans);background:var(--od-bg);color:var(--od-text);font-size:var(--od-text-base);line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+.num{font-family:var(--od-font-mono);font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--od-space-5);flex-wrap:wrap;gap:12px}
+.page-head h1{font-size:var(--od-text-2xl);font-weight:var(--od-weight-bold)}
+.page-head .sub{font-size:var(--od-text-sm);color:var(--od-text-muted);margin-top:2px}
+.head-tools{display:flex;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--od-border);border-radius:var(--od-radius-md);background:var(--od-surface);font-size:var(--od-text-sm);font-weight:var(--od-weight-medium)}
+.pill.live{color:var(--od-success)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--od-success);box-shadow:0 0 0 3px var(--od-success-soft)}
+
+.card{background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-lg);box-shadow:var(--od-shadow-sm);padding:var(--od-space-5)}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--od-space-4)}
+.card-title h3{font-size:var(--od-text-lg);font-weight:var(--od-weight-semibold)}
+.card-title .meta{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+
+.grid{display:grid;gap:var(--od-space-4)}
+.kpis{grid-template-columns:repeat(4,1fr)}
+.row-2{grid-template-columns:1.4fr 1fr}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.row-2{grid-template-columns:1fr}}
+
+/* KPI */
+.kpi{display:flex;flex-direction:column;gap:6px;transition:all .18s ease;cursor:pointer}
+.kpi:hover{box-shadow:var(--od-shadow-md);transform:translateY(-2px);border-color:color-mix(in oklab,var(--od-border),black 12%)}
+.kpi-top{display:flex;align-items:center;justify-content:space-between}
+.kpi-label{font-size:var(--od-text-sm);color:var(--od-text-muted);display:flex;align-items:center;gap:6px}
+.kpi-ico{width:30px;height:30px;border-radius:var(--od-radius-md);display:grid;place-items:center}
+.kpi-val{font-size:28px;font-weight:var(--od-weight-bold);font-family:var(--od-font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi-val small{font-size:var(--od-text-base);font-weight:var(--od-weight-medium);color:var(--od-text-muted);margin-left:3px}
+.trend{display:inline-flex;align-items:center;gap:3px;font-size:var(--od-text-xs);font-weight:var(--od-weight-semibold);padding:2px 7px;border-radius:var(--od-radius-full)}
+.trend.up{color:var(--od-success);background:var(--od-success-soft)}
+.spark{height:28px;margin-top:4px}
+.spark polyline{fill:none;stroke-width:2}
+svg.sl-rev polyline{stroke:var(--od-primary)}
+svg.sl-traf polyline{stroke:var(--od-success)}
+svg.sl-price polyline{stroke:var(--od-gold)}
+svg.sl-rech polyline{stroke:var(--od-palette-4)}
+
+/* 任务仪表盘 */
+.gauge-wrap{display:flex;align-items:center;gap:var(--od-space-6)}
+.gauge{position:relative;width:120px;height:120px;flex-shrink:0}
+.gauge svg{transform:rotate(-90deg)}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-center .pct{font-size:24px;font-weight:var(--od-weight-bold);font-family:var(--od-font-mono)}
+.gauge-center .lbl{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+.gauge-bg{fill:none;stroke:var(--od-surface-2);stroke-width:12}
+.gauge-fg{fill:none;stroke:var(--od-primary);stroke-width:12;stroke-linecap:round}
+.gauge-ring{fill:none;stroke:var(--od-border);stroke-width:2;stroke-dasharray:4 4}
+.gauge-legend{flex:1;display:flex;flex-direction:column;gap:10px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm)}
+.legend-sw{width:10px;height:10px;border-radius:3px}
+.legend-val{margin-left:auto;font-family:var(--od-font-mono);font-weight:var(--od-weight-semibold)}
+.task-table{margin-top:var(--od-space-4);width:100%;border-collapse:collapse;font-size:var(--od-text-sm)}
+.task-table th{text-align:left;font-weight:var(--od-weight-medium);color:var(--od-text-muted);padding:6px 8px;border-bottom:1px solid var(--od-border)}
+.task-table td{padding:8px;border-bottom:1px solid var(--od-border)}
+.task-table tr.late td{background:var(--od-danger-soft)}
+.mini-bar{height:6px;border-radius:3px;background:var(--od-surface-2);overflow:hidden;position:relative;width:90px}
+.mini-bar i{position:absolute;top:0;left:0;height:100%;border-radius:3px}
+.mini-bar .mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--od-text-muted);opacity:.5}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:var(--od-radius-full);font-size:var(--od-text-xs);font-weight:var(--od-weight-medium)}
+.badge-success{background:var(--od-success-soft);color:color-mix(in oklab,var(--od-success),black 20%)}
+.badge-warning{background:var(--od-warning-soft);color:color-mix(in oklab,var(--od-warning),black 25%)}
+.badge-danger{background:var(--od-danger-soft);color:color-mix(in oklab,var(--od-danger),black 20%)}
+
+/* 排名 */
+.rank-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--od-border)}
+.rank-row:last-child{border-bottom:none}
+.rank-no{width:22px;height:22px;border-radius:var(--od-radius-full);display:grid;place-items:center;font-size:var(--od-text-xs);font-weight:var(--od-weight-bold);background:var(--od-surface-2);color:var(--od-text-muted);flex-shrink:0}
+.rank-no.top{background:var(--od-gold-soft);color:color-mix(in oklab,var(--od-warning),black 25%)}
+.rank-name{width:84px;font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);display:flex;align-items:center;gap:6px}
+.rank-sw{width:8px;height:8px;border-radius:2px}
+.rank-bar{flex:1;height:8px;border-radius:4px;background:var(--od-surface-2);overflow:hidden}
+.rank-bar i{display:block;height:100%;border-radius:4px}
+.rank-val{width:72px;text-align:right;font-family:var(--od-font-mono);font-weight:var(--od-weight-semibold);font-size:var(--od-text-sm)}
+.rank-row.clickable{cursor:pointer;transition:background .15s}
+.rank-row.clickable:hover{background:var(--od-surface-2)}
+.rank-row .go{color:var(--od-text-muted)}
+
+/* 饼图 */
+.donut-wrap{display:flex;align-items:center;gap:var(--od-space-5)}
+.donut{position:relative;width:130px;height:130px;flex-shrink:0}
+.donut svg{transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-center .v{font-size:20px;font-weight:var(--od-weight-bold);font-family:var(--od-font-mono)}
+.donut-center .l{font-size:var(--od-text-xs);color:var(--od-text-muted)}
+.donut-bg{fill:none;stroke:var(--od-surface-2);stroke-width:16}
+.donut-1{fill:none;stroke:var(--od-primary);stroke-width:16}
+.donut-2{fill:none;stroke:var(--od-palette-3);stroke-width:16}
+.donut-3{fill:none;stroke:var(--od-palette-5);stroke-width:16}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:9px}
+.dl-item{display:flex;align-items:center;gap:8px;font-size:var(--od-text-sm)}
+.dl-sw{width:10px;height:10px;border-radius:3px}
+.dl-val{margin-left:auto;font-family:var(--od-font-mono);font-weight:var(--od-weight-semibold)}
+
+/* 营收趋势 */
+.grid-line{stroke:var(--od-border);stroke-width:1}
+.axis-text{fill:var(--od-text-muted);font-family:var(--od-font-mono);font-size:10px}
+.rev-line{fill:none;stroke:var(--od-primary);stroke-width:2.2;stroke-linejoin:round}
+.rev-dot{fill:var(--od-primary);stroke:var(--od-surface);stroke-width:2}
+
+/* 横条 */
+.hbar-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.hbar-row:last-child{margin-bottom:0}
+.hbar-name{width:64px;font-size:var(--od-text-sm);color:var(--od-text)}
+.hbar-track{flex:1;height:18px;border-radius:var(--od-radius-sm);background:var(--od-surface-2);overflow:hidden}
+.hbar-fill{height:100%;border-radius:var(--od-radius-sm);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:var(--od-text-xs);color:#fff;font-weight:var(--od-weight-medium);font-family:var(--od-font-mono)}
+.hbar-val{width:64px;text-align:right;font-size:var(--od-text-sm);font-family:var(--od-font-mono);font-weight:var(--od-weight-semibold)}
+</style>
+</head>
+<body>
+<div style="max-width:1320px;margin:0 auto">
+
+  <div class="page-head">
+    <div>
+      <h1>足浴经营驾驶舱</h1>
+      <div class="sub">2025 年 6 月 · 5 店汇总 · 数据更新于 06-18 18:30</div>
+    </div>
+    <div class="head-tools">
+      <span class="pill live"><span class="dot"></span>实时同步</span>
+      <span class="pill">月份:2025-06</span>
+      <span class="pill">导出报表</span>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid kpis" style="margin-bottom:var(--od-space-4)">
+    <div class="card kpi" data-od-id="kpi-revenue">
+      <div class="kpi-top">
+        <span class="kpi-label"><span class="kpi-ico" style="background:var(--od-primary-soft);color:var(--od-primary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>总营收</span>
+        <span class="trend up">↑12.4%</span>
+      </div>
+      <div class="kpi-val">¥380.2<small>万</small></div>
+      <svg class="spark sl-rev" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,22 12,20 24,18 36,19 48,14 60,15 72,10 84,8 100,4"/></svg>
+    </div>
+    <div class="card kpi" data-od-id="kpi-traffic">
+      <div class="kpi-top">
+        <span class="kpi-label"><span class="kpi-ico" style="background:var(--od-success-soft);color:var(--od-success)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>总客流</span>
+        <span class="trend up">↑8.1%</span>
+      </div>
+      <div class="kpi-val">24,560<small>人次</small></div>
+      <svg class="spark sl-traf" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,18 12,16 24,19 36,14 48,15 60,12 72,13 84,9 100,7"/></svg>
+    </div>
+    <div class="card kpi" data-od-id="kpi-price">
+      <div class="kpi-top">
+        <span class="kpi-label"><span class="kpi-ico" style="background:var(--od-gold-soft);color:var(--od-gold)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/></svg></span>客单价</span>
+        <span class="trend up">↑3.6%</span>
+      </div>
+      <div class="kpi-val">¥154.7</div>
+      <svg class="spark sl-price" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,16 12,17 24,15 36,16 48,14 60,15 72,13 84,14 100,12"/></svg>
+    </div>
+    <div class="card kpi" data-od-id="kpi-recharge">
+      <div class="kpi-top">
+        <span class="kpi-label"><span class="kpi-ico" style="background:var(--od-primary-soft);color:var(--od-palette-4)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>充值</span>
+        <span class="trend up">↑5.2%</span>
+      </div>
+      <div class="kpi-val">¥86.5<small>万</small></div>
+      <svg class="spark sl-rech" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,20 12,18 24,19 36,16 48,17 60,13 72,15 84,11 100,9"/></svg>
+    </div>
+  </div>
+
+  <!-- 任务仪表盘 + 营收趋势 -->
+  <div class="grid row-2" style="margin-bottom:var(--od-space-4)">
+    <div class="card" data-od-id="task-gauge">
+      <div class="card-title"><h3>任务仪表盘</h3><span class="meta">月度目标 vs 时间进度 · 截止 06-18(18/30 天)</span></div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+            <circle class="gauge-fg" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="115"/>
+            <circle class="gauge-ring" cx="60" cy="60" r="36"/>
+          </svg>
+          <div class="gauge-center"><div class="pct">63.4%</div><div class="lbl">任务进度</div></div>
+        </div>
+        <div class="gauge-legend">
+          <div class="legend-item"><span class="legend-sw" style="background:var(--od-primary)"></span>任务进度<span class="legend-val">63.4%</span></div>
+          <div class="legend-item"><span class="legend-sw" style="background:var(--od-border)"></span>时间进度<span class="legend-val">60.0%</span></div>
+          <div class="legend-item" style="color:var(--od-success);font-size:var(--od-text-xs)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>整体超前 3.4 个百分点</div>
+        </div>
+      </div>
+      <table class="task-table">
+        <thead><tr><th>门店</th><th>任务进度</th><th>时间进度</th><th></th><th style="text-align:right">完成/目标</th></tr></thead>
+        <tbody>
+          <tr><td>旗舰店</td><td><div class="mini-bar"><i style="width:78%;background:var(--od-palette-2)"></i><span class="mark" style="left:60%"></span></div></td><td><span class="num">60%</span></td><td><span class="badge badge-success">超前</span></td><td style="text-align:right" class="num">98.6 / 110万</td></tr>
+          <tr><td>中心店</td><td><div class="mini-bar"><i style="width:69%;background:var(--od-palette-3)"></i><span class="mark" style="left:60%"></span></div></td><td><span class="num">60%</span></td><td><span class="badge badge-success">超前</span></td><td style="text-align:right" class="num">86.4 / 100万</td></tr>
+          <tr><td>北区店</td><td><div class="mini-bar"><i style="width:62%;background:var(--od-palette-4)"></i><span class="mark" style="left:60%"></span></div></td><td><span class="num">60%</span></td><td><span class="badge badge-success">持平</span></td><td style="text-align:right" class="num">72.1 / 90万</td></tr>
+          <tr><td>南区店</td><td><div class="mini-bar"><i style="width:58%;background:var(--od-palette-5)"></i><span class="mark" style="left:60%"></span></div></td><td><span class="num">60%</span></td><td><span class="badge badge-warning">略缓</span></td><td style="text-align:right" class="num">68.5 / 100万</td></tr>
+          <tr class="late"><td>大河坎店</td><td><div class="mini-bar"><i style="width:41%;background:var(--od-danger)"></i><span class="mark" style="left:60%"></span></div></td><td><span class="num">60%</span></td><td><span class="badge badge-danger">落后</span></td><td style="text-align:right" class="num">54.6 / 100万</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" data-od-id="revenue-trend">
+      <div class="card-title"><h3>营收趋势</h3><span class="meta">2025-06 · 日营收(万元)</span></div>
+      <svg viewBox="0 0 600 220" width="100%" style="display:block">
+        <defs>
+          <linearGradient id="revArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style="stop-color:var(--od-primary);stop-opacity:.22"/>
+            <stop offset="100%" style="stop-color:var(--od-primary);stop-opacity:0"/>
+          </linearGradient>
+        </defs>
+        <g>
+          <line class="grid-line" x1="20" y1="40" x2="590" y2="40"/>
+          <line class="grid-line" x1="20" y1="90" x2="590" y2="90"/>
+          <line class="grid-line" x1="20" y1="140" x2="590" y2="140"/>
+          <line class="grid-line" x1="20" y1="180" x2="590" y2="180"/>
+        </g>
+        <g>
+          <text class="axis-text" x="0" y="44">17</text>
+          <text class="axis-text" x="0" y="94">14</text>
+          <text class="axis-text" x="0" y="144">12</text>
+          <text class="axis-text" x="0" y="184">10</text>
+        </g>
+        <path d="M20,138 L39,144 L59,130 L78,120 L97,132 L117,142 L136,124 L155,110 L175,100 L194,108 L213,122 L233,116 L252,98 L271,84 L291,76 L310,82 L329,104 L349,128 L368,142 L387,132 L407,118 L426,100 L445,88 L465,78 L484,64 L503,56 L523,62 L542,74 L561,84 L580,72 L580,180 L20,180 Z" fill="url(#revArea)"/>
+        <polyline class="rev-line" points="20,138 39,144 59,130 78,120 97,132 117,142 136,124 155,110 175,100 194,108 213,122 233,116 252,98 271,84 291,76 310,82 329,104 349,128 368,142 387,132 407,118 426,100 445,88 465,78 484,64 503,56 523,62 542,74 561,84 580,72"/>
+        <circle class="rev-dot" cx="580" cy="72" r="4"/>
+        <g>
+          <text class="axis-text" x="20" y="200">06-01</text>
+          <text class="axis-text" x="194" y="200">06-10</text>
+          <text class="axis-text" x="387" y="200">06-20</text>
+          <text class="axis-text" x="560" y="200">06-30</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 5店排名 + 业务结构 -->
+  <div class="grid row-2" style="margin-bottom:var(--od-space-4)">
+    <div class="card" data-od-id="store-ranking">
+      <div class="card-title"><h3>5 店营收排名</h3><span class="meta">点击钻取门店详情</span></div>
+      <div class="rank-row clickable" data-od-id="rank-qj">
+        <span class="rank-no top">1</span><span class="rank-name"><span class="rank-sw" style="background:var(--od-palette-2)"></span>旗舰店</span>
+        <div class="rank-bar"><i style="width:100%;background:var(--od-palette-2)"></i></div>
+        <span class="rank-val num">¥98.6万</span><svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="rank-row clickable">
+        <span class="rank-no top">2</span><span class="rank-name"><span class="rank-sw" style="background:var(--od-palette-3)"></span>中心店</span>
+        <div class="rank-bar"><i style="width:88%;background:var(--od-palette-3)"></i></div>
+        <span class="rank-val num">¥86.4万</span><svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="rank-row clickable">
+        <span class="rank-no top">3</span><span class="rank-name"><span class="rank-sw" style="background:var(--od-palette-4)"></span>北区店</span>
+        <div class="rank-bar"><i style="width:73%;background:var(--od-palette-4)"></i></div>
+        <span class="rank-val num">¥72.1万</span><svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="rank-row clickable">
+        <span class="rank-no">4</span><span class="rank-name"><span class="rank-sw" style="background:var(--od-palette-5)"></span>南区店</span>
+        <div class="rank-bar"><i style="width:69%;background:var(--od-palette-5)"></i></div>
+        <span class="rank-val num">¥68.5万</span><svg class="go" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div class="rank-row clickable" data-od-id="rank-dhk">
+        <span class="rank-no">5</span><span class="rank-name"><span class="rank-sw" style="background:var(--od-palette-1)"></span>大河坎店</span>
+        <div class="rank-bar"><i style="width:55%;background:var(--od-palette-1)"></i></div>
+        <span class="rank-val num">¥54.6万</span>
+        <span class="badge badge-danger" style="margin-left:4px">落后</span>
+      </div>
+    </div>
+
+    <div class="card" data-od-id="biz-structure">
+      <div class="card-title"><h3>业务结构</h3><span class="meta">营收占比</span></div>
+      <div class="donut-wrap">
+        <div class="donut">
+          <svg width="130" height="130" viewBox="0 0 120 120">
+            <circle class="donut-bg" cx="60" cy="60" r="50"/>
+            <circle class="donut-1" cx="60" cy="60" r="50" stroke-dasharray="182 314" stroke-dashoffset="0"/>
+            <circle class="donut-2" cx="60" cy="60" r="50" stroke-dasharray="85 314" stroke-dashoffset="-182"/>
+            <circle class="donut-3" cx="60" cy="60" r="50" stroke-dasharray="47 314" stroke-dashoffset="-267"/>
+          </svg>
+          <div class="donut-center"><div class="v">¥380万</div><div class="l">总营收</div></div>
+        </div>
+        <div class="donut-legend">
+          <div class="dl-item"><span class="dl-sw" style="background:var(--od-primary)"></span>足浴<span class="dl-val num">58%</span></div>
+          <div class="dl-item"><span class="dl-sw" style="background:var(--od-palette-3)"></span>SPA<span class="dl-val num">27%</span></div>
+          <div class="dl-item"><span class="dl-sw" style="background:var(--od-palette-5)"></span>小项<span class="dl-val num">15%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支付渠道 + 费用Top -->
+  <div class="grid row-2">
+    <div class="card" data-od-id="pay-channels">
+      <div class="card-title"><h3>支付渠道</h3><span class="meta">收款笔数占比</span></div>
+      <div class="hbar-row"><span class="hbar-name">微信</span><div class="hbar-track"><div class="hbar-fill" style="width:84%;background:var(--od-success)">42%</div></div><span class="hbar-val num">10,315</span></div>
+      <div class="hbar-row"><span class="hbar-name">支付宝</span><div class="hbar-track"><div class="hbar-fill" style="width:62%;background:var(--od-primary)">31%</div></div><span class="hbar-val num">7,614</span></div>
+      <div class="hbar-row"><span class="hbar-name">会员卡</span><div class="hbar-track"><div class="hbar-fill" style="width:36%;background:var(--od-palette-4)">18%</div></div><span class="hbar-val num">4,421</span></div>
+      <div class="hbar-row"><span class="hbar-name">现金</span><div class="hbar-track"><div class="hbar-fill" style="width:18%;background:var(--od-text-muted)">9%</div></div><span class="hbar-val num">2,210</span></div>
+    </div>
+
+    <div class="card" data-od-id="expense-top">
+      <div class="card-title"><h3>费用 Top 5</h3><span class="meta">本月支出(万元)</span></div>
+      <div class="hbar-row"><span class="hbar-name">房租</span><div class="hbar-track"><div class="hbar-fill" style="width:100%;background:var(--od-danger)">48.0</div></div><span class="hbar-val num">¥48.0万</span></div>
+      <div class="hbar-row"><span class="hbar-name">人工</span><div class="hbar-track"><div class="hbar-fill" style="width:75%;background:var(--od-warning)">36.0</div></div><span class="hbar-val num">¥36.0万</span></div>
+      <div class="hbar-row"><span class="hbar-name">物料</span><div class="hbar-track"><div class="hbar-fill" style="width:25%;background:var(--od-palette-3)">12.0</div></div><span class="hbar-val num">¥12.0万</span></div>
+      <div class="hbar-row"><span class="hbar-name">水电</span><div class="hbar-track"><div class="hbar-fill" style="width:14%;background:var(--od-primary)">6.8</div></div><span class="hbar-val num">¥6.8万</span></div>
+      <div class="hbar-row"><span class="hbar-name">营销</span><div class="hbar-track"><div class="hbar-fill" style="width:11%;background:var(--od-palette-4)">5.2</div></div><span class="hbar-val num">¥5.2万</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

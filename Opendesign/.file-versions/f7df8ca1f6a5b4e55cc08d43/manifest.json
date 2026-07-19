@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fileName": "login.html",
+  "entries": [
+    {
+      "id": "543b2acf-5d93-4299-a73f-f4769151b874",
+      "fileName": "login.html",
+      "version": 1,
+      "label": "Version 1",
+      "createdAt": 1784352554838,
+      "source": "ai",
+      "prompt": "[form answers — discovery]\n- 交付节奏: 本回合一次性交付 P0→P8 全部(推荐) [value: all_at_once]\n- 5 家门店名称(用于配色与排名): 大河坎店, 旗舰店, 中心店, 北区店, 南区店\n- 经营数据背景(月份与量级,用于 KPI 真实感): 2025年6月,5店月营收合计约380万元",
+      "size": 14257,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0001-543b2acf-5d93-4299-a73f-f4769151b874.html",
+      "promptSource": "message"
+    },
+    {
+      "id": "35de3f09-2a8e-4673-9717-30d0eec5e2fa",
+      "fileName": "login.html",
+      "version": 2,
+      "label": "Version 2",
+      "createdAt": 1784353175276,
+      "source": "ai",
+      "prompt": "https://cloud.tencent.com/login?s_url=https%3A%2F%2Fcloud.tencent.com%2Fact%2Fpro%2Ffeatured-202607%3FfromSource%3Dgwzcw.12021631.12021631.12021631%26utm_medium%3Dcpc%26utm_id%3Dgwzcw.12021631.12021631.12021631%26msclkid%3D27dc6d751db91e7182a5072e175691c4登录页和这个差不多，并且所有的emoj图标换成svg图片，不要卡通风的",
+      "size": 19968,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0002-35de3f09-2a8e-4673-9717-30d0eec5e2fa.html",
+      "promptSource": "message"
+    },
+    {
+      "id": "940ea881-c91d-4d9a-80da-7bebe86a9b7b",
+      "fileName": "login.html",
+      "version": 3,
+      "label": "Version 3",
+      "createdAt": 1784353594533,
+      "source": "ai",
+      "prompt": "系统名称改为静水楼台企业智能经营系统",
+      "size": 20040,
+      "mime": "text/html; charset=utf-8",
+      "kind": "html",
+      "contentPath": "0003-940ea881-c91d-4d9a-80da-7bebe86a9b7b.html",
+      "promptSource": "message"
+    }
+  ]
+}

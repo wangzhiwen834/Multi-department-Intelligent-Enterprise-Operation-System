@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { authRequired } from '../auth/auth.middleware.js';
 import { syncWorkbook } from './sync.service.js';
 import { isLockHolder } from '../lock/lock.service.js';
+import { auditLog } from '../audit/audit.middleware.js';
 
 export const syncRouter = Router();
 syncRouter.use(authRequired);
 
-syncRouter.post('/workbooks/:id/sync', async (req, res, next) => {
+syncRouter.post('/workbooks/:id/sync', auditLog('workbook.sync'), async (req, res, next) => {
   try {
     if (!await isLockHolder(Number(req.params.id), req.user!.id))
       return res.status(409).json({ error: '锁已丢失(被他人接管或过期),同步被拒绝,请重载工作簿' });
