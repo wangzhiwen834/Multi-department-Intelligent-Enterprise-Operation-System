@@ -58,8 +58,7 @@ const submit = async () => {
         </div>
       </div>
       <div class="brand-foot">
-        <span>© 2025 静水楼台企业智能经营系统</span>
-        <span>v2.1 · 商务版</span>
+        <span>© 2026 静水楼台企业智能经营系统</span>
       </div>
     </section>
 
@@ -74,12 +73,6 @@ const submit = async () => {
             <h2 style="font-size:var(--od-text-xl);font-weight:var(--od-weight-semibold)">静水楼台企业智能经营系统</h2>
             <p style="font-size:var(--od-text-sm);color:var(--od-text-muted)">多部门智能经营平台</p>
           </div>
-        </div>
-
-        <!-- 登录方式 tab -->
-        <div class="tabs" role="tablist" data-od-id="login-tabs">
-          <div class="tab" role="tab" aria-disabled="true" title="暂未开放">扫码登录</div>
-          <div class="tab active" role="tab" aria-selected="true">账号密码登录</div>
         </div>
 
         <form @submit.prevent="submit">
@@ -106,30 +99,11 @@ const submit = async () => {
             </div>
           </div>
 
-          <div class="row-between">
-            <label class="remember"><input type="checkbox" checked> 记住我</label>
-            <a class="link">忘记密码?</a>
-          </div>
-
-          <label class="agree"><input type="checkbox" checked> 我已阅读并同意《服务协议》《隐私声明》</label>
-
           <button class="btn btn-primary" data-od-id="login-submit">
             登录
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
         </form>
-
-        <!-- 其他方式登录 -->
-        <div class="alt" data-od-id="login-alt">
-          <div class="alt-divider">其他方式登录</div>
-          <div class="alt-icons">
-            <button type="button" class="alt-btn" title="微信扫码" aria-label="微信扫码"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 9.5h.01M12 9.5h.01"/></svg></button>
-            <button type="button" class="alt-btn" title="邮箱登录" aria-label="邮箱登录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></button>
-            <button type="button" class="alt-btn" title="扫码登录" aria-label="扫码登录"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2h-2z"/></svg></button>
-          </div>
-        </div>
-
-        <div class="register">还没有账号?<a class="link" style="margin-left:4px">立即注册</a></div>
 
         <!-- 默认账号提示 -->
         <div class="hint" data-od-id="login-default-accounts">
@@ -142,8 +116,6 @@ const submit = async () => {
             <span class="acct">经理 <b>mgr</b> / <b>mgr123</b></span>
           </div>
         </div>
-
-        <div class="foot-link">登录即代表您同意《用户协议》与《隐私政策》</div>
       </div>
     </section>
   </div>
@@ -200,12 +172,6 @@ a{color:inherit;text-decoration:none}
 .form-side{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;background:var(--od-surface)}
 .card{width:100%;max-width:380px}
 
-/* tab 切换 */
-.tabs{display:flex;align-items:center;gap:24px;margin-bottom:var(--od-space-6);border-bottom:1px solid var(--od-border)}
-.tab{position:relative;padding:0 0 12px;font-size:var(--od-text-lg);font-weight:var(--od-weight-medium);color:var(--od-text-muted);cursor:default;transition:color .15s}
-.tab.active{color:var(--od-text);font-weight:var(--od-weight-semibold);cursor:pointer}
-.tab.active::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--od-primary);border-radius:2px}
-
 .field{margin-bottom:var(--od-space-4)}
 .field label{display:block;font-size:var(--od-text-sm);font-weight:var(--od-weight-medium);margin-bottom:6px;color:var(--od-text)}
 .input-wrap{position:relative}
@@ -221,29 +187,9 @@ a{color:inherit;text-decoration:none}
 .eye:hover{background:var(--od-surface-2);color:var(--od-text)}
 .err-msg{display:flex;align-items:center;gap:6px;font-size:var(--od-text-xs);color:color-mix(in oklab,var(--od-danger),black 20%);margin-top:6px}
 
-.row-between{display:flex;align-items:center;justify-content:space-between;font-size:var(--od-text-sm);color:var(--od-text-muted);margin-bottom:var(--od-space-4)}
-.remember{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
-.remember input{accent-color:var(--od-primary);width:15px;height:15px}
-.link{color:var(--od-primary);font-weight:var(--od-weight-medium)}
-.link:hover{color:var(--od-primary-hover);text-decoration:underline}
-
-.agree{display:flex;align-items:flex-start;gap:8px;font-size:var(--od-text-xs);color:var(--od-text-muted);margin-bottom:var(--od-space-4);line-height:1.5}
-.agree input{accent-color:var(--od-primary);width:14px;height:14px;margin-top:2px;flex-shrink:0}
-
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;width:100%;border-radius:var(--od-radius-md);font-size:var(--od-text-base);font-weight:var(--od-weight-semibold);transition:all .15s ease}
 .btn-primary{background:var(--od-primary);color:#fff;box-shadow:var(--od-shadow-sm)}
 .btn-primary:hover{background:var(--od-primary-hover);box-shadow:var(--od-shadow-md);transform:translateY(-1px)}
-
-/* 其他方式登录 */
-.alt{margin-top:var(--od-space-6)}
-.alt-divider{display:flex;align-items:center;gap:12px;color:var(--od-text-muted);font-size:var(--od-text-xs);margin-bottom:var(--od-space-4)}
-.alt-divider::before,.alt-divider::after{content:"";flex:1;height:1px;background:var(--od-border)}
-.alt-icons{display:flex;justify-content:center;gap:14px}
-.alt-btn{width:40px;height:40px;border-radius:var(--od-radius-full);border:1px solid var(--od-border);display:grid;place-items:center;color:var(--od-text-muted);background:var(--od-surface);transition:all .15s}
-.alt-btn:hover{color:var(--od-primary);border-color:var(--od-primary);background:var(--od-primary-soft)}
-.alt-btn svg{width:20px;height:20px}
-
-.register{margin-top:var(--od-space-5);text-align:center;font-size:var(--od-text-sm);color:var(--od-text-muted)}
 
 /* 默认账号提示 */
 .hint{margin-top:var(--od-space-5);background:var(--od-surface-2);border:1px dashed var(--od-border);border-radius:var(--od-radius-md);padding:11px 13px;font-size:var(--od-text-sm)}
@@ -252,8 +198,6 @@ a{color:inherit;text-decoration:none}
 .hint-accounts{display:flex;gap:8px;flex-wrap:wrap}
 .acct{font-family:var(--od-font-mono);font-size:var(--od-text-xs);background:var(--od-surface);border:1px solid var(--od-border);border-radius:var(--od-radius-sm);padding:4px 8px;color:var(--od-text)}
 .acct b{color:var(--od-primary);font-weight:var(--od-weight-semibold)}
-
-.foot-link{margin-top:var(--od-space-6);text-align:center;font-size:var(--od-text-xs);color:var(--od-text-muted)}
 
 @media(max-width:960px){
   .wrap{grid-template-columns:1fr}
