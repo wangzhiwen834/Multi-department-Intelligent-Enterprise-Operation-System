@@ -159,7 +159,7 @@ const gaugeOffset = computed(() => GAUGE_CIRC * (1 - (taskPct.value || 0) / 100)
             </span>
           </div>
           <div class="kpi-val" :class="{ danger: k.danger }">{{ k.val }}</div>
-          <div v-if="k.danger" class="kpi-warn">⚠ 落后时间进度 {{ timePct - taskPct }}%</div>
+          <div v-if="k.danger" class="kpi-warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> 落后时间进度 {{ timePct - taskPct }}%</div>
         </div>
       </div>
 

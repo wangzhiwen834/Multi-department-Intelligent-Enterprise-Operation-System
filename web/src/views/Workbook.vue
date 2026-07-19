@@ -177,7 +177,7 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
       <div class="od-tb-right">
         <!-- 锁徽标两态,绑现有 editing/holder -->
         <span v-if="editing" class="od-lock-editable">● 编辑中</span>
-        <span v-else-if="holder" class="od-lock-occupied">🔒 {{ holder }} 编辑中</span>
+        <span v-else-if="holder" class="od-lock-occupied"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> {{ holder }} 编辑中</span>
         <span v-else class="od-lock-view">查看</span>
         <button v-if="!editing && !holder" class="od-btn-primary" @click="startEdit">编辑</button>
         <button v-if="editing" class="od-btn-ghost" @click="endEdit">退出编辑</button>

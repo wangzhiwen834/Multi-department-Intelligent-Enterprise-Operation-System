@@ -106,7 +106,7 @@ const roleLabel = (r: string) => r === 'chairman' ? '董事长' : r === 'manager
       <div class="od-modal">
         <div class="od-modal-h">
           <h3>新建{{ isChairman ? '经理/员工' : '员工' }}</h3>
-          <button class="od-modal-x" @click="showCreate = false" aria-label="关闭">✕</button>
+          <button class="od-modal-x" @click="showCreate = false" aria-label="关闭"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="od-modal-b">
           <div class="od-modal-grid">
