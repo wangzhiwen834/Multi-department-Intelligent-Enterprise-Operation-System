@@ -11,6 +11,7 @@ interface TplSheet { key: string; columns: TplColumn[] }
 interface TemplateDef { sheets: TplSheet[] }
 
 const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+const isValidDate = (v: unknown) => typeof v === 'string' && /^\d{4}[-/]\d{2}[-/]\d{2}$/.test(v.trim());
 const typeCheck = (type: string, val: unknown): boolean => {
   if (isEmpty(val)) return true;
   switch (type) {
@@ -45,7 +46,7 @@ export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayl
 
   // upsert daily_metric(按 sheetKey 归属的 entry 列)
   for (const row of body.dailyMetrics ?? []) {
-    if (isEmpty(row.date)) continue; // 跳过空日期行
+    if (isEmpty(row.date) || !isValidDate(row.date)) continue; // 跳过空日期或非日期格式行（如表头"日期"）
     const sheetKey = row.sheetKey ?? 'daily_ops';
     const cols = entryColsBySheet.get(sheetKey) ?? [];
     for (const c of cols) {
