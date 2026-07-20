@@ -143,15 +143,15 @@ const save = async () => {
   } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 };
 
-// 导出当前工作簿为 Excel(.xlsx),查看态也可用
-const exportXlsx = () => {
-  if (!fwb || !tpl) { msg.value = '工作簿未就绪'; return; }
+// 导出当前工作簿为 Excel(.xlsx,含样式),查看态也可用
+const exportXlsx = async () => {
+  if (!fwb) { msg.value = '工作簿未就绪'; return; }
   try {
-    exportWorkbookToXlsx(fwb, tpl!.definition, `${props.shop.name}_${props.period}.xlsx`);
-    msg.value = '已导出 Excel 文件';
+    await exportWorkbookToXlsx(fwb, `${props.shop.name}_${props.period}.xlsx`);
+    msg.value = '已导出 Excel 文件(含样式)';
   } catch (e: any) { msg.value = `导出失败:${e.message}`; }
 };
-// 导入 Excel:需编辑态(持锁),覆盖当前工作表数据;导入后不自动保存,由用户检查后手动保存
+// 导入 Excel:需编辑态(持锁);用导入内容构建新工作簿快照并重建(保留样式);导入后不自动保存,由用户检查后手动保存
 const pickImport = () => {
   if (!editing.value) { msg.value = '请先进入编辑(获取锁)再导入'; return; }
   fileInputRef.value?.click();
@@ -159,13 +159,13 @@ const pickImport = () => {
 const onImportFile = async (e: Event) => {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
-  if (!file || !fwb || !tpl) return;
+  if (!file || !tpl) return;
   busy.value = true; msg.value = '';
   try {
     const buf = await file.arrayBuffer();
-    try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前编辑中的单元格 */ }
-    const n = await importXlsxToWorkbook(fwb, tpl!.definition, buf);
-    msg.value = `已导入 ${n} 张表,请检查后点「保存并同步」`;
+    const snapshot = await importXlsxToWorkbook(buf, tpl!.definition, `${props.shop.name} ${props.period}`);
+    mountWithSnapshot(snapshot);
+    msg.value = `已导入,请检查后点「保存并同步」`;
   } catch (e: any) { msg.value = `导入失败:${e.message}`; } finally {
     busy.value = false;
     input.value = '';
@@ -180,6 +180,15 @@ const mountUniver = async () => {
   fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl!.definition, `${props.shop.name} ${props.period}`);
   // Univer 创建后异步初始化可编辑权限(默认 true),延迟到初始化后再设只读;若用户先点编辑则 watch 会取消此定时器
   initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(false); }, 150);
+};
+// 用指定快照重建工作簿(导入用):dispose 旧实例 -> createWorkbook(snapshot) -> 按当前编辑态设可编辑
+const mountWithSnapshot = (snapshot: any) => {
+  if (initReadOnlyTimer) { clearTimeout(initReadOnlyTimer); initReadOnlyTimer = null; }
+  if (univerHandle) univerHandle.dispose();
+  const handle = setupUniver(containerRef.value!);
+  univerHandle = handle;
+  fwb = handle.univerAPI.createWorkbook(snapshot);
+  initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(editing.value); }, 150);
 };
 onMounted(async () => {
   me = await api.me().catch(() => null);
