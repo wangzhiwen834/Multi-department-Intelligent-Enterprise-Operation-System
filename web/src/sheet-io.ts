@@ -95,22 +95,6 @@ function downloadBlob(blob: Blob, filename: string) {
 // 导出整个工作簿(含样式)为 .xlsx 并下载。用 fwb.save() 拿完整快照,解析后写 exceljs。
 export async function exportWorkbookToXlsx(fwb: any, filename: string): Promise<void> {
   const snapshot = fwb.save();
-  // DEBUG:排查颜色/样式字段(临时,定位背景色等导出问题)
-  {
-    const _st = snapshot.styles || {};
-    console.log('[导出调试] styles keys:', Object.keys(_st));
-    const _k = Object.keys(_st)[0];
-    if (_k) console.log('[导出调试] sample style:', JSON.stringify(_st[_k]));
-    const _bgStyle = Object.values(_st).find((s: any) => s && s.bg);
-    if (_bgStyle) console.log('[导出调试] style with bg:', JSON.stringify(_bgStyle));
-    else console.log('[导出调试] 无 style 含 bg 字段(背景色可能存别处)');
-    outer: for (const _sid of (snapshot.sheetOrder || Object.keys(snapshot.sheets || {}))) {
-      const _cd = snapshot.sheets[_sid]?.cellData || {};
-      for (const _r in _cd) for (const _c in _cd[_r]) {
-        if (_cd[_r][_c]?.s) { console.log('[导出调试] sample cell.s:', JSON.stringify(_cd[_r][_c].s), '(type:', typeof _cd[_r][_c].s + ')'); break outer; }
-      }
-    }
-  }
   const wb = new ExcelJS.Workbook();
   const order: string[] = snapshot.sheetOrder || Object.keys(snapshot.sheets || {});
   for (const sheetId of order) {
