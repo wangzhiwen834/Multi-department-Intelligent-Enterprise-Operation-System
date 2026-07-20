@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage } from './types';
+import type { Shop, Template, Workbook, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
 
 const TOKEN_KEY = 'token';
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -37,6 +37,8 @@ export const api = {
     req<{ token: string; user: User }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   me: () => req<User>('/api/auth/me'),
   shops: () => req<Shop[]>('/api/shops'),
+  updateShopContact: (id: number, body: { address: string; phone: string }) =>
+    req<Shop>(`/api/shops/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   template: (code: string) => req<Template>(`/api/templates/${code}`),
   getWorkbook: (shopId: number, period: string) =>
     req<Workbook | null>(`/api/workbooks?shopId=${shopId}&period=${period}`),
@@ -69,6 +71,11 @@ export const api = {
   aiInfo: () => req<{ chatModel: string; posterModel: string; configured: boolean }>('/api/ai/info'),
   posterGenerate: (prompt: string, size?: string) =>
     req<{ image: string }>('/api/poster/generate', { method: 'POST', body: JSON.stringify({ prompt, size }) }),
+  posterLogos: () => req<Logo[]>('/api/poster/logos'),
+  posterUploadLogo: (image: string, originalName: string) =>
+    req<Logo>('/api/poster/logos', { method: 'POST', body: JSON.stringify({ image, originalName }) }),
+  posterDeleteLogo: (id: number) =>
+    req<{ ok: boolean }>(`/api/poster/logos/${id}`, { method: 'DELETE' }),
   listUsers: () => req<User[]>('/api/users'),
   createUser: (b: { username: string; password: string; name: string; role: 'manager' | 'employee'; department?: string | null; phone?: string }) =>
     req<User>('/api/users', { method: 'POST', body: JSON.stringify(b) }),

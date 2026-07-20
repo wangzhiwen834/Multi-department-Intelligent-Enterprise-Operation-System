@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { Canvas, IText, FabricImage, Rect, Shadow } from 'fabric';
+import type { Logo } from '../types';
 
 // 编辑画布逻辑尺寸(9:16)。导出时 multiplier=2 -> 1080×1920。
 const EW = 540;
@@ -12,6 +13,10 @@ const props = defineProps<{
   bgImage: string;
   shopName: string;
   date: string;
+  logos: Logo[];
+  shopAddress: string;
+  shopPhone: string;
+  contactOptions: { id: number; name: string; address: string; phone: string }[];
 }>();
 
 const emit = defineEmits<{ (e: 'ready'): void }>();
@@ -26,6 +31,9 @@ let ro: ResizeObserver | null = null;
 interface SelState { fontSize: number; fill: string; bold: boolean; align: 'left' | 'center' | 'right'; }
 const sel = ref<SelState | null>(null);
 const cropMode = ref(false);
+const showLogoPicker = ref(false);
+const showContactPicker = ref(false);
+const hasSelection = ref(false);
 
 let cropMarquee: Rect | null = null;
 let cropBands: Rect[] = [];
@@ -121,7 +129,7 @@ async function init() {
 
   canvas.on('selection:created', updateSel);
   canvas.on('selection:updated', updateSel);
-  canvas.on('selection:cleared', () => { sel.value = null; });
+  canvas.on('selection:cleared', () => { sel.value = null; hasSelection.value = false; });
   canvas.on('object:modified', updateSel);
 
   bgImgObj = await loadBg(props.bgImage);
@@ -158,6 +166,7 @@ watch(() => props.date, v => syncText('date', v));
 function updateSel() {
   if (!canvas) return;
   const o = canvas.getActiveObject();
+  hasSelection.value = !!o;
   if (o && o instanceof IText) {
     sel.value = {
       fontSize: Math.round(o.fontSize || 36),
@@ -180,6 +189,55 @@ function addText() {
   canvas.setActiveObject(t);
   canvas.requestRenderAll();
   updateSel();
+}
+
+// ---------- 工具栏:企业 logo ----------
+function toggleLogoPicker() {
+  showLogoPicker.value = !showLogoPicker.value;
+  showContactPicker.value = false;
+}
+async function addLogo(url: string) {
+  if (!canvas) return;
+  showLogoPicker.value = false;
+  const img = await FabricImage.fromURL(url);
+  const targetW = EW * 0.28;
+  const s = targetW / (img.width || targetW);
+  img.scale(s);
+  img.set({ left: 20, top: 20, originX: 'left', originY: 'top' });
+  (img as unknown as { role: string }).role = 'logo';
+  canvas.add(img);
+  canvas.setActiveObject(img);
+  canvas.requestRenderAll();
+  updateSel();
+}
+
+// ---------- 工具栏:联系信息(地址 / 电话) ----------
+// 优先用当前选中店铺的预设;若未选或该店无信息,弹选择器从其他已填店铺挑一个。
+const hasContact = computed(() => !!(props.shopAddress?.trim() || props.shopPhone?.trim()));
+function addContactText(addr: string, phone: string) {
+  if (!canvas) return;
+  showContactPicker.value = false;
+  // 地址在上、电话在下,底部居中;作为独立文字图层便于分别调整。
+  if (addr) {
+    canvas.add(makeText('address', addr, { fontSize: 20, originX: 'center', originY: 'bottom', left: EW / 2, top: EH - 56, textAlign: 'center' }));
+  }
+  if (phone) {
+    canvas.add(makeText('phone', phone, { fontSize: 20, originX: 'center', originY: 'bottom', left: EW / 2, top: EH - 28, textAlign: 'center' }));
+  }
+  canvas.requestRenderAll();
+}
+function openContact() {
+  if (!canvas) return;
+  showLogoPicker.value = false;
+  if (hasContact.value) {
+    addContactText(props.shopAddress.trim(), props.shopPhone.trim());
+    return;
+  }
+  if (props.contactOptions.length) {
+    showContactPicker.value = true;
+  } else {
+    alert('请先在左侧「店铺联系信息」填写并保存地址 / 电话。');
+  }
 }
 
 function deleteSelected() {
@@ -298,6 +356,8 @@ function updateBands() {
 }
 function enterCrop() {
   if (!canvas || cropMarquee) return;
+  showLogoPicker.value = false;
+  showContactPicker.value = false;
   const CW = canvas.getWidth(), CH = canvas.getHeight();
   canvas.discardActiveObject();
   canvas.getObjects().forEach(o => { o.set({ selectable: false, evented: false }); });
@@ -393,7 +453,15 @@ onBeforeUnmount(() => {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
           添加文字
         </button>
-        <button class="pe-btn" :disabled="!sel" @click="deleteSelected" title="删除选中">
+        <button class="pe-btn" :class="{ on: showLogoPicker }" @click="toggleLogoPicker" title="添加企业 logo">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 20"/></svg>
+          Logo
+        </button>
+        <button class="pe-btn" @click="openContact" title="添加地址 / 电话到画布">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          联系信息
+        </button>
+        <button class="pe-btn" :disabled="!hasSelection" @click="deleteSelected" title="删除选中">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
           删除
         </button>
@@ -403,12 +471,30 @@ onBeforeUnmount(() => {
         </button>
         <button class="pe-btn" @click="resetSeedTexts" title="补回店名/日期/文案">重置文字</button>
         <span class="pe-sep"></span>
-        <button class="pe-btn icon" :disabled="!sel" @click="bringForward" title="上移一层">
+        <button class="pe-btn icon" :disabled="!hasSelection" @click="bringForward" title="上移一层">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         </button>
-        <button class="pe-btn icon" :disabled="!sel" @click="sendBackward" title="下移一层">
+        <button class="pe-btn icon" :disabled="!hasSelection" @click="sendBackward" title="下移一层">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         </button>
+
+        <!-- logo 选择浮层 -->
+        <div v-if="showLogoPicker" class="pe-logo-picker">
+          <div v-if="logos.length" class="pe-logo-grid">
+            <div v-for="l in logos" :key="l.id" class="pe-logo-thumb" @click="addLogo(l.url)" :title="`添加 ${l.original_name}`">
+              <img :src="l.url" :alt="l.original_name" />
+            </div>
+          </div>
+          <div v-else class="pe-logo-empty">暂无 logo,请在左侧「企业 Logo」上传后再添加。</div>
+        </div>
+
+        <!-- 联系信息选择浮层(当前店铺无信息时,从其他已填店铺挑一个) -->
+        <div v-if="showContactPicker" class="pe-contact-picker">
+          <div v-for="c in contactOptions" :key="c.id" class="pe-contact-opt" @click="addContactText(c.address.trim(), c.phone.trim())">
+            <div class="pe-contact-opt-name">{{ c.name }}</div>
+            <div class="pe-contact-opt-info">{{ [c.address, c.phone].filter(Boolean).join(' · ') || '无信息' }}</div>
+          </div>
+        </div>
       </template>
       <template v-else>
         <span class="pe-hint">拖动 / 缩放白框选裁剪范围</span>
@@ -443,7 +529,7 @@ onBeforeUnmount(() => {
       <div class="pe-canvas-wrap" ref="wrapRef">
         <canvas ref="canvasEl"></canvas>
       </div>
-      <p class="pe-tip">双击文字可直接编辑内容;拖动调整位置;选中后可改字号 / 颜色 / 对齐 / 层级。裁剪作用于整张海报。</p>
+      <p class="pe-tip">双击文字可直接编辑内容;拖动调整位置;选中后可改字号 / 颜色 / 对齐 / 层级。点「Logo」「联系信息」把预设素材放到画布。裁剪作用于整张海报。</p>
     </div>
   </div>
 </template>
@@ -452,7 +538,7 @@ onBeforeUnmount(() => {
 .pe-wrap, .pe-wrap * { box-sizing: border-box; }
 .pe-wrap { display: flex; flex-direction: column; gap: var(--od-space-3); font-family: var(--od-font-sans); }
 
-.pe-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); }
+.pe-toolbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); }
 .pe-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; min-width: 32px; padding: 0 10px; border: 1px solid var(--od-border); border-radius: var(--od-radius-md); background: var(--od-surface); color: var(--od-text); font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); cursor: pointer; transition: all .15s; }
 .pe-btn.icon { padding: 0; width: 32px; font-size: 13px; }
 .pe-btn:hover:not(:disabled) { background: var(--od-surface-2); border-color: color-mix(in oklab, var(--od-border), black 10%); }
@@ -467,6 +553,21 @@ onBeforeUnmount(() => {
 .pe-swatches { display: inline-flex; gap: 4px; margin-left: 4px; }
 .pe-sw { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--od-border); cursor: pointer; padding: 0; }
 .pe-sw.on { border-color: var(--od-primary); box-shadow: 0 0 0 2px var(--od-primary-soft); }
+
+/* logo 选择浮层 */
+.pe-logo-picker { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-md); box-shadow: var(--od-shadow-md); padding: 10px; }
+.pe-logo-grid { display: grid; grid-template-columns: repeat(3, 88px); gap: 8px; }
+.pe-logo-thumb { width: 88px; height: 88px; border: 1px solid var(--od-border); border-radius: var(--od-radius-sm); overflow: hidden; cursor: pointer; background: var(--od-surface-2); display: grid; place-items: center; transition: border-color .15s; }
+.pe-logo-thumb:hover { border-color: var(--od-primary); }
+.pe-logo-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pe-logo-empty { font-size: var(--od-text-xs); color: var(--od-text-muted); padding: 14px 10px; text-align: center; width: 240px; }
+
+/* 联系信息选择浮层 */
+.pe-contact-picker { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-md); box-shadow: var(--od-shadow-md); padding: 6px; min-width: 220px; max-width: 300px; }
+.pe-contact-opt { padding: 8px 10px; border-radius: var(--od-radius-sm); cursor: pointer; transition: background .15s; }
+.pe-contact-opt:hover { background: var(--od-surface-2); }
+.pe-contact-opt-name { font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); color: var(--od-text); }
+.pe-contact-opt-info { font-size: var(--od-text-xs); color: var(--od-text-muted); margin-top: 2px; }
 
 .pe-stage { display: flex; flex-direction: column; align-items: center; gap: var(--od-space-2); }
 .pe-canvas-wrap { width: 100%; max-width: 540px; display: flex; justify-content: center; border-radius: var(--od-radius-lg); overflow: hidden; box-shadow: var(--od-shadow-lg); border: 1px solid var(--od-border); background: var(--od-surface-2); }

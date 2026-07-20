@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'node:path';
 
 const required = (k: string) => {
   const v = process.env[k];
@@ -16,4 +17,6 @@ export const config = {
   doubaoModel: process.env.DOUBAO_MODEL ?? 'doubao-seed-2-1-pro-260628',
   doubaoBaseUrl: process.env.DOUBAO_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3',
   posterModel: process.env.POSTER_MODEL ?? 'doubao-seedream-4-0-250828',
+  // 上传文件根目录(企业 logo 等);默认 server/uploads,可由 UPLOADS_DIR 覆盖
+  uploadsDir: process.env.UPLOADS_DIR ?? path.resolve(process.cwd(), 'uploads'),
 };

@@ -6,6 +6,19 @@ export interface Template { id: number; business_code: string; version: number; 
 export interface Shop {
   id: number; code: string; name: string; status: string;
   business_code: string; business_name: string;
+  address: string | null;
+  phone: string | null;
+}
+
+// 企业 logo(全局共享,海报素材)
+export interface Logo {
+  id: number;
+  filename: string;
+  original_name: string;
+  mime: string;
+  size: number;
+  url: string;
+  created_at: string;
 }
 export interface Workbook { id: number; shop_id: number; period: string; template_version: number; status: string }
 

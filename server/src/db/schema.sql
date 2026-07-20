@@ -112,3 +112,16 @@ ALTER TABLE sheet_lock ADD COLUMN IF NOT EXISTS request_user_name TEXT;
 
 -- 03 大屏:门店月度目标(任务完成进度用)
 ALTER TABLE shop ADD COLUMN IF NOT EXISTS monthly_target NUMERIC NOT NULL DEFAULT 0;
+
+-- 04 海报:企业 logo(全局共享,不绑定店铺) + 门店联系信息(按店铺各一份)
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE shop ADD COLUMN IF NOT EXISTS phone TEXT;
+
+CREATE TABLE IF NOT EXISTS poster_logo (
+  id SERIAL PRIMARY KEY,
+  filename TEXT NOT NULL,        -- 磁盘存储名(随机 id + 扩展名)
+  original_name TEXT NOT NULL,   -- 用户上传时的原始文件名
+  mime TEXT NOT NULL,
+  size INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);

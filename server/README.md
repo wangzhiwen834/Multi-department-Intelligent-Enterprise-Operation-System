@@ -44,4 +44,14 @@ npm run dev                   # 开发服务器 :3000
 - `PATCH /api/users/:id` (董事长/经理,按权限范围)
 - `DELETE /api/users/:id`(软删=禁用)
 
-> 地基仅含鉴权/权限/日志。Univer 录入+悲观锁+同步、大屏、AI、海报在后续子计划(02-06)实现。
+> 地基含鉴权/权限/日志。其余模块已实现:工作簿录入 + 悲观锁 + 同步 + 台账(02)、数据大屏(03)、AI 助手(04)、海报(05)。
+
+## 海报相关接口
+
+- `POST /api/poster/generate`         文生图生成海报背景(返回 base64 dataUrl)
+- `GET  /api/poster/logos`            列出企业 logo
+- `POST /api/poster/logos`            上传 logo(body: base64 dataUrl + originalName,≤2MB,PNG/JPEG/WebP)
+- `DELETE /api/poster/logos/:id`      删除 logo(同步删磁盘文件)
+- `GET  /api/uploads/logos/:filename` logo 静态文件(公开,供 `<img>` 直接加载)
+- `GET  /api/shops`                   门店列表(含 `address` / `phone`)
+- `PATCH /api/shops/:id`              更新门店地址 / 电话(海报预设用)

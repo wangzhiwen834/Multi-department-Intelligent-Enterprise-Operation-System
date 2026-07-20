@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, useTemplateRef, watch } from 'vue';
 import { api } from '../api';
-import type { Shop } from '../types';
+import type { Shop, Logo } from '../types';
 import PosterEditor from './PosterEditor.vue';
 import PosterLoading from './PosterLoading.vue';
 
@@ -65,9 +65,72 @@ const model = ref('');
 const editorRef = useTemplateRef<InstanceType<typeof PosterEditor>>('editorRef');
 
 const shopName = computed(() => shops.value.find(s => s.id === shopId.value)?.name ?? '');
+const shopAddress = computed(() => shops.value.find(s => s.id === shopId.value)?.address ?? '');
+const shopPhone = computed(() => shops.value.find(s => s.id === shopId.value)?.phone ?? '');
+const contactOptions = computed(() => shops.value
+  .filter(s => !!(s.address?.trim() || s.phone?.trim()))
+  .map(s => ({ id: s.id, name: s.name, address: s.address ?? '', phone: s.phone ?? '' })));
+
+// 企业 logo(全局共享,永久保存到服务端)
+const logos = ref<Logo[]>([]);
+const logoUploading = ref(false);
+const logoErr = ref('');
+async function loadLogos() { try { logos.value = await api.posterLogos(); } catch { /* ignore */ } }
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(new Error('读取文件失败'));
+    r.readAsDataURL(file);
+  });
+}
+async function onLogoFile(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  logoUploading.value = true; logoErr.value = '';
+  try {
+    const dataUrl = await readFileAsDataUrl(file);
+    const logo = await api.posterUploadLogo(dataUrl, file.name);
+    logos.value.unshift(logo);
+  } catch (e: any) { logoErr.value = e.message; } finally {
+    logoUploading.value = false;
+    input.value = '';
+  }
+}
+async function deleteLogo(id: number) {
+  if (!confirm('确定删除该 logo?')) return;
+  try { await api.posterDeleteLogo(id); logos.value = logos.value.filter(l => l.id !== id); }
+  catch (e: any) { alert(e.message); }
+}
+
+// 店铺联系信息(按店铺各一份,海报预设)
+const contactDraft = ref<Record<number, { address: string; phone: string }>>({});
+const contactSaving = ref<number | null>(null);
+const contactSaved = ref<number | null>(null);
+watch(shops, list => {
+  for (const s of list) {
+    if (!contactDraft.value[s.id]) contactDraft.value[s.id] = { address: s.address ?? '', phone: s.phone ?? '' };
+  }
+}, { immediate: true, deep: true });
+async function saveContact(id: number) {
+  const d = contactDraft.value[id];
+  if (!d) return;
+  contactSaving.value = id;
+  try {
+    const updated = await api.updateShopContact(id, { address: d.address, phone: d.phone });
+    const i = shops.value.findIndex(s => s.id === id);
+    if (i >= 0) shops.value[i] = { ...shops.value[i], address: updated.address, phone: updated.phone };
+    contactDraft.value[id] = { address: updated.address ?? '', phone: updated.phone ?? '' };
+    contactSaved.value = id;
+    setTimeout(() => { if (contactSaved.value === id) contactSaved.value = null; }, 1500);
+  } catch (e: any) { alert(e.message); } finally { contactSaving.value = null; }
+}
+
 onMounted(() => {
   api.shops().then(r => { shops.value = r; });
   api.aiInfo().then(i => model.value = i.posterModel);
+  loadLogos();
 });
 
 const generate = async () => {
@@ -101,6 +164,7 @@ const download = () => {
 
     <div class="layout">
       <!-- 左:配置区 -->
+      <div class="left-col">
       <div class="card">
         <div class="card-h">海报配置</div>
         <div class="card-desc">提示词驱动文生图背景,生成后在画布上直接编辑店名 / 日期,可新增文字、裁剪、调层级。</div>
@@ -162,6 +226,41 @@ const download = () => {
         <div class="hint-txt" style="text-align:center;margin-top:8px">预计耗时约 10-30 秒</div>
       </div>
 
+      <!-- 企业 Logo(全局共享,可传多个,永久保存) -->
+      <div class="card">
+        <div class="card-h">企业 Logo</div>
+        <div class="card-desc">上传后永久保存,做海报时点画布工具栏「Logo」把缩略图加到画布。支持 PNG / JPEG / WebP,单张 ≤ 2MB。</div>
+        <div class="logo-grid">
+          <div v-for="l in logos" :key="l.id" class="logo-cell">
+            <img :src="l.url" :alt="l.original_name" />
+            <button class="logo-del" type="button" @click="deleteLogo(l.id)" title="删除该 logo">×</button>
+          </div>
+          <label class="logo-add" :class="{ disabled: logoUploading }">
+            <input type="file" accept="image/png,image/jpeg,image/webp" hidden @change="onLogoFile" :disabled="logoUploading" />
+            <span v-if="!logoUploading">＋ 上传</span>
+            <span v-else>上传中…</span>
+          </label>
+        </div>
+        <div v-if="logoErr" class="err-box">{{ logoErr }}</div>
+      </div>
+
+      <!-- 店铺联系信息(按店铺各一份,海报预设) -->
+      <div class="card">
+        <div class="card-h">店铺联系信息</div>
+        <div class="card-desc">预设每个门店的地址与电话;做海报选了店铺后,点画布工具栏「联系信息」一键加到画布。</div>
+        <div v-for="s in shops" :key="s.id" class="contact-row">
+          <div class="contact-name">{{ s.name }}</div>
+          <input v-model="contactDraft[s.id].address" class="input contact-input" placeholder="地址" />
+          <input v-model="contactDraft[s.id].phone" class="input contact-input" placeholder="电话" />
+          <button class="btn btn-ghost contact-save" type="button"
+            :disabled="contactSaving === s.id" @click="saveContact(s.id)">
+            {{ contactSaving === s.id ? '保存中…' : contactSaved === s.id ? '已保存 ✓' : '保存' }}
+          </button>
+        </div>
+        <div v-if="!shops.length" class="hint-txt">暂无门店。</div>
+      </div>
+      </div>
+
       <!-- 右:预览区 -->
       <div class="preview-area">
         <div class="preview-block">
@@ -185,7 +284,8 @@ const download = () => {
               <!-- 编辑器(已生成过;再次生成时叠加遮罩,保留文字编辑) -->
               <template v-else>
                 <div class="pe-host">
-                  <PosterEditor ref="editorRef" :bg-image="bgImage" :shop-name="shopName" :date="date" />
+                  <PosterEditor ref="editorRef" :bg-image="bgImage" :shop-name="shopName" :date="date"
+                    :logos="logos" :shop-address="shopAddress" :shop-phone="shopPhone" :contact-options="contactOptions" />
                   <div v-if="loading" class="gen-overlay">
                     <PosterLoading />
                   </div>
@@ -255,6 +355,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* 布局 */
 .layout { display: grid; grid-template-columns: 380px 1fr; gap: var(--od-space-5); max-width: 1180px; margin: 0 auto; align-items: start; }
+.left-col { display: flex; flex-direction: column; gap: var(--od-space-5); }
 @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
 
 /* 卡片 */
@@ -355,4 +456,21 @@ textarea.input { height: auto; padding: 10px 12px; background-image: none; paddi
 .tpl-add { height: 40px; width: auto; padding: 0 16px; }
 .tpl-foot { padding: 10px 18px; border-top: 1px solid var(--od-border); font-size: var(--od-text-xs); color: var(--od-text-muted); background: var(--od-surface-2); }
 @media (max-width: 560px) { .tpl-row, .tpl-new { grid-template-columns: 1fr; } .tpl-add, .tpl-del { width: 100%; } }
+
+/* logo 管理 */
+.logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.logo-cell { position: relative; aspect-ratio: 1; border: 1px solid var(--od-border); border-radius: var(--od-radius-md); overflow: hidden; background: var(--od-surface-2); display: grid; place-items: center; }
+.logo-cell img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(15,23,42,.7); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.logo-del:hover { background: var(--od-danger); }
+.logo-add { aspect-ratio: 1; border: 1px dashed var(--od-border); border-radius: var(--od-radius-md); display: grid; place-items: center; cursor: pointer; color: var(--od-text-muted); font-size: var(--od-text-sm); background: var(--od-surface); transition: all .15s; }
+.logo-add:hover { border-color: var(--od-primary); color: var(--od-primary); background: var(--od-primary-soft); }
+.logo-add.disabled { opacity: .5; cursor: wait; }
+
+/* 店铺联系信息 */
+.contact-row { display: grid; grid-template-columns: 90px 1fr 1fr 64px; gap: 8px; align-items: center; margin-bottom: 10px; }
+.contact-name { font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); color: var(--od-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-input { height: 36px; }
+.contact-save { height: 36px; width: 100%; font-size: var(--od-text-sm); }
+@media (max-width: 560px) { .contact-row { grid-template-columns: 1fr; } .contact-name { margin-top: 4px; } }
 </style>
