@@ -10,7 +10,7 @@ interface TplColumn { key: string; type: string; kind: string }
 interface TplSheet { key: string; columns: TplColumn[] }
 interface TemplateDef { sheets: TplSheet[] }
 
-const isEmpty = (v: unknown) => v === null || v === undefined || v === '';
+const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
 const typeCheck = (type: string, val: unknown): boolean => {
   if (isEmpty(val)) return true;
   switch (type) {
@@ -60,7 +60,7 @@ export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayl
        VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT (shop_id, date) DO UPDATE
        SET metrics = daily_metric.metrics || $4, source_workbook_id=$5, updated_at=now()`,
-      [wb.shop_id, row.date, shopBiz.bcode, JSON.stringify(metrics), wbId],
+      [wb.shop_id, isEmpty(row.date) ? null : row.date, shopBiz.bcode, JSON.stringify(metrics), wbId],
     );
   }
 
@@ -71,7 +71,7 @@ export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayl
     await query(
       `INSERT INTO expense (shop_id, pay_date, attribution_month, summary, amount, payee, subject, source_workbook_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [wb.shop_id, e.pay_date, e.attribution_month, e.summary, Number(e.amount) || 0, e.payee, e.subject, wbId],
+      [wb.shop_id, isEmpty(e.pay_date) ? null : e.pay_date, isEmpty(e.attribution_month) ? null : e.attribution_month, isEmpty(e.summary) ? null : e.summary, Number(e.amount) || 0, isEmpty(e.payee) ? null : e.payee, isEmpty(e.subject) ? null : e.subject, wbId],
     );
   }
 
