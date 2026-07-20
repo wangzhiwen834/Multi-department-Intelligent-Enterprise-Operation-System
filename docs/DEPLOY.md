@@ -220,7 +220,7 @@ server {
     }
 
     # API 反向代理到后端
-    location /api/ {
+    location ^~ /api/ {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -248,7 +248,7 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    location /api/ {
+    location ^~ /api/ {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
