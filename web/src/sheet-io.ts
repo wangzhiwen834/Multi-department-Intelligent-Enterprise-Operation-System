@@ -11,7 +11,7 @@ const rgbToArgb = (rgb?: string): string | undefined => {
   const s = rgb.trim();
   const m1 = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
   if (m1) {
-    const hex = (n: number) => Number(n).toString(16).padStart(2, '0');
+    const hex = (n: string | number) => Number(n).toString(16).padStart(2, '0');
     return `FF${hex(m1[1])}${hex(m1[2])}${hex(m1[3])}`.toUpperCase();
   }
   const h = s.replace(/^#/, '');
