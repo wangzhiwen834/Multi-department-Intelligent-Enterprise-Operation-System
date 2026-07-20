@@ -45,6 +45,7 @@ export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayl
 
   // upsert daily_metric(按 sheetKey 归属的 entry 列)
   for (const row of body.dailyMetrics ?? []) {
+    if (isEmpty(row.date)) continue; // 跳过空日期行
     const sheetKey = row.sheetKey ?? 'daily_ops';
     const cols = entryColsBySheet.get(sheetKey) ?? [];
     for (const c of cols) {
