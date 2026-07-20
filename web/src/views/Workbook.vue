@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../api';
 import { setupUniver, buildFromTemplate, extractForSync } from '../univer';
+import { exportWorkbookToXlsx, importXlsxToWorkbook } from '../sheet-io';
 import type { Shop, Template, SyncResult, User } from '../types';
 
 const props = defineProps<{ shop: Shop; period: string }>();
@@ -20,6 +21,7 @@ const holder = ref<string | null>(null);
 const msg = ref('');
 const syncResult = ref<SyncResult | null>(null);
 const busy = ref(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const SHEET_KEY = 'daily_ops';
 
@@ -141,6 +143,35 @@ const save = async () => {
   } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 };
 
+// 导出当前工作簿为 Excel(.xlsx),查看态也可用
+const exportXlsx = () => {
+  if (!fwb || !tpl) { msg.value = '工作簿未就绪'; return; }
+  try {
+    exportWorkbookToXlsx(fwb, tpl!.definition, `${props.shop.name}_${props.period}.xlsx`);
+    msg.value = '已导出 Excel 文件';
+  } catch (e: any) { msg.value = `导出失败:${e.message}`; }
+};
+// 导入 Excel:需编辑态(持锁),覆盖当前工作表数据;导入后不自动保存,由用户检查后手动保存
+const pickImport = () => {
+  if (!editing.value) { msg.value = '请先进入编辑(获取锁)再导入'; return; }
+  fileInputRef.value?.click();
+};
+const onImportFile = async (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !fwb || !tpl) return;
+  busy.value = true; msg.value = '';
+  try {
+    const buf = await file.arrayBuffer();
+    try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前编辑中的单元格 */ }
+    const n = await importXlsxToWorkbook(fwb, tpl!.definition, buf);
+    msg.value = `已导入 ${n} 张表,请检查后点「保存并同步」`;
+  } catch (e: any) { msg.value = `导入失败:${e.message}`; } finally {
+    busy.value = false;
+    input.value = '';
+  }
+};
+
 const mountUniver = async () => {
   const snap = await api.getSnapshot(wbId);
   if (univerHandle) univerHandle.dispose();
@@ -182,7 +213,10 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
         <button v-if="!editing && !holder" class="od-btn-primary" @click="startEdit">编辑</button>
         <button v-if="editing" class="od-btn-ghost" @click="endEdit">退出编辑</button>
         <button v-if="holder" class="od-btn-takeover" @click="takeover">接管</button>
+        <button class="od-btn-ghost" @click="exportXlsx" title="导出当前工作簿为 Excel 文件">导出</button>
+        <button class="od-btn-ghost" @click="pickImport" :disabled="!editing || busy" title="从 Excel 导入,覆盖当前数据(需先编辑)">导入</button>
         <button class="od-btn-ghost" @click="save" :disabled="!editing || busy">保存并同步</button>
+        <input ref="fileInputRef" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" @change="onImportFile" />
       </div>
     </div>
     <div v-if="msg" class="od-wb-msg">{{ msg }}</div>

@@ -14,7 +14,8 @@
     "echarts": "^5.5.1",
     "fabric": "^6.9.1",
     "marked": "^18.0.6",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.5.0",
