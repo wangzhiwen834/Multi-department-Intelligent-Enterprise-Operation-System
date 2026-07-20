@@ -101,6 +101,9 @@ export async function exportWorkbookToXlsx(fwb: any, filename: string): Promise<
     console.log('[导出调试] styles keys:', Object.keys(_st));
     const _k = Object.keys(_st)[0];
     if (_k) console.log('[导出调试] sample style:', JSON.stringify(_st[_k]));
+    const _bgStyle = Object.values(_st).find((s: any) => s && s.bg);
+    if (_bgStyle) console.log('[导出调试] style with bg:', JSON.stringify(_bgStyle));
+    else console.log('[导出调试] 无 style 含 bg 字段(背景色可能存别处)');
     outer: for (const _sid of (snapshot.sheetOrder || Object.keys(snapshot.sheets || {}))) {
       const _cd = snapshot.sheets[_sid]?.cellData || {};
       for (const _r in _cd) for (const _c in _cd[_r]) {
