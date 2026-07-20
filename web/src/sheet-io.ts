@@ -5,11 +5,19 @@ import type { TemplateDef } from './types';
 const MAX_ROWS = 400;
 
 // ---------- 颜色 / 单位换算 ----------
-// Univer '#RRGGBB' -> exceljs 'FFRRGGBB'(加 FF alpha)
+// Univer '#RRGGBB' -> exceljs 'FFRRGGBB'(加 FF alpha)。兼容 rgb(r,g,b) / RRGGBB / #AARRGGBB 等多种格式
 const rgbToArgb = (rgb?: string): string | undefined => {
   if (!rgb) return undefined;
-  const m = rgb.match(/^#?([0-9a-fA-F]{6})$/);
-  return m ? `FF${m[1].toUpperCase()}` : undefined;
+  const s = rgb.trim();
+  const m1 = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (m1) {
+    const hex = (n: number) => Number(n).toString(16).padStart(2, '0');
+    return `FF${hex(m1[1])}${hex(m1[2])}${hex(m1[3])}`.toUpperCase();
+  }
+  const h = s.replace(/^#/, '');
+  if (/^[0-9a-fA-F]{6}$/.test(h)) return `FF${h.toUpperCase()}`;
+  if (/^[0-9a-fA-F]{8}$/.test(h)) return h.toUpperCase();
+  return undefined;
 };
 // exceljs 'FFRRGGBB' / 'RRGGBB' -> Univer '#RRGGBB'
 const argbToRgb = (argb?: string): string | undefined => {
@@ -53,7 +61,7 @@ function applyStyleToCell(cell: ExcelJS.Cell, st: any) {
   if (Object.keys(font).length) cell.font = font;
 
   const bg = rgbToArgb(st.bg?.rgb);
-  if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+  if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg }, bgColor: { argb: bg } };
 
   const alignment: any = {};
   if (HT_TO_EXCEL[st.ht]) alignment.horizontal = HT_TO_EXCEL[st.ht];
@@ -87,6 +95,19 @@ function downloadBlob(blob: Blob, filename: string) {
 // 导出整个工作簿(含样式)为 .xlsx 并下载。用 fwb.save() 拿完整快照,解析后写 exceljs。
 export async function exportWorkbookToXlsx(fwb: any, filename: string): Promise<void> {
   const snapshot = fwb.save();
+  // DEBUG:排查颜色/样式字段(临时,定位背景色等导出问题)
+  {
+    const _st = snapshot.styles || {};
+    console.log('[导出调试] styles keys:', Object.keys(_st));
+    const _k = Object.keys(_st)[0];
+    if (_k) console.log('[导出调试] sample style:', JSON.stringify(_st[_k]));
+    outer: for (const _sid of (snapshot.sheetOrder || Object.keys(snapshot.sheets || {}))) {
+      const _cd = snapshot.sheets[_sid]?.cellData || {};
+      for (const _r in _cd) for (const _c in _cd[_r]) {
+        if (_cd[_r][_c]?.s) { console.log('[导出调试] sample cell.s:', JSON.stringify(_cd[_r][_c].s), '(type:', typeof _cd[_r][_c].s + ')'); break outer; }
+      }
+    }
+  }
   const wb = new ExcelJS.Workbook();
   const order: string[] = snapshot.sheetOrder || Object.keys(snapshot.sheets || {});
   for (const sheetId of order) {
