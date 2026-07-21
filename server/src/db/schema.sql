@@ -131,3 +131,8 @@ CREATE TABLE IF NOT EXISTS poster_logo (
 -- 子项目1:工作簿软删除(保留 snapshot 与已同步 metric,大屏数据不受影响)
 ALTER TABLE workbook ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_workbook_shop_period_live ON workbook(shop_id, period) WHERE deleted_at IS NULL;
+
+-- 子项目3:AI 抽取管线溯源 + 调度跳过标记
+ALTER TABLE workbook ADD COLUMN IF NOT EXISTS last_extracted_at TIMESTAMPTZ;  -- 上次 AI 抽取时间(调度跳过 + /status)
+ALTER TABLE daily_metric ADD COLUMN IF NOT EXISTS last_source TEXT;            -- 'ai'(替代 sync 后唯一来源,留字段备查)
+ALTER TABLE expense ADD COLUMN IF NOT EXISTS source TEXT;                      -- 'ai'

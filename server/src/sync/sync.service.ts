@@ -1,5 +1,6 @@
 import { query } from '../db/pool.js';
 import type { TokenPayload } from '../auth/jwt.js';
+import { isEmpty, isValidDate, typeCheck } from '../extraction/validate.js';
 
 interface SyncBody {
   dailyMetrics: { date: string; sheetKey?: string; metrics: Record<string, unknown> }[];
@@ -9,18 +10,6 @@ interface SyncBody {
 interface TplColumn { key: string; type: string; kind: string }
 interface TplSheet { key: string; columns: TplColumn[] }
 interface TemplateDef { sheets: TplSheet[] }
-
-const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
-const isValidDate = (v: unknown) => typeof v === 'string' && /^\d{4}[-/]\d{2}[-/]\d{2}$/.test(v.trim());
-const typeCheck = (type: string, val: unknown): boolean => {
-  if (isEmpty(val)) return true;
-  switch (type) {
-    case 'number': return typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val)));
-    case 'int': return Number.isInteger(Number(val));
-    case 'date': return typeof val === 'string' || val instanceof Date;
-    default: return true; // text
-  }
-};
 
 export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayload) => {
   // 保存防覆盖:校验锁归属
