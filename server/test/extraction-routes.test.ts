@@ -60,14 +60,31 @@ async function acquire() {
   await request(app).post(`/api/workbooks/${wbId}/locks/daily_ops`).set('Authorization', `Bearer ${managerT}`);
 }
 
+// 解析 SSE 流:取所有 data: 事件;doneResult 取末尾 done 事件的 result
+function parseSSE(text: string): any[] {
+  return text.split('\n\n').filter(Boolean).map(chunk => {
+    const line = chunk.split('\n').find(l => l.startsWith('data: '));
+    try { return line ? JSON.parse(line.slice(6)) : null; } catch { return null; }
+  }).filter(Boolean);
+}
+function doneResult(text: string): any {
+  return parseSSE(text).find((e: any) => e.stage === 'done')?.result;
+}
+
 describe('POST /api/workbooks/:id/extract', () => {
-  it('manager 手动抽取 -> 200', async () => {
+  it('manager 手动抽取 -> 200 + done ok', async () => {
     mockOk();
     const r = await request(app).post(`/api/workbooks/${wbId}/extract`).set('Authorization', `Bearer ${managerT}`)
       .send({ source: 'manual' });
     expect(r.status).toBe(200);
-    expect(r.body.ok).toBe(true);
-    expect(r.body.extracted.dailyMetrics).toBe(1);
+    const result = doneResult(r.text);
+    expect(result.ok).toBe(true);
+    expect(result.extracted.dailyMetrics).toBe(1);
+    // 进度事件齐全:start + 每表 sheet_start/sheet_done + write + done
+    const stages = parseSSE(r.text).map((e: any) => e.stage);
+    expect(stages).toContain('start');
+    expect(stages.filter(s => s === 'sheet_start').length).toBeGreaterThan(0);
+    expect(stages).toContain('done');
   });
 
   it('employee 手动抽取 -> 403', async () => {
@@ -82,22 +99,24 @@ describe('POST /api/workbooks/:id/extract', () => {
     expect(r.status).toBe(409);
   });
 
-  it('save 持锁 -> 200', async () => {
+  it('save 持锁 -> 200 + done ok', async () => {
     mockOk();
     await acquire();
     const r = await request(app).post(`/api/workbooks/${wbId}/extract`).set('Authorization', `Bearer ${managerT}`)
       .send({ source: 'save' });
     expect(r.status).toBe(200);
-    expect(r.body.ok).toBe(true);
+    expect(doneResult(r.text).ok).toBe(true);
   });
 
-  it('未配 key -> 503 configured:false', async () => {
+  it('未配 key -> done configured:false', async () => {
     const { NotConfigured } = await import('../src/ai/ai.gateway.js');
     vi.mocked(callDoubaoJson).mockRejectedValue(new NotConfigured());
     const r = await request(app).post(`/api/workbooks/${wbId}/extract`).set('Authorization', `Bearer ${managerT}`)
       .send({ source: 'manual' });
-    expect(r.status).toBe(503);
-    expect(r.body.configured).toBe(false);
+    expect(r.status).toBe(200); // 流已开,结果在 done 事件
+    const result = doneResult(r.text);
+    expect(result.ok).toBe(false);
+    expect(result.configured).toBe(false);
   });
 
   it('软删工作簿 -> 404', async () => {

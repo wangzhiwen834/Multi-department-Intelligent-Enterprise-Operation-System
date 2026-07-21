@@ -12,6 +12,7 @@ extractRouter.use(authRequired);
 const Body = z.object({ source: z.enum(['save', 'manual']) });
 
 // AI 抽取:source=manual 需 manager+;source=save 需持锁(保存流程保证)。scheduled 走进程内,不经此路由。
+// SSE 流:逐表推送进度(start/sheet_start/sheet_done/write),末尾 done 事件带完整 ExtractResult。
 extractRouter.post('/workbooks/:id/extract', auditLog('ai.extract'), async (req, res, next) => {
   try {
     const { source } = Body.parse(req.body);
@@ -20,13 +21,24 @@ extractRouter.post('/workbooks/:id/extract', auditLog('ai.extract'), async (req,
       return res.status(403).json({ error: '需要经理或以上权限' });
     if (source === 'save' && !await isLockHolder(id, req.user!.id))
       return res.status(409).json({ error: '锁已丢失,请重载工作簿' });
-    const r = await extractWorkbook(id, { source, userId: req.user!.id });
-    if (!r.ok) {
-      if (r.code === 'not_configured') return res.status(503).json(r);
-      if (r.code === 'not_found') return res.status(404).json(r);
-      return res.status(502).json(r);
+    // 软删守卫(流开始前):stale tab 抽取已删工作簿 -> 404
+    const wb = (await query<{ deleted_at: string | null }>('SELECT deleted_at FROM workbook WHERE id=$1', [id])).rows[0];
+    if (!wb || wb.deleted_at) return res.status(404).json({ error: '工作簿不存在或已删除' });
+    // 鉴权通过后开 SSE 流(403/409/404 仍走普通 JSON)
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Nginx 不缓冲,实时推送
+    res.flushHeaders();
+    const send = (e: unknown) => res.write(`data: ${JSON.stringify(e)}\n\n`);
+    let result;
+    try {
+      result = await extractWorkbook(id, { source, userId: req.user!.id, onProgress: send });
+    } catch (e: any) {
+      result = { ok: false, error: e.message };
     }
-    res.json(r);
+    send({ stage: 'done', result });
+    res.end();
   } catch (e) { next(e); }
 });
 

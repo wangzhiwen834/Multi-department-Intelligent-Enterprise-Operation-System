@@ -19,7 +19,13 @@ import { posterRouter } from './poster/poster.routes.js';
 import { auditRouter } from './audit/audit.routes.js';
 
 export const app = express();
-app.use(compression());
+// SSE(text/event-stream)不压缩:compression 会缓冲流破坏实时进度推送
+app.use(compression({
+  filter: (_req, res) => {
+    if (String(res.getHeader('Content-Type') || '').includes('text/event-stream')) return false;
+    return compression.filter(_req, res);
+  },
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // 企业 logo 静态资源:<img src> 不携带 Bearer token,故不走 authRequired;logo 为公开展示的企业标识。

@@ -1,6 +1,7 @@
 // AI 抽取管线核心:读工作簿快照 -> 序列化每表 -> 调 LLM(callDoubaoJson)语义化识别 ->
 // coerceMetric 校验 -> 写 daily_metric/expense。位置式 sync 的替代入库路径。
 import { query } from '../db/pool.js';
+import { config } from '../config.js';
 import { callDoubaoJson, NotConfigured } from '../ai/ai.gateway.js';
 import { coerceMetric, isValidDate, isEmpty } from './validate.js';
 
@@ -20,6 +21,13 @@ export interface ExtractResult {
 interface TplColumn { key: string; label?: string; type: string; kind: string }
 interface TplSheet { key: string; label?: string; layout?: string; grain?: string; columns: TplColumn[] }
 interface TemplateDef { sheets: TplSheet[] }
+
+// 抽取进度事件(SSE 推给前端,可视化流程)。done 事件由路由补发(result 在返回值里)。
+export type ProgressEvent =
+  | { stage: 'start'; sheets: { key: string; label: string }[] }
+  | { stage: 'sheet_start'; key: string; label: string; index: number; total: number }
+  | { stage: 'sheet_done'; key: string; rowsIn: number; rowsOut: number; errorCount: number }
+  | { stage: 'write' };
 
 // 序列化快照某表 cellData -> 紧凑 TSV(第0行表头 + 非空数据行)。后端纯 JSON 操作,不依赖 Univer。
 function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {
@@ -63,7 +71,13 @@ function buildMessages(sheet: TplSheet, tsv: string) {
   return [{ role: 'system' as const, content: system }, { role: 'user' as const, content: user }];
 }
 
-export async function extractWorkbook(wbId: number, opts: { source: ExtractSource; userId: number | null }): Promise<ExtractResult> {
+export async function extractWorkbook(
+  wbId: number,
+  opts: { source: ExtractSource; userId: number | null; onProgress?: (e: ProgressEvent) => void },
+): Promise<ExtractResult> {
+  const { onProgress } = opts;
+  // 0. 配置预检(免得 emit 了 start 才发现没配 key;调度路径也受益)
+  if (!config.doubaoApiKey) return { ok: false, code: 'not_configured', configured: false, error: 'AI 未配置' };
   // 1. 守卫:工作簿存在且未软删
   const wb = (await query<{ shop_id: number; deleted_at: string | null }>(
     'SELECT shop_id, deleted_at FROM workbook WHERE id=$1', [wbId],
@@ -90,9 +104,14 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
   let anySheetOk = false;
   let notConfigured = false;
 
-  for (const s of tpl.sheets || []) {
+  const sheets = tpl.sheets || [];
+  onProgress?.({ stage: 'start', sheets: sheets.map(s => ({ key: s.key, label: s.label || s.key })) });
+  for (let i = 0; i < sheets.length; i++) {
+    const s = sheets[i];
+    const errsBefore = errors.length;
     const sheet = snap.data?.sheets?.[s.key];
     const { tsv, rowsIn } = sheet ? serializeSheet(sheet) : { tsv: '', rowsIn: 0 };
+    onProgress?.({ stage: 'sheet_start', key: s.key, label: s.label || s.key, index: i, total: sheets.length });
     let llmResult: any;
     try {
       llmResult = await callDoubaoJson(buildMessages(s, tsv));
@@ -100,6 +119,7 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
       if (e instanceof NotConfigured || e?.name === 'NotConfigured') { notConfigured = true; break; }
       sheetReports.push({ key: s.key, rowsIn, rowsOut: 0 });
       errors.push({ sheetKey: s.key, date: '', key: '', msg: `LLM 调用失败:${e.message}` });
+      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut: 0, errorCount: errors.length - errsBefore });
       continue;
     }
     anySheetOk = true;
@@ -120,6 +140,7 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
       }
       expenseRows = rows;
       sheetReports.push({ key: s.key, rowsIn, rowsOut: rows.length });
+      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut: rows.length, errorCount: errors.length - errsBefore });
     } else {
       const colByKey = new Map(s.columns.filter(c => c.kind === 'entry' && c.key !== 'date' && c.key !== 'pay_date').map(c => [c.key, c]));
       let rowsOut = 0;
@@ -140,11 +161,13 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
         }
       }
       sheetReports.push({ key: s.key, rowsIn, rowsOut });
+      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut, errorCount: errors.length - errsBefore });
     }
   }
 
   if (notConfigured) return { ok: false, code: 'not_configured', configured: false, error: 'AI 未配置' };
   if (!anySheetOk) return { ok: false, code: 'llm_error', configured: true, error: '所有工作表抽取失败', errors, sheets: sheetReports };
+  onProgress?.({ stage: 'write' });
 
   // 4. 写 daily_metric(merge;last_source='ai')
   let dailyCount = 0;

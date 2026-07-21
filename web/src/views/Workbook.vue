@@ -23,6 +23,24 @@ const editing = ref(false);
 const holder = ref<string | null>(null);
 const msg = ref('');
 const extractResult = ref<ExtractResult | null>(null);
+
+// AI 抽取进度可视化(SSE 事件驱动)
+interface ProgressSheet { key: string; label: string; state: 'pending' | 'active' | 'done'; rowsOut?: number; errorCount?: number }
+const extracting = ref(false);
+const progress = ref<{ sheets: ProgressSheet[]; writing: boolean } | null>(null);
+const onProgress = (e: any) => {
+  if (e.stage === 'start') {
+    progress.value = { sheets: (e.sheets as { key: string; label: string }[]).map(s => ({ key: s.key, label: s.label, state: 'pending' as const })), writing: false };
+  } else if (e.stage === 'sheet_start' && progress.value) {
+    const sh = progress.value.sheets.find(s => s.key === e.key);
+    if (sh) sh.state = 'active';
+  } else if (e.stage === 'sheet_done' && progress.value) {
+    const sh = progress.value.sheets.find(s => s.key === e.key);
+    if (sh) { sh.state = 'done'; sh.rowsOut = e.rowsOut; sh.errorCount = e.errorCount; }
+  } else if (e.stage === 'write' && progress.value) {
+    progress.value.writing = true;
+  }
+};
 const busy = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
@@ -137,26 +155,26 @@ const persistSnapshot = async () => {
 // 保存并 AI 抽取(编辑者持锁;保留 v1「保存即进大屏」即时性)
 const save = async () => {
   if (!editing.value) { msg.value = '请先进入编辑(获取锁)'; return; }
-  busy.value = true; msg.value = '';
+  busy.value = true; msg.value = ''; progress.value = null; extracting.value = true;
   try {
     await persistSnapshot();
-    const res = await api.extractWorkbook(wbId, 'save');
+    const res = await api.extractWorkbookStream(wbId, 'save', onProgress);
     extractResult.value = res;
     msg.value = res.ok
       ? `已保存并抽取 ${res.extracted.dailyMetrics} 条日报、${res.extracted.expenses} 条费用${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`
       : (res.configured === false ? 'AI 未配置,请联系管理员' : `抽取失败:${res.error}`);
-  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
+  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; extracting.value = false; }
 };
 // 经理手动 AI 抽取(免锁,基于上次保存的快照刷新大屏)
 const manualExtract = async () => {
-  busy.value = true; msg.value = '';
+  busy.value = true; msg.value = ''; progress.value = null; extracting.value = true;
   try {
-    const res = await api.extractWorkbook(wbId, 'manual');
+    const res = await api.extractWorkbookStream(wbId, 'manual', onProgress);
     extractResult.value = res;
     msg.value = res.ok
       ? `AI 抽取完成:${res.extracted.dailyMetrics} 条日报、${res.extracted.expenses} 条费用${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`
       : (res.configured === false ? 'AI 未配置,请联系管理员' : `抽取失败:${res.error}`);
-  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
+  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; extracting.value = false; }
 };
 
 // 导出当前工作簿为 Excel(.xlsx,含样式),查看态也可用
@@ -252,6 +270,19 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
     <div v-if="msg" class="od-wb-msg">{{ msg }}</div>
     <div v-if="extractResult?.errors.length" class="od-wb-err">
       校验错误:<span v-for="(e,i) in extractResult.errors" :key="i">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}; </span>
+    </div>
+    <!-- AI 抽取进度可视化(SSE 事件驱动) -->
+    <div v-if="progress" class="od-wb-progress">
+      <div class="od-wb-progress-title">{{ extracting ? 'AI 抽取中…' : 'AI 抽取完成' }}</div>
+      <div v-for="s in progress.sheets" :key="s.key" class="od-wb-step" :class="s.state">
+        <span class="od-wb-step-icon">{{ s.state === 'done' ? '✓' : s.state === 'active' ? '⟳' : '·' }}</span>
+        <span class="od-wb-step-label">{{ s.label }}</span>
+        <span v-if="s.state === 'done'" class="od-wb-step-meta">{{ s.rowsOut }} 条{{ s.errorCount ? ` · ${s.errorCount} 项错误` : '' }}</span>
+        <span v-else-if="s.state === 'active'" class="od-wb-step-meta">抽取中…</span>
+      </div>
+      <div v-if="progress.writing" class="od-wb-step" :class="extracting ? 'active' : 'done'">
+        <span class="od-wb-step-icon">{{ extracting ? '⟳' : '✓' }}</span><span class="od-wb-step-label">写入数据库</span>
+      </div>
     </div>
     <!-- Univer 挂载点:禁动 -->
     <div ref="containerRef" class="od-wb-grid"></div>
@@ -396,6 +427,23 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
   font-size: var(--od-text-xs);
   border-bottom: 1px solid var(--od-border);
 }
+
+/* AI 抽取进度面板 */
+.od-wb-progress {
+  padding: 8px var(--od-space-4);
+  background: var(--od-surface-2);
+  border-bottom: 1px solid var(--od-border);
+  font-size: var(--od-text-sm);
+}
+.od-wb-progress-title { font-weight: var(--od-weight-medium); margin-bottom: 6px; color: var(--od-primary-hover); }
+.od-wb-step { display: flex; align-items: center; gap: 8px; padding: 2px 0; color: var(--od-text-muted); }
+.od-wb-step.active { color: var(--od-primary-hover); }
+.od-wb-step.done { color: var(--od-text); }
+.od-wb-step-icon { width: 16px; text-align: center; font-weight: var(--od-weight-semibold); }
+.od-wb-step.active .od-wb-step-icon { display: inline-block; animation: od-spin 1s linear infinite; }
+.od-wb-step-label { flex: 1; }
+.od-wb-step-meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
+@keyframes od-spin { to { transform: rotate(360deg); } }
 
 /* Univer 挂载点:填满剩余空间(禁动容器,仅类名) */
 .od-wb-grid { flex: 1; min-height: 0; }

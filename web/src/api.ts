@@ -33,6 +33,49 @@ async function reqLock<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return (r.status === 204 ? undefined : body) as T;
 }
 
+// AI 抽取走 SSE 流:逐表进度事件 onProgress 回调,末尾 done 事件的结果作为返回值。
+// 流前错误(403/409/404)走 JSON,throw;流内结果(含 not_configured/llm_error)在 done 事件里返回。
+export async function extractWorkbookStream(
+  id: number,
+  source: 'save' | 'manual',
+  onProgress?: (e: { stage: string; [k: string]: unknown }) => void,
+): Promise<ExtractResult> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const t = getToken();
+  if (t) headers.Authorization = `Bearer ${t}`;
+  const r = await fetch(`/api/workbooks/${id}/extract`, {
+    method: 'POST', headers, body: JSON.stringify({ source }), cache: 'no-store',
+  });
+  if (r.status === 401) { clearToken(); throw new Error('未登录或登录已过期'); }
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${r.status}`);
+  }
+  if (!r.body) throw new Error('无响应流');
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result: ExtractResult | null = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+      const chunk = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
+      const line = chunk.split('\n').find(l => l.startsWith('data: '));
+      if (!line) continue;
+      let evt: { stage: string; result?: ExtractResult };
+      try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+      if (evt.stage === 'done') result = evt.result ?? null;
+      else onProgress?.(evt);
+    }
+  }
+  if (!result) throw new Error('抽取未返回结果');
+  return result;
+}
+
 export const api = {
   login: (username: string, password: string) =>
     req<{ token: string; user: User }>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
@@ -69,8 +112,7 @@ export const api = {
     reqLock<{ acquired: boolean; pending?: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}/takeover`, { method: 'POST' }),
   yieldLock: (id: number, sheetKey: string) =>
     reqLock<{ yielded: boolean }>(`/api/workbooks/${id}/locks/${sheetKey}/yield`, { method: 'POST' }),
-  extractWorkbook: (id: number, source: 'save' | 'manual') =>
-    req<ExtractResult>(`/api/workbooks/${id}/extract`, { method: 'POST', body: JSON.stringify({ source }) }),
+  extractWorkbookStream,
   extractStatus: (id: number) =>
     req<{ lastExtractedAt: string | null }>(`/api/workbooks/${id}/extract/status`),
   ledger: (shopId: number, period: string) =>
