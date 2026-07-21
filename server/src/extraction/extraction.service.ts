@@ -173,8 +173,8 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
       expenseCount++;
     }
   }
-  // 6. 更新 workbook.last_extracted_at(调度跳过 + /status 用)
-  await query('UPDATE workbook SET last_extracted_at=now(), updated_at=now() WHERE id=$1', [wbId]);
+  // 6. 更新 workbook.last_extracted_at(调度跳过 + /status 用)。不 bump updated_at(那是"最后保存"语义)。
+  await query('UPDATE workbook SET last_extracted_at=now() WHERE id=$1', [wbId]);
 
   return { ok: true, configured: true, extracted: { dailyMetrics: dailyCount, expenses: expenseCount }, errors, sheets: sheetReports };
 }

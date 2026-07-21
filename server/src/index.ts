@@ -11,6 +11,7 @@ import { workbookRouter } from './workbook/workbook.routes.js';
 import { lockRouter } from './lock/lock.routes.js';
 import { syncRouter } from './sync/sync.routes.js';
 import { extractRouter } from './extraction/extraction.routes.js';
+import { startScheduler } from './extraction/extraction.scheduler.js';
 import { reportRouter } from './report/report.routes.js';
 import { shopRouter } from './shop/shop.routes.js';
 import { dashboardRouter } from './dashboard/dashboard.routes.js';
@@ -53,5 +54,8 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(config.port, () => console.log(`server on :${config.port}`));
+  app.listen(config.port, () => {
+    console.log(`server on :${config.port}`);
+    startScheduler(); // 定时 AI 抽取(node-cron,当期每日;test 环境不启动)
+  });
 }
