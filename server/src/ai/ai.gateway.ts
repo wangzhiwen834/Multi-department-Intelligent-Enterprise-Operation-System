@@ -1,4 +1,5 @@
 import { config } from '../config.js';
+import { getFeatureModel } from '../settings/settings.service.js';
 import { AI_TOOLS, executeTool, type AiCtx } from './ai.tools.js';
 
 interface ChatMessage {
@@ -14,11 +15,12 @@ const systemPrompt = (ctx: AiCtx) =>
 规则:基于工具查询的真实数据回答,不要编造数字;金额用¥加千分位;末尾给一句简短经营建议。`;
 
 async function callDoubao(messages: ChatMessage[]) {
+  const model = await getFeatureModel('chat');
   const url = `${config.doubaoBaseUrl}/chat/completions`;
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.doubaoApiKey}` },
-    body: JSON.stringify({ model: config.doubaoModel, messages, tools: AI_TOOLS, tool_choice: 'auto', temperature: 0.3 }),
+    body: JSON.stringify({ model, messages, tools: AI_TOOLS, tool_choice: 'auto', temperature: 0.3 }),
   });
   if (!r.ok) {
     const t = await r.text();
@@ -36,11 +38,12 @@ export class NotConfigured extends Error {
 // 与 callDoubao 区别:不带 tools、强制 JSON 输出、temperature 0、用 extractModel。
 export async function callDoubaoJson(messages: ChatMessage[]): Promise<any> {
   if (!config.doubaoApiKey) throw new NotConfigured();
+  const model = await getFeatureModel('extraction');
   const url = `${config.doubaoBaseUrl}/chat/completions`;
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.doubaoApiKey}` },
-    body: JSON.stringify({ model: config.extractModel, messages, response_format: { type: 'json_object' }, temperature: 0 }),
+    body: JSON.stringify({ model, messages, response_format: { type: 'json_object' }, temperature: 0 }),
   });
   if (!r.ok) {
     const t = await r.text();
