@@ -22,18 +22,6 @@ const headersOnlySnapshot = (snap: any): any => {
   return { ...snap, sheets };
 };
 
-// 引导加载:仅保留活动表(sheetOrder[0])的 cellData,其余表 cellData 置空;全量 styles/元信息保留
-const activeOnlySnapshot = (snap: any): any => {
-  const order: string[] = snap.sheetOrder || Object.keys(snap.sheets || {});
-  const activeId = order[0];
-  const sheets: Record<string, any> = {};
-  for (const sid of order) {
-    const sh = snap.sheets[sid];
-    sheets[sid] = sid === activeId ? sh : { ...sh, cellData: {} };
-  }
-  return { ...snap, sheets };
-};
-
 // upsert 工作簿(shopId+period),返回完整行;POST /workbooks 与 bootstrap 共用,避免重复(预检决定)
 // 软删后再建同月:复用原行并清 deleted_at(否则该行仍被列表 WHERE deleted_at IS NULL 过滤,看不见)
 const upsertWorkbook = async (shopId: number, period: string, templateVersion: number) => {
@@ -149,7 +137,7 @@ workbookRouter.post('/workbooks/bootstrap', async (req, res, next) => {
     if (!tpl) return res.status(400).json({ error: 'no template for business' });
     const wbId = (await upsertWorkbook(shopId, period, tpl.version)).id;
     const snap = (await query<{ data: any; updated_at: string }>('SELECT data, updated_at FROM workbook_snapshot WHERE workbook_id=$1', [wbId])).rows[0];
-    const snapshot = snap ? { data: activeOnlySnapshot(snap.data), updated_at: snap.updated_at } : null;
+    const snapshot = snap ? { data: snap.data, updated_at: snap.updated_at } : null;
     const lockRow = await getLockStatus(wbId, 'daily_ops');
     res.json({
       wbId,

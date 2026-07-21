@@ -33,7 +33,7 @@ beforeEach(async () => {
 });
 
 describe('POST /api/workbooks/bootstrap', () => {
-  it('有快照:活动表带 cellData,其余表 cellData 为空,返回 template 与 lockStatus', async () => {
+  it('有快照:返回完整快照(所有表带 cellData)+ template + lockStatus', async () => {
     const wb = (await query('INSERT INTO workbook (shop_id, period, template_version) VALUES ($1,$2,1) RETURNING id', [shopId, '2026-07'])).rows[0];
     await query('INSERT INTO workbook_snapshot (workbook_id, data) VALUES ($1,$2)', [wb.id, JSON.stringify(FULL_SNAP)]);
     const r = await request(app).post('/api/workbooks/bootstrap').set('Authorization', `Bearer ${bossT}`).send({ shopId, period: '2026-07' });
@@ -44,7 +44,7 @@ describe('POST /api/workbooks/bootstrap', () => {
     const snap = r.body.snapshot.data;
     expect(snap.sheetOrder).toEqual(['daily_ops', 'expense']);
     expect(snap.sheets.daily_ops.cellData[0][0].v).toBe('日期');   // 活动表保留
-    expect(snap.sheets.expense.cellData).toEqual({});               // 非活动表清空
+    expect(snap.sheets.expense.cellData[0][0].v).toBe('金额');      // 非活动表保留数据
     expect(snap.styles.s1).toBeDefined();                           // 全量 styles 保留
   });
 
