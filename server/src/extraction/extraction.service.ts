@@ -9,6 +9,7 @@ export type ExtractSource = 'save' | 'manual' | 'scheduled';
 export interface ExtractError { sheetKey: string; date: string; key: string; msg: string }
 export interface ExtractResult {
   ok: boolean;
+  code?: 'not_found' | 'not_configured' | 'llm_error'; // 路由据此定 404/503/502
   configured?: boolean;                              // false = 未配 key(503)
   extracted?: { dailyMetrics: number; expenses: number };
   errors?: ExtractError[];
@@ -67,19 +68,19 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
   const wb = (await query<{ shop_id: number; deleted_at: string | null }>(
     'SELECT shop_id, deleted_at FROM workbook WHERE id=$1', [wbId],
   )).rows[0];
-  if (!wb || wb.deleted_at) return { ok: false, error: '工作簿不存在或已删除' };
+  if (!wb || wb.deleted_at) return { ok: false, code: 'not_found', error: '工作簿不存在或已删除' };
   // 2. 快照
   const snap = (await query<{ data: any }>('SELECT data FROM workbook_snapshot WHERE workbook_id=$1', [wbId])).rows[0];
-  if (!snap || !snap.data) return { ok: false, error: '工作簿无快照' };
+  if (!snap || !snap.data) return { ok: false, code: 'not_found', error: '工作簿无快照' };
   // 3. 模板(经 shop -> business -> template)
   const shopBiz = (await query<{ bid: number; bcode: string }>(
     'SELECT s.business_id AS bid, b.code AS bcode FROM shop s JOIN business b ON b.id=s.business_id WHERE s.id=$1', [wb.shop_id],
   )).rows[0];
-  if (!shopBiz) return { ok: false, error: '门店不存在' };
+  if (!shopBiz) return { ok: false, code: 'not_found', error: '门店不存在' };
   const tplRow = (await query<{ definition: TemplateDef }>(
     'SELECT definition FROM template WHERE business_id=$1 ORDER BY version DESC LIMIT 1', [shopBiz.bid],
   )).rows[0];
-  if (!tplRow) return { ok: false, error: '模板不存在' };
+  if (!tplRow) return { ok: false, code: 'not_found', error: '模板不存在' };
   const tpl = tplRow.definition;
 
   const errors: ExtractError[] = [];
@@ -142,8 +143,8 @@ export async function extractWorkbook(wbId: number, opts: { source: ExtractSourc
     }
   }
 
-  if (notConfigured) return { ok: false, configured: false, error: 'AI 未配置' };
-  if (!anySheetOk) return { ok: false, configured: true, error: '所有工作表抽取失败', errors, sheets: sheetReports };
+  if (notConfigured) return { ok: false, code: 'not_configured', configured: false, error: 'AI 未配置' };
+  if (!anySheetOk) return { ok: false, code: 'llm_error', configured: true, error: '所有工作表抽取失败', errors, sheets: sheetReports };
 
   // 4. 写 daily_metric(merge;last_source='ai')
   let dailyCount = 0;
