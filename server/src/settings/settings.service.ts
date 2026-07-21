@@ -32,3 +32,26 @@ export function classifyKind(taskType: string[] | null | undefined): AiModelKind
   if (t.some(x => x === 'TextGeneration' || x === 'VisualQuestionAnswering')) return 'chat';
   return 'other';
 }
+
+// 从 Ark GET /models 拉取可用模型,过滤 Shutdown/Retiring,按 task_type 定 kind,upsert 进 ai_model。
+// 返回入库数量。未配 key / Ark 不可达 -> 抛错(路由层转 502/503)。
+export async function refreshModels(): Promise<{ fetched: number }> {
+  if (!config.doubaoApiKey) throw new Error('AI 未配置:DOUBAO_API_KEY 缺失');
+  const r = await fetch(`${config.doubaoBaseUrl}/models`, {
+    headers: { Authorization: `Bearer ${config.doubaoApiKey}` },
+  });
+  if (!r.ok) throw new Error(`Ark /models ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const j = await r.json() as { data: any[] };
+  const usable = (j.data || []).filter(m => m && m.status !== 'Shutdown' && m.status !== 'Retiring');
+  for (const m of usable) {
+    const kind = classifyKind(m.task_type);
+    await query(
+      `INSERT INTO ai_model (model_id, label, kind, status, task_type, fetched_at, enabled)
+       VALUES ($1,$2,$3,$4,$5,now(),true)
+       ON CONFLICT (model_id) DO UPDATE
+       SET label=EXCLUDED.label, kind=EXCLUDED.kind, status=EXCLUDED.status, task_type=EXCLUDED.task_type, fetched_at=now()`,
+      [m.id, m.name || m.id, kind, m.status || '', JSON.stringify(m.task_type || [])],
+    );
+  }
+  return { fetched: usable.length };
+}
