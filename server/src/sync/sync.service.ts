@@ -30,8 +30,8 @@ export const syncWorkbook = async (wbId: number, body: SyncBody, user: TokenPayl
   );
   if (!lock.rows.length) return { ok: false as const, error: 'lock lost', status: 409 };
 
-  const wb = (await query<{ shop_id: number }>('SELECT shop_id FROM workbook WHERE id=$1', [wbId])).rows[0];
-  if (!wb) return { ok: false as const, error: 'workbook not found', status: 404 };
+  const wb = (await query<{ shop_id: number }>('SELECT shop_id FROM workbook WHERE id=$1 AND deleted_at IS NULL', [wbId])).rows[0];
+  if (!wb) return { ok: false as const, error: 'workbook not found or deleted', status: 404 };
   const shopBiz = (await query<{ bid: number; bcode: string }>(
     'SELECT s.business_id AS bid, b.code AS bcode FROM shop s JOIN business b ON b.id=s.business_id WHERE s.id=$1', [wb.shop_id],
   )).rows[0];

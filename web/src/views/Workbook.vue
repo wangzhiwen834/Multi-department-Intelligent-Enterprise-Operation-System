@@ -21,6 +21,8 @@ const loadedSheets = new Set<string>();
 const loadingPromises = new Map<string, Promise<void>>();
 let snapshotStyles: Record<string, any> = {};
 let activePoll: ReturnType<typeof setInterval> | null = null;
+// bootstrap 已带 lockStatus,onMounted 复用避免重复请求;mountUniver 每次重建时刷新
+let bootLockStatus: any = null;
 const stopActivePoll = () => { if (activePoll) { clearInterval(activePoll); activePoll = null; } };
 
 // 切到未加载的表时按需拉取并注入。loadingPromises 防并发重复;仅在注入成功后才标记 loaded,
@@ -235,6 +237,7 @@ const mountUniver = async () => {
   const boot = await api.bootstrapWorkbook(props.shop.id, props.period);
   wbId = boot.wbId;
   tpl = boot.template;
+  bootLockStatus = boot.lockStatus ?? null;
   if (univerHandle) univerHandle.dispose();
   const handle = setupUniver(containerRef.value!);
   univerHandle = handle;
@@ -273,7 +276,8 @@ const mountWithSnapshot = (snapshot: any) => {
 onMounted(async () => {
   me = await api.me().catch(() => null);
   await mountUniver();
-  const st: any = await api.lockStatus(wbId, SHEET_KEY);
+  // 复用 bootstrap 已返回的 lockStatus,避免 onMounted 再发一次 lockStatus 请求
+  const st: any = bootLockStatus ?? { held: false };
   if (st.held === false) { holder.value = null; editing.value = false; }
   else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
   else holder.value = null;

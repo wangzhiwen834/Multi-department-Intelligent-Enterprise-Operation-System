@@ -35,15 +35,20 @@ const activeOnlySnapshot = (snap: any): any => {
 };
 
 // upsert 工作簿(shopId+period),返回完整行;POST /workbooks 与 bootstrap 共用,避免重复(预检决定)
+// 软删后再建同月:复用原行并清 deleted_at(否则该行仍被列表 WHERE deleted_at IS NULL 过滤,看不见)
 const upsertWorkbook = async (shopId: number, period: string, templateVersion: number) => {
   const ins = await query(
     `INSERT INTO workbook (shop_id, period, template_version) VALUES ($1,$2,$3)
-     ON CONFLICT (shop_id, period) DO UPDATE SET updated_at=now()
+     ON CONFLICT (shop_id, period) DO UPDATE SET updated_at=now(), deleted_at=NULL
      RETURNING id, shop_id, period, template_version, status, created_at`,
     [shopId, period, templateVersion],
   );
   return ins.rows[0];
 };
+
+// 活跃工作簿存在性检查(未软删)——保存路由用,防止 stale tab 向已软删的工作簿写新快照
+const liveWorkbook = (id: number) =>
+  query('SELECT 1 FROM workbook WHERE id=$1 AND deleted_at IS NULL', [id]);
 
 // 创建(或返回已存在)工作簿
 workbookRouter.post('/workbooks', async (req, res, next) => {
@@ -171,6 +176,9 @@ workbookRouter.get('/workbooks/:id/sheets/:sheetKey/celldata', async (req, res, 
 // 存快照(表格编辑保存)
 workbookRouter.put('/workbooks/:id/snapshot', auditLog('workbook.save'), async (req, res, next) => {
   try {
+    // 软删守卫:stale tab 可能在工作簿被软删后仍触发保存,拒绝写新快照
+    if (!(await liveWorkbook(Number(req.params.id))).rows.length)
+      return res.status(404).json({ error: '工作簿不存在或已删除' });
     if (!await isLockHolder(Number(req.params.id), req.user!.id))
       return res.status(409).json({ error: '锁已丢失(被他人接管或过期),保存被拒绝,请重载工作簿' });
     const { data } = req.body as { data: unknown };

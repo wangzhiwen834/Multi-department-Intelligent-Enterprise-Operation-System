@@ -48,3 +48,24 @@ describe('GET /api/shops/:shopId/workbooks', () => {
     expect(r.body.find((w: any) => w.period === '2026-07').lockedBy).toBeNull();
   });
 });
+
+describe('POST /api/workbooks (upsert 清 deleted_at)', () => {
+  it('软删后再建同月:upsert 复用原行并清 deleted_at,列表重新可见', async () => {
+    // 软删 2026-07
+    await query('UPDATE workbook SET deleted_at=now() WHERE shop_id=$1 AND period=$2', [shopId, '2026-07']);
+    // 列表此时应排除 2026-07
+    const before = await request(app).get(`/api/shops/${shopId}/workbooks`).set('Authorization', `Bearer ${bossT}`);
+    expect(before.body.map((w: any) => w.period)).not.toContain('2026-07');
+    // 重新创建同月
+    const r = await request(app).post('/api/workbooks').set('Authorization', `Bearer ${bossT}`)
+      .send({ shopId, period: '2026-07' });
+    expect(r.status).toBe(201);
+    expect(r.body.period).toBe('2026-07');
+    // 行的 deleted_at 已清
+    const wb = (await query('SELECT deleted_at FROM workbook WHERE shop_id=$1 AND period=$2', [shopId, '2026-07'])).rows[0];
+    expect(wb.deleted_at).toBeNull();
+    // 列表重新包含 2026-07
+    const after = await request(app).get(`/api/shops/${shopId}/workbooks`).set('Authorization', `Bearer ${bossT}`);
+    expect(after.body.map((w: any) => w.period)).toContain('2026-07');
+  });
+});

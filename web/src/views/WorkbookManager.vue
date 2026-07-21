@@ -61,8 +61,9 @@ async function createCurrent() {
 
 async function copyFromPrev() {
   if (!selected.value || !prevPeriod.value) return;
+  const period = selectedPeriod.value;
   busy.value = true; msg.value = '';
-  try { await api.copyFromWorkbook(selected.value.id, prevPeriod.value); msg.value = '已从上月复制表头新建'; }
+  try { await api.copyFromWorkbook(selected.value.id, prevPeriod.value); await load(); if (period) pick(period); msg.value = '已从上月复制表头新建'; }
   catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 }
 
