@@ -67,3 +67,23 @@ export function extractForSync(wb: any, template: TemplateDef) {
   });
   return { dailyMetrics, expenses };
 }
+
+// 按需加载:把快照里某表的稀疏 cellData(带 style id)注入到已创建的工作表。
+// 反解 style id -> 内联样式,确保 setValues 能正确套用样式(styles 为 bootstrap 全量返回的全局样式表)。
+export function injectSheetCellData(sheet: any, cellData: any, styles: Record<string, any>) {
+  const matrix: Record<string, Record<string, any>> = {};
+  const rows = Object.keys(cellData || {});
+  let maxR = 1, maxC = 1;
+  for (const r of rows) {
+    matrix[r] = {};
+    const cols = Object.keys(cellData[r]);
+    for (const c of cols) {
+      const cell = cellData[r][c];
+      const s = typeof cell.s === 'string' ? styles[cell.s] : cell.s;
+      matrix[r][c] = s ? { ...cell, s } : { ...cell };
+      maxR = Math.max(maxR, Number(r) + 1);
+      maxC = Math.max(maxC, Number(c) + 1);
+    }
+  }
+  sheet.getRange(0, 0, maxR, maxC).setValues(matrix);
+}

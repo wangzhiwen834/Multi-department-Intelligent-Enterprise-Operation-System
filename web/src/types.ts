@@ -27,6 +27,13 @@ export interface WorkbookListItem {
   status: string; updated_at: string; lockedBy: string | null;
 }
 
+export interface BootstrapPayload {
+  wbId: number;
+  template: Template;
+  snapshot: { data: any; updated_at: string } | null;
+  lockStatus: LockStatus;
+}
+
 export interface LockStatus {
   user_id?: number; user_name?: string; expires_at?: string; acquired_at?: string; held?: boolean;
 }

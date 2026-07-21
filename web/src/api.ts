@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, WorkbookListItem, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
+import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
 
 const TOKEN_KEY = 'token';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
@@ -51,6 +51,10 @@ export const api = {
     req<{ ok: boolean }>(`/api/workbooks/${id}/copy-from`, { method: 'POST', body: JSON.stringify({ fromPeriod }) }),
   deleteWorkbook: (id: number) =>
     req<{ ok: boolean }>(`/api/workbooks/${id}`, { method: 'DELETE' }),
+  bootstrapWorkbook: (shopId: number, period: string) =>
+    req<BootstrapPayload>('/api/workbooks/bootstrap', { method: 'POST', body: JSON.stringify({ shopId, period }) }),
+  getSheetCellData: (id: number, sheetKey: string) =>
+    req<{ cellData: any; styles: Record<string, any> }>(`/api/workbooks/${id}/sheets/${sheetKey}/celldata`),
   getSnapshot: (id: number) =>
     req<{ data: unknown; updated_at: string } | null>(`/api/workbooks/${id}/snapshot`),
   putSnapshot: (id: number, data: unknown) =>

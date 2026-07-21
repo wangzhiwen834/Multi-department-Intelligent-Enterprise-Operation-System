@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../api';
-import { setupUniver, buildFromTemplate, extractForSync } from '../univer';
+import { setupUniver, buildFromTemplate, extractForSync, injectSheetCellData } from '../univer';
 import { exportWorkbookToXlsx, importXlsxToWorkbook } from '../sheet-io';
 import type { Shop, Template, SyncResult, User } from '../types';
 
@@ -15,6 +15,54 @@ let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let wbId = 0;
 let tpl: Template | null = null;
 let me: User | null = null;
+
+const sheetOrderIds = ref<string[]>([]);
+const loadedSheets = new Set<string>();
+let snapshotStyles: Record<string, any> = {};
+let activePoll: ReturnType<typeof setInterval> | null = null;
+const stopActivePoll = () => { if (activePoll) { clearInterval(activePoll); activePoll = null; } };
+
+// 切到未加载的表时按需拉取并注入
+const ensureSheetLoaded = async (sid: string) => {
+  if (loadedSheets.has(sid)) return;
+  const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
+  if (!fwbAny) return;
+  const active = (fwbAny as any).getActiveSheet();
+  if (!active || active.getSheetId() !== sid) return;
+  loadedSheets.add(sid); // 先标记,防并发重复
+  try {
+    const { cellData } = await api.getSheetCellData(wbId, sid);
+    injectSheetCellData(active, cellData, snapshotStyles);
+  } catch { loadedSheets.delete(sid); }
+};
+const startActivePoll = () => {
+  stopActivePoll();
+  activePoll = setInterval(() => {
+    const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
+    if (!fwbAny) return;
+    const active = (fwbAny as any).getActiveSheet();
+    if (active) { const sid = active.getSheetId(); if (!loadedSheets.has(sid)) void ensureSheetLoaded(sid); }
+  }, 300);
+};
+
+// 保存前补全所有未加载表,防止 fwb.save() 用空 cellData 覆盖未访问表数据
+const hydrateAllSheets = async () => {
+  const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
+  if (!fwbAny) return;
+  for (const sid of sheetOrderIds.value) {
+    if (loadedSheets.has(sid)) continue;
+    const sheet = (fwbAny as any).getSheetByName(sheetNameOf(sid));
+    if (!sheet) continue;
+    try {
+      const { cellData } = await api.getSheetCellData(wbId, sid);
+      injectSheetCellData(sheet, cellData, snapshotStyles);
+    } catch { /* 单表补全失败不阻塞保存 */ }
+    loadedSheets.add(sid);
+  }
+};
+// sheetId -> 表名映射(在 mountUniver 里由 snapshot sheets[id].name 填充,供 hydrateAllSheets 按名取表)
+const sheetNameMap: Record<string, string> = {};
+const sheetNameOf = (sid: string): string | undefined => sheetNameMap[sid];
 
 const editing = ref(false);
 const holder = ref<string | null>(null);
@@ -126,6 +174,7 @@ const takeover = async () => {
   } catch (e: any) { msg.value = e.message; }
 };
 const performSave = async () => {
+  await hydrateAllSheets();
   try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前正在编辑的单元格,无编辑则忽略 */ }
   const snapshot = fwb.save();
   await api.putSnapshot(wbId, snapshot);
@@ -173,13 +222,30 @@ const onImportFile = async (e: Event) => {
 };
 
 const mountUniver = async () => {
-  const snap = await api.getSnapshot(wbId);
+  const boot = await api.bootstrapWorkbook(props.shop.id, props.period);
+  wbId = boot.wbId;
+  tpl = boot.template;
   if (univerHandle) univerHandle.dispose();
   const handle = setupUniver(containerRef.value!);
   univerHandle = handle;
-  fwb = snap?.data ? handle.univerAPI.createWorkbook(snap.data as any) : buildFromTemplate(handle.univerAPI, tpl!.definition, `${props.shop.name} ${props.period}`);
-  // Univer 创建后异步初始化可编辑权限(默认 true),延迟到初始化后再设只读;若用户先点编辑则 watch 会取消此定时器
+  if (boot.snapshot?.data) {
+    const snap = boot.snapshot.data;
+    snapshotStyles = snap.styles || {};
+    sheetOrderIds.value = snap.sheetOrder || Object.keys(snap.sheets || {});
+    for (const sid of sheetOrderIds.value) sheetNameMap[sid] = snap.sheets?.[sid]?.name ?? sid;
+    loadedSheets.clear();
+    loadedSheets.add(sheetOrderIds.value[0]); // 活动表已带 cellData
+    fwb = handle.univerAPI.createWorkbook(snap as any);
+  } else {
+    snapshotStyles = {};
+    sheetOrderIds.value = tpl.definition.sheets.map(s => s.key);
+    for (const s of tpl.definition.sheets) sheetNameMap[s.key] = s.label;
+    loadedSheets.clear();
+    tpl.definition.sheets.forEach(s => loadedSheets.add(s.key)); // 模板新建:每表只有表头,视为已加载
+    fwb = buildFromTemplate(handle.univerAPI, tpl.definition, `${props.shop.name} ${props.period}`);
+  }
   initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(false); }, 150);
+  startActivePoll();
 };
 // 用指定快照重建工作簿(导入用):dispose 旧实例 -> createWorkbook(snapshot) -> 按当前编辑态设可编辑
 const mountWithSnapshot = (snapshot: any) => {
@@ -188,21 +254,22 @@ const mountWithSnapshot = (snapshot: any) => {
   const handle = setupUniver(containerRef.value!);
   univerHandle = handle;
   fwb = handle.univerAPI.createWorkbook(snapshot);
+  snapshotStyles = snapshot.styles || {};
+  sheetOrderIds.value = snapshot.sheetOrder || Object.keys(snapshot.sheets || {});
+  for (const sid of sheetOrderIds.value) { sheetNameMap[sid] = snapshot.sheets?.[sid]?.name ?? sid; loadedSheets.add(sid); }
   initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(editing.value); }, 150);
+  startActivePoll();
 };
 onMounted(async () => {
   me = await api.me().catch(() => null);
-  const wb = await api.createWorkbook(props.shop.id, props.period);
-  wbId = wb.id;
-  tpl = await api.template(props.shop.business_code);
   await mountUniver();
-  const st = await api.lockStatus(wb.id, SHEET_KEY);
-  if ((st as any).held === false) { holder.value = null; editing.value = false; }
-  else if ((st as any).user_name && (st as any).user_name !== me?.username) holder.value = (st as any).user_name;
+  const st: any = await api.lockStatus(wbId, SHEET_KEY);
+  if (st.held === false) { holder.value = null; editing.value = false; }
+  else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
   else holder.value = null;
   startStatusPoll();
 });
-onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTimer) clearTimeout(initReadOnlyTimer); void releaseIfMine(); univerHandle?.dispose(); });
+onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); stopActivePoll(); if (initReadOnlyTimer) clearTimeout(initReadOnlyTimer); void releaseIfMine(); univerHandle?.dispose(); });
 </script>
 
 <template>
