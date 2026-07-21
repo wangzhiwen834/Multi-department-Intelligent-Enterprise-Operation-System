@@ -64,16 +64,13 @@ describe('软删守卫:stale tab 不能向已删工作簿写快照/同步', () =
     expect(snap.rows.length).toBe(0);
   });
 
-  it('POST /api/workbooks/:id/sync 对软删工作簿返回 404,不插 daily_metric/expense', async () => {
-    // beforeEach 已插入 1 条 daily_metric;软删后同步不应新增
+  it('POST /api/workbooks/:id/extract 对软删工作簿返回 404,不插 daily_metric/expense', async () => {
+    // beforeEach 已插入 1 条 daily_metric;软删后抽取不应新增
     const dmBefore = (await query('SELECT count(*)::int AS n FROM daily_metric WHERE source_workbook_id=$1', [wbId])).rows[0].n;
     const expBefore = (await query('SELECT count(*)::int AS n FROM expense WHERE source_workbook_id=$1', [wbId])).rows[0].n;
     await acquireLockThenSoftDelete();
-    const r = await request(app).post(`/api/workbooks/${wbId}/sync`).set('Authorization', `Bearer ${bossT}`)
-      .send({
-        dailyMetrics: [{ date: '2026-07-20', sheetKey: 'daily_ops', metrics: { revenue: 999 } }],
-        expenses: [{ pay_date: '2026-07-20', attribution_month: '7月', summary: 'x', amount: 1, payee: 'p', subject: 's' }],
-      });
+    const r = await request(app).post(`/api/workbooks/${wbId}/extract`).set('Authorization', `Bearer ${bossT}`)
+      .send({ source: 'manual' });
     expect(r.status).toBe(404);
     const dmAfter = (await query('SELECT count(*)::int AS n FROM daily_metric WHERE source_workbook_id=$1', [wbId])).rows[0].n;
     const expAfter = (await query('SELECT count(*)::int AS n FROM expense WHERE source_workbook_id=$1', [wbId])).rows[0].n;
