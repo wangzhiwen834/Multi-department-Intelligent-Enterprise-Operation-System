@@ -1,4 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
+import compression from 'compression';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ZodError } from 'zod';
@@ -17,6 +18,7 @@ import { posterRouter } from './poster/poster.routes.js';
 import { auditRouter } from './audit/audit.routes.js';
 
 export const app = express();
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
 // 企业 logo 静态资源:<img src> 不携带 Bearer token,故不走 authRequired;logo 为公开展示的企业标识。
