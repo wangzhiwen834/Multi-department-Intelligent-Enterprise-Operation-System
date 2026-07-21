@@ -41,6 +41,25 @@ workbookRouter.get('/workbooks', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// 列出某店全部工作簿(按 period 倒序,排除软删除),LATERAL 取一条活跃锁持有者避免行膨胀
+workbookRouter.get('/shops/:shopId/workbooks', async (req, res, next) => {
+  try {
+    const shopId = Number(req.params.shopId);
+    const { rows } = await query(
+      `SELECT w.id, w.shop_id, w.period, w.template_version, w.status, w.updated_at,
+              sl.user_name AS "lockedBy"
+       FROM workbook w
+       LEFT JOIN LATERAL (
+         SELECT user_name FROM sheet_lock WHERE workbook_id = w.id AND expires_at > now() LIMIT 1
+       ) sl ON true
+       WHERE w.shop_id=$1 AND w.deleted_at IS NULL
+       ORDER BY w.period DESC`,
+      [shopId],
+    );
+    res.json(rows);
+  } catch (e) { next(e); }
+});
+
 // 存快照(表格编辑保存)
 workbookRouter.put('/workbooks/:id/snapshot', auditLog('workbook.save'), async (req, res, next) => {
   try {

@@ -125,3 +125,7 @@ CREATE TABLE IF NOT EXISTS poster_logo (
   size INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- 子项目1:工作簿软删除(保留 snapshot 与已同步 metric,大屏数据不受影响)
+ALTER TABLE workbook ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_workbook_shop_period_live ON workbook(shop_id, period) WHERE deleted_at IS NULL;
