@@ -7,6 +7,22 @@ export const isEmpty = (v: unknown): boolean =>
 export const isValidDate = (v: unknown): boolean =>
   typeof v === 'string' && /^\d{4}[-/]\d{2}[-/]\d{2}$/.test(v.trim());
 
+// 宽松日期解析+归一化:接受 YYYY-M-D / YYYY/M/D(月日 1-2 位)、Excel 数字序列号暂不支持。
+// 返回 YYYY-MM-DD 或 null(无法解析)。供 AI 抽取用(LLM 常回 2026/7/1 这类)。
+export const normalizeDate = (v: unknown): string | null => {
+  if (v == null) return null;
+  const m = String(v).trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const mm = mo.padStart(2, '0'), dd = d.padStart(2, '0');
+  const iso = `${y}-${mm}-${dd}`;
+  // 校验真实日历日(防 2026-13-45)
+  const dt = new Date(`${iso}T00:00:00Z`);
+  if (isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== Number(y) || dt.getUTCMonth() + 1 !== Number(mo) || dt.getUTCDate() !== Number(d)) return null;
+  return iso;
+};
+
 // 类型校验(仅判定,不改值)。sync 用它收集校验错误。
 export const typeCheck = (type: string, val: unknown): boolean => {
   if (isEmpty(val)) return true;

@@ -173,4 +173,29 @@ describe('extractWorkbook', () => {
     const w = await query('SELECT last_extracted_at FROM workbook WHERE id=$1', [wbId]);
     expect(w.rows[0].last_extracted_at).not.toBeNull();
   });
+
+  it('日期宽松解析:2026/7/1 -> 2026-07-01', async () => {
+    mockBySheet({
+      daily_ops: { rows: [{ date: '2026/7/1', metrics: { revenue: 100 } }] },
+      reconciliation: { rows: [] }, expense: { expenses: [] },
+    });
+    const r = await extractWorkbook(wbId, { source: 'manual', userId: 1 });
+    expect(r.ok).toBe(true);
+    expect(r.errors!.some(e => e.key === 'date')).toBe(false);
+    const dm = await query('SELECT metrics FROM daily_metric WHERE shop_id=$1 AND date=$2', [shopId, '2026-07-01']);
+    expect(Number(dm.rows[0].metrics.revenue)).toBe(100);
+  });
+
+  it('LLM 返回异常结构不中断整体(该表 0 条+错误,其他表仍抽取)', async () => {
+    mockBySheet({
+      daily_ops: { rows: [null] },          // item=null -> 解析抛错
+      reconciliation: { rows: [{ date: '2026-07-02', metrics: { cash: 50 } }] },
+      expense: { expenses: [] },
+    });
+    const r = await extractWorkbook(wbId, { source: 'manual', userId: 1 });
+    expect(r.ok).toBe(true);                 // 其他表成功 -> 整体 ok
+    expect(r.errors!.some(e => e.sheetKey === 'daily_ops' && e.msg.includes('解析 LLM 输出失败'))).toBe(true);
+    const dm = await query('SELECT metrics FROM daily_metric WHERE shop_id=$1 AND date=$2', [shopId, '2026-07-02']);
+    expect(Number(dm.rows[0].metrics.cash)).toBe(50);
+  });
 });

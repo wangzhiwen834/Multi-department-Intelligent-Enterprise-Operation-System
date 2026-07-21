@@ -3,7 +3,7 @@
 import { query } from '../db/pool.js';
 import { config } from '../config.js';
 import { callDoubaoJson, NotConfigured } from '../ai/ai.gateway.js';
-import { coerceMetric, isValidDate, isEmpty } from './validate.js';
+import { coerceMetric, isEmpty, normalizeDate } from './validate.js';
 
 export type ExtractSource = 'save' | 'manual' | 'scheduled';
 
@@ -30,8 +30,7 @@ export type ProgressEvent =
   | { stage: 'write' };
 
 // 序列化快照某表 cellData -> 紧凑 TSV(第0行表头 + 非空数据行)。后端纯 JSON 操作,不依赖 Univer。
-function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {
-  const cd = sheet?.cellData || {};
+function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {  const cd = sheet?.cellData || {};
   const rowIdx = Object.keys(cd).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
   if (!rowIdx.length) return { tsv: '', rowsIn: 0 };
   const lines: string[] = [];
@@ -69,6 +68,11 @@ function buildMessages(sheet: TplSheet, tsv: string) {
 严格输出 {"rows":[{"date":"YYYY-MM-DD","metrics":{"字段key":数值}}]},不要 markdown/解释。`;
   const user = `表名:${sheet.label || sheet.key}(${sheet.key})\n目标字段(key=中文标签):\n${fields}\n\nTSV 数据:\n${tsv}`;
   return [{ role: 'system' as const, content: system }, { role: 'user' as const, content: user }];
+}
+
+// 单表 LLM 调用超时(防挂起;config.extractTimeoutMs,默认 60s)
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`LLM 调用超时 ${ms}ms`)), ms))]);
 }
 
 export async function extractWorkbook(
@@ -114,55 +118,60 @@ export async function extractWorkbook(
     onProgress?.({ stage: 'sheet_start', key: s.key, label: s.label || s.key, index: i, total: sheets.length });
     let llmResult: any;
     try {
-      llmResult = await callDoubaoJson(buildMessages(s, tsv));
+      llmResult = await withTimeout(callDoubaoJson(buildMessages(s, tsv)), config.extractTimeoutMs);
     } catch (e: any) {
       if (e instanceof NotConfigured || e?.name === 'NotConfigured') { notConfigured = true; break; }
-      sheetReports.push({ key: s.key, rowsIn, rowsOut: 0 });
       errors.push({ sheetKey: s.key, date: '', key: '', msg: `LLM 调用失败:${e.message}` });
+      sheetReports.push({ key: s.key, rowsIn, rowsOut: 0 });
       onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut: 0, errorCount: errors.length - errsBefore });
       continue;
     }
-    anySheetOk = true;
-
-    if (s.key === 'expense') {
-      const expColByKey = new Map(s.columns.filter(c => c.kind === 'entry').map(c => [c.key, c]));
-      const rows: Record<string, unknown>[] = [];
-      for (const exp of llmResult.expenses || []) {
-        const row: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(exp)) {
-          const col = expColByKey.get(k);
-          if (!col) continue;
-          const r = coerceMetric(col.type, v);
-          if (!r.ok) errors.push({ sheetKey: 'expense', date: String(exp.pay_date ?? ''), key: k, msg: r.error });
-          else if (r.value !== undefined) row[k] = r.value;
+    console.log('[extraction] LLM', s.key, 'rowsIn=', rowsIn, '->', JSON.stringify(llmResult).slice(0, 800));
+    let rowsOut = 0;
+    try {
+      anySheetOk = true;
+      if (s.key === 'expense') {
+        const expColByKey = new Map(s.columns.filter(c => c.kind === 'entry').map(c => [c.key, c]));
+        const rows: Record<string, unknown>[] = [];
+        for (const exp of llmResult?.expenses || []) {
+          const row: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(exp)) {
+            const col = expColByKey.get(k);
+            if (!col) continue;
+            const r = coerceMetric(col.type, v);
+            if (!r.ok) errors.push({ sheetKey: 'expense', date: String(exp.pay_date ?? ''), key: k, msg: r.error });
+            else if (r.value !== undefined) row[k] = r.value;
+          }
+          rows.push(row);
         }
-        rows.push(row);
+        expenseRows = rows;
+        rowsOut = rows.length;
+      } else {
+        const colByKey = new Map(s.columns.filter(c => c.kind === 'entry' && c.key !== 'date' && c.key !== 'pay_date').map(c => [c.key, c]));
+        for (const item of llmResult?.rows || []) {
+          const date = normalizeDate(item.date);
+          if (!date) { errors.push({ sheetKey: s.key, date: String(item.date ?? ''), key: 'date', msg: `日期格式错误:${item.date ?? ''}` }); continue; }
+          const metrics: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(item.metrics || {})) {
+            const col = colByKey.get(k);
+            if (!col) continue; // manual_derived / 未知键 -> 跳过
+            const r = coerceMetric(col.type, v);
+            if (!r.ok) errors.push({ sheetKey: s.key, date, key: k, msg: r.error });
+            else if (r.value !== undefined) metrics[k] = r.value;
+          }
+          if (Object.keys(metrics).length) {
+            dailyByDate.set(date, { ...(dailyByDate.get(date) || {}), ...metrics });
+            rowsOut++;
+          }
+        }
       }
-      expenseRows = rows;
-      sheetReports.push({ key: s.key, rowsIn, rowsOut: rows.length });
-      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut: rows.length, errorCount: errors.length - errsBefore });
-    } else {
-      const colByKey = new Map(s.columns.filter(c => c.kind === 'entry' && c.key !== 'date' && c.key !== 'pay_date').map(c => [c.key, c]));
-      let rowsOut = 0;
-      for (const item of llmResult.rows || []) {
-        const date = item.date ? String(item.date).slice(0, 10) : '';
-        if (!isValidDate(date)) { errors.push({ sheetKey: s.key, date: String(item.date ?? ''), key: 'date', msg: '日期格式错误' }); continue; }
-        const metrics: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(item.metrics || {})) {
-          const col = colByKey.get(k);
-          if (!col) continue; // manual_derived / 未知键 -> 跳过
-          const r = coerceMetric(col.type, v);
-          if (!r.ok) errors.push({ sheetKey: s.key, date, key: k, msg: r.error });
-          else if (r.value !== undefined) metrics[k] = r.value;
-        }
-        if (Object.keys(metrics).length) {
-          dailyByDate.set(date, { ...(dailyByDate.get(date) || {}), ...metrics });
-          rowsOut++;
-        }
-      }
-      sheetReports.push({ key: s.key, rowsIn, rowsOut });
-      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut, errorCount: errors.length - errsBefore });
+    } catch (e: any) {
+      // LLM 返回结构异常:记错误跳过此表,继续下一张(不中止整体抽取)
+      errors.push({ sheetKey: s.key, date: '', key: '', msg: `解析 LLM 输出失败:${e.message}` });
+      rowsOut = 0;
     }
+    sheetReports.push({ key: s.key, rowsIn, rowsOut });
+    onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut, errorCount: errors.length - errsBefore });
   }
 
   if (notConfigured) return { ok: false, code: 'not_configured', configured: false, error: 'AI 未配置' };
