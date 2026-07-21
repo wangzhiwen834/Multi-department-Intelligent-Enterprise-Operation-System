@@ -136,3 +136,21 @@ CREATE INDEX IF NOT EXISTS idx_workbook_shop_period_live ON workbook(shop_id, pe
 ALTER TABLE workbook ADD COLUMN IF NOT EXISTS last_extracted_at TIMESTAMPTZ;  -- 上次 AI 抽取时间(调度跳过 + /status)
 ALTER TABLE daily_metric ADD COLUMN IF NOT EXISTS last_source TEXT;            -- 'ai'(替代 sync 后唯一来源,留字段备查)
 ALTER TABLE expense ADD COLUMN IF NOT EXISTS source TEXT;                      -- 'ai'
+
+-- 子项目4:AI 模型管理(自动从 Ark /models 拉取 + 按 AI 功能分配)
+CREATE TABLE IF NOT EXISTS ai_model (
+  id SERIAL PRIMARY KEY,
+  model_id TEXT NOT NULL UNIQUE,        -- Ark 模型 id,如 doubao-seed-2-1-pro-260628
+  label TEXT NOT NULL,                  -- 显示名(Ark name 字段)
+  kind TEXT NOT NULL DEFAULT 'chat',    -- chat(文本生成) | image(文生图) | other(视频/3D/embedding,不可分配)
+  status TEXT,                          -- Ark status(Active/Retiring/Shutdown;拉取只存非 Shutdown/Retiring)
+  task_type JSONB,                      -- Ark task_type 数组,留展示
+  fetched_at TIMESTAMPTZ,               -- 上次从 Ark 拉取时间
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ai_feature_config (
+  feature TEXT PRIMARY KEY,             -- chat | poster | extraction
+  model_id TEXT NOT NULL REFERENCES ai_model(model_id) ON DELETE RESTRICT,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
