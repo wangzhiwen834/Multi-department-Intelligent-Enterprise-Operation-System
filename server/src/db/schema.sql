@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS daily_metric (
   UNIQUE (shop_id, date)
 );
 CREATE INDEX IF NOT EXISTS idx_daily_metric_metrics ON daily_metric USING GIN (metrics);
+-- 大屏全店 KPI/趋势按 date BETWEEN 过滤(无 shop_id),补 date 索引支撑。
+CREATE INDEX IF NOT EXISTS idx_daily_metric_date ON daily_metric(date);
 
 CREATE TABLE IF NOT EXISTS expense (
   id SERIAL PRIMARY KEY,

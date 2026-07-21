@@ -91,7 +91,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
         <h1 class="od-module-title">{{ activeLabel }}</h1>
         <div class="od-top-right">
           <input type="month" :value="period"
-            v-if="!(module === 'ops' && shop)"
+            v-if="!(module === 'ops' && shop) && module !== 'dashboard'"
             @change="period = ($event.target as HTMLInputElement).value" class="od-month" />
           <span class="od-user">{{ user?.name }} · {{ user?.role === 'chairman' ? '董事长' : user?.role === 'manager' ? '经理' : '员工' }}</span>
           <button class="od-logout" @click="onLogout">退出</button>
@@ -105,7 +105,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
 
       <!-- 内容区 -->
       <main class="od-content">
-        <Dashboard v-if="module === 'dashboard'" v-model:period="period" />
+        <Dashboard v-if="module === 'dashboard'" />
         <ShopList v-else-if="module === 'ops' && !shop" :user="user" :period="period" @pick="onPick" />
         <WorkbookManager v-else-if="module === 'ops' && shop && !openedPeriod" :shop="shop" @open="onOpenPeriod" @back="onManagerBack" />
         <Workbook v-else-if="module === 'ops' && shop && openedPeriod" :shop="shop" :period="openedPeriod" @back="onWorkbookBack" />

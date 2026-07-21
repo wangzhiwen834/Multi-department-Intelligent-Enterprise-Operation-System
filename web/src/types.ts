@@ -55,12 +55,28 @@ export interface AuditLogEntry {
 export interface AuditLogPage { items: AuditLogEntry[]; total: number; page: number; pageSize: number }
 
 export interface DashboardOverview {
-  period: string; shopId: number | null;
-  kpis: { totalRevenue: number; totalCustomers: number; avgCustomerPrice: number; totalRecharge: number };
-  taskProgress: number; timeProgress: number;
-  revenueTrend: { date: string; revenue: number }[];
-  shopRanking: { shopId: number; shopName: string; revenue: number; target: number; taskProgress: number }[];
+  granularity: 'day' | 'week' | 'month' | 'year';
+  date: string;            // YYYY-MM-DD(请求的锚点日)
+  rangeStart: string;      // YYYY-MM-DD
+  rangeEnd: string;        // YYYY-MM-DD
+  shopId: number | null;
+  kpis: {
+    revenue: number;             // 营业收入 Σ
+    customersTotal: number;      // 总客流 Σ
+    avgCustomerPrice: number;    // Σrevenue/Σcustomers 重算
+    rechargeTotal: number;       // 充值总额 Σ
+    totalClocks: number;         // 总钟数 Σ
+    newMembers: number;          // 新增会员 Σ
+    therapistAttendance: number; // 技师出勤(人天)Σ
+    therapistWage: number;       // 技师工资 Σ
+    memberConsume: number;       // 会员消费 Σ
+  };
+  revenueTrend: { label: string; revenue: number }[];
+  customerStructure: { member: number; group: number; walkin: number };
+  clockStructure: { arranged: number; requested: number; added: number };
+  rechargeStructure: { first: number; renew: number; gift: number };
   businessStructure: { footbath: number; spa: number; minor: number };
   paymentChannels: { cash: number; douyin: number; meituan: number; pos: number; alipay: number; wechat: number };
   expenseBySubject: { subject: string; amount: number }[];
+  shopRanking: { shopId: number; shopName: string; revenue: number }[];
 }

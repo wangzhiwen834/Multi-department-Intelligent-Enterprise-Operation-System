@@ -75,8 +75,8 @@ export const api = {
     req<SyncResult>(`/api/workbooks/${id}/sync`, { method: 'POST', body: JSON.stringify(body) }),
   ledger: (shopId: number, period: string) =>
     req<{ period: string; days: { date: string; revenue: number; expense: number; running_balance: number }[] }>(`/api/shops/${shopId}/ledger?period=${period}`),
-  dashboardOverview: (period: string, shopId?: number) =>
-    req<DashboardOverview>(`/api/dashboard/overview?period=${period}${shopId ? `&shopId=${shopId}` : ''}`),
+  dashboardOverview: (granularity: 'day' | 'week' | 'month' | 'year', date: string, shopId?: number) =>
+    req<DashboardOverview>(`/api/dashboard/overview?granularity=${granularity}&date=${date}${shopId ? `&shopId=${shopId}` : ''}`),
   aiChat: (message: string, period: string) =>
     req<{ answer: string; configured: boolean; error?: string }>('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message, period }) }),
   aiInfo: () => req<{ chatModel: string; posterModel: string; configured: boolean }>('/api/ai/info'),
