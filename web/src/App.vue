@@ -5,6 +5,7 @@ import type { Shop, User } from './types';
 import Login from './views/Login.vue';
 import ShopList from './views/ShopList.vue';
 import Workbook from './views/Workbook.vue';
+import WorkbookManager from './views/WorkbookManager.vue';
 import Dashboard from './views/Dashboard.vue';
 import Chat from './views/Chat.vue';
 import Poster from './views/Poster.vue';
@@ -19,6 +20,7 @@ const user = ref<User | null>(null);
 const booted = ref(false);
 const module = ref<Module>('dashboard');
 const shop = ref<Shop | null>(null);
+const openedPeriod = ref<string | null>(null);
 const period = ref(new Date().toISOString().slice(0, 7));
 const sidebarCollapsed = ref(false);
 const toggleSidebar = () => { sidebarCollapsed.value = !sidebarCollapsed.value; };
@@ -31,9 +33,11 @@ onMounted(() => {
 
 const onLogin = (u: User, t: string) => { setToken(t); user.value = u; module.value = 'dashboard'; };
 const onLogout = () => { clearToken(); user.value = null; shop.value = null; };
-const onPick = (s: Shop) => { shop.value = s; };          // 公司经营 -> 选店 -> 进 Workbook
-const onBackToOps = () => { shop.value = null; };          // Workbook 返回 -> 回店铺列表
-const setModule = (m: Module) => { if (m !== 'ops') shop.value = null; module.value = m; };
+const onPick = (s: Shop) => { shop.value = s; openedPeriod.value = null; };   // 选店 -> 进管理器
+const onOpenPeriod = (p: string) => { period.value = p; openedPeriod.value = p; };  // 管理器 -> 进工作簿
+const onWorkbookBack = () => { openedPeriod.value = null; };                   // 工作簿返回 -> 回管理器
+const onManagerBack = () => { shop.value = null; openedPeriod.value = null; }; // 管理器返回 -> 回店铺列表
+const setModule = (m: Module) => { if (m !== 'ops') { shop.value = null; openedPeriod.value = null; } module.value = m; };
 
 const showEmployees = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
 const showAudit = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
@@ -103,7 +107,8 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
       <main class="od-content">
         <Dashboard v-if="module === 'dashboard'" v-model:period="period" />
         <ShopList v-else-if="module === 'ops' && !shop" :user="user" :period="period" @pick="onPick" />
-        <Workbook v-else-if="module === 'ops' && shop" :shop="shop" v-model:period="period" @back="onBackToOps" />
+        <WorkbookManager v-else-if="module === 'ops' && shop && !openedPeriod" :shop="shop" @open="onOpenPeriod" @back="onManagerBack" />
+        <Workbook v-else-if="module === 'ops' && shop && openedPeriod" :shop="shop" :period="openedPeriod" @back="onWorkbookBack" />
         <Chat v-else-if="module === 'chat'" :period="period" />
         <Poster v-else-if="module === 'poster'" />
         <Employees v-else-if="module === 'employees'" :user="user" />
