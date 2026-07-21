@@ -19,6 +19,7 @@ const tpl = {
       { key: 'date', label: '日期', type: 'date', kind: 'entry' },
       { key: 'revenue', label: '营业收入', type: 'number', kind: 'entry' },
       { key: 'customers_total', label: '总客流', type: 'int', kind: 'entry' },
+      { key: 'therapist_attendance', label: '技师出勤', type: 'int', kind: 'entry' },
       { key: 'customer_price', label: '客单价', type: 'number', kind: 'manual_derived' },
     ]},
     { key: 'reconciliation', label: '收入对账', layout: 'row_per_day', grain: 'per_day', columns: [
@@ -197,5 +198,32 @@ describe('extractWorkbook', () => {
     expect(r.errors!.some(e => e.sheetKey === 'daily_ops' && e.msg.includes('解析 LLM 输出失败'))).toBe(true);
     const dm = await query('SELECT metrics FROM daily_metric WHERE shop_id=$1 AND date=$2', [shopId, '2026-07-02']);
     expect(Number(dm.rows[0].metrics.cash)).toBe(50);
+  });
+
+  it('转置表(daily_ops)确定性解析:Excel 序列号日期 + 括号 label 匹配(不调 LLM)', async () => {
+    // 转置快照:row2=日期序列号(46204=2026-07-01..03),row3=营业收入,row4=总客流,row5=技师出勤（人）
+    await query('UPDATE workbook_snapshot SET data=$2 WHERE workbook_id=$1', [wbId, JSON.stringify({
+      name: 't', styles: {}, sheetOrder: ['daily_ops'],
+      sheets: {
+        daily_ops: { id: 'daily_ops', name: '经营报表', cellData: {
+          0: { 0: { v: '标题' } },
+          1: { 0: { v: '日期/星期' }, 1: { v: '行次' }, 2: { v: '星期三' }, 3: { v: '星期四' }, 4: { v: '星期五' } },
+          2: { 2: { v: 46204 }, 3: { v: 46205 }, 4: { v: 46206 } },
+          3: { 0: { v: '营业收入' }, 1: { v: 3 }, 2: { v: 8026 }, 3: { v: 8073 }, 4: { v: 6940 } },
+          4: { 0: { v: '总客流' }, 1: { v: 5 }, 2: { v: 25 }, 3: { v: 31 }, 4: { v: 24 } },
+          5: { 0: { v: '技师出勤（人）' }, 1: { v: 16 }, 2: { v: 16 }, 3: { v: 14 }, 4: { v: 12 } },
+        } },
+      },
+    })]);
+    vi.mocked(callDoubaoJson).mockReset();
+    const r = await extractWorkbook(wbId, { source: 'manual', userId: 1 });
+    expect(r.ok).toBe(true);
+    expect(r.extracted!.dailyMetrics).toBe(3);
+    expect(r.errors).toEqual([]);
+    expect(callDoubaoJson).not.toHaveBeenCalled(); // 转置表不调 LLM
+    const dm1 = await query('SELECT metrics FROM daily_metric WHERE shop_id=$1 AND date=$2', [shopId, '2026-07-01']);
+    expect(Number(dm1.rows[0].metrics.revenue)).toBe(8026);
+    expect(Number(dm1.rows[0].metrics.customers_total)).toBe(25);
+    expect(Number(dm1.rows[0].metrics.therapist_attendance)).toBe(16); // 技师出勤（人）-> 技师出勤 匹配
   });
 });

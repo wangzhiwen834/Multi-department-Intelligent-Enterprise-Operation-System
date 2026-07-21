@@ -30,7 +30,7 @@ export type ProgressEvent =
   | { stage: 'write' };
 
 // 序列化快照某表 cellData -> 紧凑 TSV(第0行表头 + 非空数据行)。后端纯 JSON 操作,不依赖 Univer。
-function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {  const cd = sheet?.cellData || {};
+export function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {  const cd = sheet?.cellData || {};
   const rowIdx = Object.keys(cd).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
   if (!rowIdx.length) return { tsv: '', rowsIn: 0 };
   const lines: string[] = [];
@@ -55,7 +55,7 @@ function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {  const cd
   return { tsv: lines.join('\n'), rowsIn };
 }
 
-function buildMessages(sheet: TplSheet, tsv: string) {
+export function buildMessages(sheet: TplSheet, tsv: string) {
   const isExpense = sheet.key === 'expense';
   const entryCols = sheet.columns.filter(c => c.kind === 'entry' && c.key !== 'date' && c.key !== 'pay_date');
   const fields = entryCols.map(c => `- ${c.key}=${c.label || c.key}`).join('\n');
@@ -73,6 +73,73 @@ function buildMessages(sheet: TplSheet, tsv: string) {
 // 单表 LLM 调用超时(防挂起;config.extractTimeoutMs,默认 60s)
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`LLM 调用超时 ${ms}ms`)), ms))]);
+}
+
+// Excel 序列号 -> YYYY-MM-DD(serial 1 = 1900-01-01;1899-12-30 起算补偿 1900 闰年 bug)
+function excelSerialToISO(serial: number): string | null {
+  if (typeof serial !== 'number' || !Number.isFinite(serial) || serial < 1) return null;
+  const d = new Date(Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+// 标签归一化变体:去括号字符(充值（首充）->充值首充)+ 去括号内容组(技师出勤（人）->技师出勤)
+// 返回多种形式,任一匹配即可(数据用全角括号,模板无括号,差异靠此兜底)
+function labelVariants(s: string): string[] {
+  const t = (s || '').trim();
+  const noParenChars = t.replace(/[（）()]/g, '');
+  const noParenGroups = t.replace(/[（(][^）)]*[）)]/g, '');
+  return Array.from(new Set([t, noParenChars, noParenGroups].filter(Boolean)));
+}
+
+// 转置表确定性解析(经营报表实际布局):col0=指标名,col1=行次,col2..=每日值,某行=日期(Excel 序列号或日期串)。
+// 模板 entry 列 label 经 labelVariants 建多键索引,与数据 col0 匹配。无需 LLM。返回 {rows, errors}。
+export function parseTransposed(sheet: any, tplSheet: TplSheet): { rows: { date: string; metrics: Record<string, unknown> }[]; errors: ExtractError[] } {
+  const cd = sheet?.cellData || {};
+  const rowIdx = Object.keys(cd).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
+  const errors: ExtractError[] = [];
+  // 1. 找日期行:cols>=2 中有 >=3 个可解析日期(序列号或日期串)
+  let dateCols: { col: number; iso: string }[] = [];
+  let dateRowNum = -1;
+  for (const r of rowIdx) {
+    const row = cd[r] || {};
+    const found: { col: number; iso: string }[] = [];
+    for (const c of Object.keys(row).map(Number).filter(c => c >= 2)) {
+      const v = row[c]?.v;
+      if (v == null || v === '') continue;
+      const iso = typeof v === 'number' ? excelSerialToISO(v) : normalizeDate(v);
+      if (iso) found.push({ col: c, iso });
+    }
+    if (found.length >= 3) { dateCols = found; dateRowNum = r; break; }
+  }
+  if (!dateCols.length) return { rows: [], errors };
+  // 2. label -> {key,type} 多键索引
+  const map = new Map<string, { key: string; type: string }>();
+  for (const col of tplSheet.columns) {
+    if (col.kind !== 'entry' || col.key === 'date' || col.key === 'pay_date') continue;
+    for (const v of labelVariants(col.label || col.key)) map.set(v, { key: col.key, type: col.type });
+  }
+  // 3. 日期行之后的行:col0 匹配指标 -> 各日期列取值
+  const byDate = new Map<string, Record<string, unknown>>();
+  for (const { iso } of dateCols) byDate.set(iso, {});
+  for (const r of rowIdx) {
+    if (r <= dateRowNum) continue;
+    const row = cd[r] || {};
+    const label = String(row[0]?.v ?? '').trim();
+    if (!label) continue;
+    let mapped: { key: string; type: string } | undefined;
+    for (const v of labelVariants(label)) { mapped = map.get(v); if (mapped) break; }
+    if (!mapped) continue; // 非模板指标(时间进度/任务完成进度/商品类销售收入/合计行)跳过
+    for (const { col, iso } of dateCols) {
+      const raw = row[col]?.v;
+      if (raw == null || raw === '') continue;
+      const cr = coerceMetric(mapped.type, raw);
+      if (cr.ok && cr.value !== undefined) (byDate.get(iso) as Record<string, unknown>)[mapped.key] = cr.value;
+      else if (!cr.ok) errors.push({ sheetKey: tplSheet.key, date: iso, key: mapped.key, msg: cr.error });
+    }
+  }
+  const rows = dateCols.map(d => ({ date: d.iso, metrics: byDate.get(d.iso) || {} })).filter(d => Object.keys(d.metrics).length);
+  return { rows, errors };
 }
 
 export async function extractWorkbook(
@@ -116,6 +183,29 @@ export async function extractWorkbook(
     const sheet = snap.data?.sheets?.[s.key];
     const { tsv, rowsIn } = sheet ? serializeSheet(sheet) : { tsv: '', rowsIn: 0 };
     onProgress?.({ stage: 'sheet_start', key: s.key, label: s.label || s.key, index: i, total: sheets.length });
+    // 转置表(经营报表):确定性解析,无需 LLM(规则结构,LLM 反而易超时/解析错)
+    if (s.layout === 'transposed') {
+      const parsed = parseTransposed(sheet, s);
+      if (parsed.rows.length) {
+        anySheetOk = true;
+        let rowsOut = 0;
+        for (const { date, metrics } of parsed.rows) {
+          if (Object.keys(metrics).length) { dailyByDate.set(date, { ...(dailyByDate.get(date) || {}), ...metrics }); rowsOut++; }
+        }
+        errors.push(...parsed.errors);
+        sheetReports.push({ key: s.key, rowsIn, rowsOut });
+        onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut, errorCount: errors.length - errsBefore });
+        console.log('[extraction] transposed', s.key, 'rowsIn=', rowsIn, '-> rowsOut=', rowsOut, 'errs=', parsed.errors.length);
+        continue;
+      }
+      // 未检测到转置结构(如旧式行式快照)-> 回退 LLM
+    }
+    // 空表不调 LLM(避免浪费/超时)
+    if (rowsIn === 0) {
+      sheetReports.push({ key: s.key, rowsIn: 0, rowsOut: 0 });
+      onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn: 0, rowsOut: 0, errorCount: 0 });
+      continue;
+    }
     let llmResult: any;
     try {
       llmResult = await withTimeout(callDoubaoJson(buildMessages(s, tsv)), config.extractTimeoutMs);
