@@ -60,6 +60,18 @@ workbookRouter.get('/shops/:shopId/workbooks', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// 软删除工作簿(有活跃锁拒绝;保留 snapshot 与已同步 metric,大屏数据不受影响)
+workbookRouter.delete('/workbooks/:id', auditLog('workbook.delete'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const lock = (await query('SELECT 1 FROM sheet_lock WHERE workbook_id=$1 AND expires_at > now() LIMIT 1', [id])).rows[0];
+    if (lock) return res.status(409).json({ error: '工作簿正在被编辑,无法删除' });
+    const r = await query('UPDATE workbook SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL RETURNING id', [id]);
+    if (!r.rows.length) return res.status(404).json({ error: '工作簿不存在或已删除' });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 // 存快照(表格编辑保存)
 workbookRouter.put('/workbooks/:id/snapshot', auditLog('workbook.save'), async (req, res, next) => {
   try {
