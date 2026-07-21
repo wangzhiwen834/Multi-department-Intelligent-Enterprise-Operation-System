@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../api';
-import { setupUniver, buildFromTemplate, extractForSync } from '../univer';
+import { setupUniver, buildFromTemplate } from '../univer';
 import { exportWorkbookToXlsx, importXlsxToWorkbook } from '../sheet-io';
-import type { Shop, Template, SyncResult, User } from '../types';
+import type { Shop, Template, ExtractResult, User } from '../types';
 
 const props = defineProps<{ shop: Shop; period: string }>();
 const emit = defineEmits<{ (e: 'update:period', p: string): void; (e: 'back'): void }>();
@@ -14,7 +14,7 @@ let fwb: any = null;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let wbId = 0;
 let tpl: Template | null = null;
-let me: User | null = null;
+const me = ref<User | null>(null);
 
 // bootstrap 已带 lockStatus,onMounted 复用避免重复请求;mountUniver 每次重建时刷新
 let bootLockStatus: any = null;
@@ -22,7 +22,7 @@ let bootLockStatus: any = null;
 const editing = ref(false);
 const holder = ref<string | null>(null);
 const msg = ref('');
-const syncResult = ref<SyncResult | null>(null);
+const extractResult = ref<ExtractResult | null>(null);
 const busy = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
@@ -56,7 +56,7 @@ const startHeartbeat = () => {
         const who = h.takeoverRequest.user_name;
         msg.value = `${who} 请求接管,正在保存…`;
         try {
-          await performSave();
+          await persistSnapshot();
           await api.yieldLock(wbId, SHEET_KEY);
           editing.value = false; holder.value = who; setEditable(false);
           msg.value = `已保存并让出编辑权,被 ${who} 接管`;
@@ -85,7 +85,7 @@ const startTakeoverPoll = () => {
   takeoverPoll = setInterval(async () => {
     try {
       const st: any = await api.lockStatus(wbId, SHEET_KEY);
-      if (st.user_name && st.user_name === me?.username) {
+      if (st.user_name && st.user_name === me.value?.username) {
         stopTakeoverPoll();
         await mountUniver();  // 重载快照(含被接管者刚保存的数据)
         editing.value = true; holder.value = null; startHeartbeat(); setEditable(true);
@@ -112,7 +112,7 @@ const startStatusPoll = () => {
     try {
       const st: any = await api.lockStatus(wbId, SHEET_KEY);
       if (st.held === false) holder.value = null;
-      else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
+      else if (st.user_name && st.user_name !== me.value?.username) holder.value = st.user_name;
       else holder.value = null;
     } catch { /* ignore */ }
   }, 1000);
@@ -128,21 +128,34 @@ const takeover = async () => {
     } else { holder.value = r.heldBy?.user_name ?? '他人'; msg.value = '对方仍持有,暂无法接管'; }
   } catch (e: any) { msg.value = e.message; }
 };
-const performSave = async () => {
+// 仅存快照(接管自动保存用,不调 LLM,避免浪费)
+const persistSnapshot = async () => {
   try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前单元格 */ }
   const snapshot = fwb.save();
   await api.putSnapshot(wbId, snapshot);
-  const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
-  const res = await api.sync(wbId, { dailyMetrics, expenses });
-  syncResult.value = res;
-  return res;
 };
+// 保存并 AI 抽取(编辑者持锁;保留 v1「保存即进大屏」即时性)
 const save = async () => {
   if (!editing.value) { msg.value = '请先进入编辑(获取锁)'; return; }
   busy.value = true; msg.value = '';
   try {
-    const res = await performSave();
-    msg.value = `已保存并同步${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`;
+    await persistSnapshot();
+    const res = await api.extractWorkbook(wbId, 'save');
+    extractResult.value = res;
+    msg.value = res.ok
+      ? `已保存并抽取 ${res.extracted.dailyMetrics} 条日报、${res.extracted.expenses} 条费用${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`
+      : (res.configured === false ? 'AI 未配置,请联系管理员' : `抽取失败:${res.error}`);
+  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
+};
+// 经理手动 AI 抽取(免锁,基于上次保存的快照刷新大屏)
+const manualExtract = async () => {
+  busy.value = true; msg.value = '';
+  try {
+    const res = await api.extractWorkbook(wbId, 'manual');
+    extractResult.value = res;
+    msg.value = res.ok
+      ? `AI 抽取完成:${res.extracted.dailyMetrics} 条日报、${res.extracted.expenses} 条费用${res.errors.length ? `,${res.errors.length} 项校验错误` : ''}`
+      : (res.configured === false ? 'AI 未配置,请联系管理员' : `抽取失败:${res.error}`);
   } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
 };
 
@@ -200,12 +213,12 @@ const mountWithSnapshot = (snapshot: any) => {
   initReadOnlyTimer = setTimeout(() => { initReadOnlyTimer = null; setEditable(editing.value); }, 150);
 };
 onMounted(async () => {
-  me = await api.me().catch(() => null);
+  me.value = await api.me().catch(() => null);
   await mountUniver();
   // 复用 bootstrap 已返回的 lockStatus,避免 onMounted 再发一次 lockStatus 请求
   const st: any = bootLockStatus ?? { held: false };
   if (st.held === false) { holder.value = null; editing.value = false; }
-  else if (st.user_name && st.user_name !== me?.username) holder.value = st.user_name;
+  else if (st.user_name && st.user_name !== me.value?.username) holder.value = st.user_name;
   else holder.value = null;
   startStatusPoll();
 });
@@ -232,12 +245,13 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
         <button class="od-btn-ghost" @click="exportXlsx" title="导出当前工作簿为 Excel 文件">导出</button>
         <button class="od-btn-ghost" @click="pickImport" :disabled="!editing || busy" title="从 Excel 导入,覆盖当前数据(需先编辑)">导入</button>
         <button class="od-btn-ghost" @click="save" :disabled="!editing || busy">保存并同步</button>
+        <button v-if="me?.role === 'manager' || me?.role === 'chairman'" class="od-btn-ghost" @click="manualExtract" :disabled="busy" title="基于上次保存的快照 AI 抽取到大屏(经理以上,无需编辑)">AI 抽取</button>
         <input ref="fileInputRef" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" @change="onImportFile" />
       </div>
     </div>
     <div v-if="msg" class="od-wb-msg">{{ msg }}</div>
-    <div v-if="syncResult?.errors.length" class="od-wb-err">
-      校验错误:<span v-for="(e,i) in syncResult.errors" :key="i">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}; </span>
+    <div v-if="extractResult?.errors.length" class="od-wb-err">
+      校验错误:<span v-for="(e,i) in extractResult.errors" :key="i">{{ e.sheetKey }}/{{ e.date }} {{ e.key }}:{{ e.msg }}; </span>
     </div>
     <!-- Univer 挂载点:禁动 -->
     <div ref="containerRef" class="od-wb-grid"></div>

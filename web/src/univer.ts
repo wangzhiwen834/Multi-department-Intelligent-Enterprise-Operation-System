@@ -38,40 +38,6 @@ export function buildFromTemplate(api: FUniver, template: TemplateDef, title: st
   return wb;
 }
 
-const readVal = (sheet: any, r: number, c: number) => {
-  const v = sheet.getRange(r, c).getValue();
-  return v === null || v === undefined || v === '' ? null : v;
-};
-
-// 从工作簿提取录入数据 -> { dailyMetrics, expenses }
-// 行式布局:第0行表头,数据从第1行;遇到日期列空则停止该表
-export function extractForSync(wb: any, template: TemplateDef) {
-  const dailyMetrics: any[] = [];
-  const expenses: any[] = [];
-  template.sheets.forEach(s => {
-    // 优先按 sheetId(=模板 key,建表时 id 即 s.key;重命名只改 name 不改 id,故跨重命名稳定)
-    // 回退按表名:兼容旧快照或删表后同名重建
-    const sheet = wb.getSheetBySheetId(s.key) ?? wb.getSheetByName(s.label);
-    if (!sheet) return;
-    const dateCol = s.columns.findIndex(c => c.key === 'date' || c.key === 'pay_date');
-    for (let r = 1; r < 400; r++) {
-      const dateRaw = dateCol >= 0 ? readVal(sheet, r, dateCol) : null;
-      if (dateRaw === null) break;
-      const date = String(dateRaw).slice(0, 10);
-      if (s.key === 'expense') {
-        const row: Record<string, unknown> = {};
-        s.columns.forEach((c, ci) => { row[c.key] = readVal(sheet, r, ci); });
-        expenses.push(row);
-      } else {
-        const metrics: Record<string, unknown> = {};
-        s.columns.forEach((c, ci) => { if (c.key !== 'date') metrics[c.key] = readVal(sheet, r, ci); });
-        dailyMetrics.push({ date, sheetKey: s.key, metrics });
-      }
-    }
-  });
-  return { dailyMetrics, expenses };
-}
-
 // 按需加载:把快照里某表的稀疏 cellData(带 style id)注入到已创建的工作表。
 // 反解 style id -> 内联样式,确保 setValues 能正确套用样式(styles 为 bootstrap 全量返回的全局样式表)。
 export function injectSheetCellData(sheet: any, cellData: any, styles: Record<string, any>) {

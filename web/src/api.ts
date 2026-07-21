@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, SyncResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
+import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
 
 const TOKEN_KEY = 'token';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
@@ -69,8 +69,10 @@ export const api = {
     reqLock<{ acquired: boolean; pending?: boolean; lock?: unknown; heldBy?: { user_name: string } }>(`/api/workbooks/${id}/locks/${sheetKey}/takeover`, { method: 'POST' }),
   yieldLock: (id: number, sheetKey: string) =>
     reqLock<{ yielded: boolean }>(`/api/workbooks/${id}/locks/${sheetKey}/yield`, { method: 'POST' }),
-  sync: (id: number, body: { dailyMetrics: unknown[]; expenses: unknown[] }) =>
-    req<SyncResult>(`/api/workbooks/${id}/sync`, { method: 'POST', body: JSON.stringify(body) }),
+  extractWorkbook: (id: number, source: 'save' | 'manual') =>
+    req<ExtractResult>(`/api/workbooks/${id}/extract`, { method: 'POST', body: JSON.stringify({ source }) }),
+  extractStatus: (id: number) =>
+    req<{ lastExtractedAt: string | null }>(`/api/workbooks/${id}/extract/status`),
   ledger: (shopId: number, period: string) =>
     req<{ period: string; days: { date: string; revenue: number; expense: number; running_balance: number }[] }>(`/api/shops/${shopId}/ledger?period=${period}`),
   dashboardOverview: (granularity: 'day' | 'week' | 'month' | 'year', date: string, shopId?: number) =>

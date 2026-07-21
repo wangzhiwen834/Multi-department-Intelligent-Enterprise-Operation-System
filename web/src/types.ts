@@ -38,7 +38,14 @@ export interface LockStatus {
   user_id?: number; user_name?: string; expires_at?: string; acquired_at?: string; held?: boolean;
 }
 export interface SyncError { sheetKey: string; date: string; key: string; msg: string }
-export interface SyncResult { autoSums: Record<string, Record<string, number>>; errors: SyncError[] }
+export interface ExtractResult {
+  ok: boolean;
+  configured?: boolean;                              // false = AI 未配置
+  extracted: { dailyMetrics: number; expenses: number };
+  errors: SyncError[];
+  sheets?: { key: string; rowsIn: number; rowsOut: number }[];
+  error?: string;
+}
 export interface User { id: number; username: string; name: string; role: string; department: string | null; phone?: string; status?: 'active' | 'disabled'; created_at?: string; }
 
 export interface AuditLogEntry {
