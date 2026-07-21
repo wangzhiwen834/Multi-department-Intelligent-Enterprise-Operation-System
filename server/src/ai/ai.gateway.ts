@@ -27,6 +27,35 @@ async function callDoubao(messages: ChatMessage[]) {
   return r.json();
 }
 
+// AI 未配置(缺 DOUBAO_API_KEY)专用错误,供抽取管线区分"未配置"与"调用失败"
+export class NotConfigured extends Error {
+  constructor(msg = 'AI 未配置:请在 server/.env 设置 DOUBAO_API_KEY') { super(msg); this.name = 'NotConfigured'; }
+}
+
+// 结构化输出:response_format json_object + temperature 0,供 AI 抽取(单轮,返回 JSON.parse 后的对象)。
+// 与 callDoubao 区别:不带 tools、强制 JSON 输出、temperature 0、用 extractModel。
+export async function callDoubaoJson(messages: ChatMessage[]): Promise<any> {
+  if (!config.doubaoApiKey) throw new NotConfigured();
+  const url = `${config.doubaoBaseUrl}/chat/completions`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.doubaoApiKey}` },
+    body: JSON.stringify({ model: config.extractModel, messages, response_format: { type: 'json_object' }, temperature: 0 }),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`豆包 API ${r.status}: ${t.slice(0, 300)}`);
+  }
+  const resp = await r.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const content = resp.choices?.[0]?.message?.content;
+  if (!content) throw new Error('AI 未返回内容');
+  try {
+    return JSON.parse(content);
+  } catch {
+    throw new Error('AI 返回非合法 JSON');
+  }
+}
+
 export async function chat(message: string, ctx: AiCtx): Promise<{ answer: string; configured: boolean; error?: string }> {
   if (!config.doubaoApiKey) {
     return {
