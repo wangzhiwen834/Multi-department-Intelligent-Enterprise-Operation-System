@@ -18,22 +18,32 @@ let me: User | null = null;
 
 const sheetOrderIds = ref<string[]>([]);
 const loadedSheets = new Set<string>();
+const loadingPromises = new Map<string, Promise<void>>();
 let snapshotStyles: Record<string, any> = {};
 let activePoll: ReturnType<typeof setInterval> | null = null;
 const stopActivePoll = () => { if (activePoll) { clearInterval(activePoll); activePoll = null; } };
 
-// 切到未加载的表时按需拉取并注入
-const ensureSheetLoaded = async (sid: string) => {
-  if (loadedSheets.has(sid)) return;
-  const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
-  if (!fwbAny) return;
-  const active = (fwbAny as any).getActiveSheet();
-  if (!active || active.getSheetId() !== sid) return;
-  loadedSheets.add(sid); // 先标记,防并发重复
-  try {
-    const { cellData } = await api.getSheetCellData(wbId, sid);
-    injectSheetCellData(active, cellData, snapshotStyles);
-  } catch { loadedSheets.delete(sid); }
+// 切到未加载的表时按需拉取并注入。loadingPromises 防并发重复;仅在注入成功后才标记 loaded,
+// 避免"标记早于注入"导致 hydrateAllSheets 误判已加载而跳过、保存时覆写空数据。
+const ensureSheetLoaded = (sid: string): Promise<void> => {
+  if (loadedSheets.has(sid)) return Promise.resolve();
+  const existing = loadingPromises.get(sid);
+  if (existing) return existing;
+  const p = (async () => {
+    const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
+    const sheet = fwbAny && (fwbAny as any).getSheetByName(sheetNameOf(sid));
+    if (!sheet) return;
+    try {
+      const { cellData } = await api.getSheetCellData(wbId, sid);
+      injectSheetCellData(sheet, cellData, snapshotStyles);
+      loadedSheets.add(sid);
+    } catch {
+      msg.value = `工作表「${sheetNameOf(sid) ?? sid}」加载失败,请重试`;
+    }
+  })();
+  loadingPromises.set(sid, p);
+  p.finally(() => loadingPromises.delete(sid));
+  return p;
 };
 const startActivePoll = () => {
   stopActivePoll();
@@ -45,20 +55,14 @@ const startActivePoll = () => {
   }, 300);
 };
 
-// 保存前补全所有未加载表,防止 fwb.save() 用空 cellData 覆盖未访问表数据
-const hydrateAllSheets = async () => {
-  const fwbAny = univerHandle?.univerAPI.getActiveWorkbook();
-  if (!fwbAny) return;
+// 保存前补全所有未加载表:逐张 await ensureSheetLoaded(复用 in-flight promise),
+// 任一加载失败则返回 false,performSave 据此中止保存,防止覆写空数据。
+const hydrateAllSheets = async (): Promise<boolean> => {
   for (const sid of sheetOrderIds.value) {
-    if (loadedSheets.has(sid)) continue;
-    const sheet = (fwbAny as any).getSheetByName(sheetNameOf(sid));
-    if (!sheet) continue;
-    try {
-      const { cellData } = await api.getSheetCellData(wbId, sid);
-      injectSheetCellData(sheet, cellData, snapshotStyles);
-    } catch { /* 单表补全失败不阻塞保存 */ }
-    loadedSheets.add(sid);
+    await ensureSheetLoaded(sid);
+    if (!loadedSheets.has(sid)) return false;
   }
+  return true;
 };
 // sheetId -> 表名映射(在 mountUniver 里由 snapshot sheets[id].name 填充,供 hydrateAllSheets 按名取表)
 const sheetNameMap: Record<string, string> = {};
@@ -174,14 +178,20 @@ const takeover = async () => {
   } catch (e: any) { msg.value = e.message; }
 };
 const performSave = async () => {
-  await hydrateAllSheets();
-  try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前正在编辑的单元格,无编辑则忽略 */ }
-  const snapshot = fwb.save();
-  await api.putSnapshot(wbId, snapshot);
-  const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
-  const res = await api.sync(wbId, { dailyMetrics, expenses });
-  syncResult.value = res;
-  return res;
+  stopActivePoll();
+  try {
+    const allLoaded = await hydrateAllSheets();
+    if (!allLoaded) throw new Error('部分工作表加载失败,保存已取消,请重试');
+    try { await (fwb as any)?.endEditingAsync?.(true); } catch { /* 提交当前单元格 */ }
+    const snapshot = fwb.save();
+    await api.putSnapshot(wbId, snapshot);
+    const { dailyMetrics, expenses } = extractForSync(fwb, tpl!.definition);
+    const res = await api.sync(wbId, { dailyMetrics, expenses });
+    syncResult.value = res;
+    return res;
+  } finally {
+    startActivePoll();
+  }
 };
 const save = async () => {
   if (!editing.value) { msg.value = '请先进入编辑(获取锁)'; return; }
