@@ -101,6 +101,13 @@ const scopeLabel = computed(() => shopId.value
 
 const money = (n: number) => '¥' + (n || 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
 
+// 饼图标签:名 + 值(占比);无数据占位只显示"无数据"
+const pieLabel = () => ({
+  show: true,
+  color: theme.text,
+  formatter: (p: any) => p.name === '无数据' ? '无数据' : `${p.name}: ${Number(p.value).toLocaleString('zh-CN')} (${p.percent}%)`,
+});
+
 const kpiCards = computed(() => {
   const k = data.value?.kpis;
   return [
@@ -147,7 +154,7 @@ const customerOpt = computed<EChartsOption>(() => {
     textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
     series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
       data: items.length ? items : [{ name: '无数据', value: 1 }],
-      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: { color: theme.text } }],
+      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: pieLabel() }],
   };
 });
 
@@ -186,7 +193,7 @@ const rechargeOpt = computed<EChartsOption>(() => {
     textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
     series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
       data: items.length ? items : [{ name: '无数据', value: 1 }],
-      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: { color: theme.text } }],
+      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: pieLabel() }],
   };
 });
 
@@ -202,33 +209,41 @@ const structOpt = computed<EChartsOption>(() => {
     textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
     series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
       data: items.length ? items : [{ name: '无数据', value: 1 }],
-      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: { color: theme.text } }],
+      color: [theme.palette[0], theme.palette[1], theme.palette[2]], label: pieLabel() }],
   };
 });
 
-// 6. 支付渠道:pie(过滤零值,无数据时占位)
-const payOpt = computed<EChartsOption>(() => {
-  const p = data.value?.paymentChannels;
+// 6. 客流新老:pie 新增会员 / 老客(总客流-新增)。daily_ops 已聚合 KPI,无需后端改动
+const customerNewOpt = computed<EChartsOption>(() => {
+  const k = data.value?.kpis;
+  const newM = k?.newMembers || 0;
+  const old = Math.max(0, (k?.customersTotal || 0) - newM);
   const items = [
-    { name: '微信', value: p?.wechat || 0 }, { name: '美团', value: p?.meituan || 0 },
-    { name: '抖音', value: p?.douyin || 0 }, { name: '支付宝', value: p?.alipay || 0 },
-    { name: 'POS', value: p?.pos || 0 }, { name: '现金', value: p?.cash || 0 },
+    { name: '新增会员', value: newM },
+    { name: '老客', value: old },
   ].filter(i => i.value > 0);
   return {
-    textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText }, type: 'scroll' },
-    series: [{ type: 'pie', radius: '60%', center: ['50%', '45%'], data: items.length ? items : [{ name: '无数据', value: 1 }], color: theme.palette, label: { color: theme.text } }],
+    textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
+    series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
+      data: items.length ? items : [{ name: '无数据', value: 1 }],
+      color: [theme.palette[0], theme.palette[1]], label: pieLabel() }],
   };
 });
 
-// 7. 费用 Top:横向柱
-const expOpt = computed<EChartsOption>(() => ({
-  textStyle: { color: theme.subText },
-  grid: { left: 85, right: 24, top: 20, bottom: 20 },
-  tooltip: { trigger: 'axis' },
-  xAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
-  yAxis: { type: 'category', data: (data.value?.expenseBySubject || []).map(e => e.subject).reverse(), axisLine: { lineStyle: { color: theme.subText } }, axisLabel: { color: theme.text } },
-  series: [{ type: 'bar', data: (data.value?.expenseBySubject || []).map(e => e.amount).reverse(), itemStyle: { color: theme.gold, borderRadius: [0, 6, 6, 0] } }],
-}));
+// 7. 充值与消耗:pie 充值总额 / 会员消耗(member_consume 负值取绝对值)
+const rechargeFlowOpt = computed<EChartsOption>(() => {
+  const k = data.value?.kpis;
+  const items = [
+    { name: '充值总额', value: k?.rechargeTotal || 0 },
+    { name: '会员消耗', value: Math.abs(k?.memberConsume || 0) },
+  ].filter(i => i.value > 0);
+  return {
+    textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
+    series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'],
+      data: items.length ? items : [{ name: '无数据', value: 1 }],
+      color: [theme.palette[0], theme.palette[1]], label: pieLabel() }],
+  };
+});
 
 // 8. 门店营收排名:横向柱,点击柱子钻取选店
 const rankingOpt = computed<EChartsOption>(() => ({
@@ -351,16 +366,16 @@ const kpiTints = [
           <div class="chart-box"><Chart :option="structOpt" :theme="theme" /></div>
         </div>
         <div class="card">
-          <div class="card-title"><h3>支付渠道</h3><span class="meta">收款占比</span></div>
-          <div class="chart-box"><Chart :option="payOpt" :theme="theme" /></div>
+          <div class="card-title"><h3>客流新老</h3><span class="meta">新增 / 老客</span></div>
+          <div class="chart-box"><Chart :option="customerNewOpt" :theme="theme" /></div>
         </div>
       </div>
 
       <!-- 费用 Top + 门店营收排名 -->
       <div class="grid row-even">
         <div class="card">
-          <div class="card-title"><h3>费用 Top</h3><span class="meta">支出科目</span></div>
-          <div class="chart-box"><Chart :option="expOpt" :theme="theme" /></div>
+          <div class="card-title"><h3>充值与消耗</h3><span class="meta">进账 / 出账</span></div>
+          <div class="chart-box"><Chart :option="rechargeFlowOpt" :theme="theme" /></div>
         </div>
         <div class="card">
           <div class="card-title"><h3>门店营收排名</h3><span class="meta">点击柱子钻取门店</span></div>
