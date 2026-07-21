@@ -20,6 +20,8 @@ const booted = ref(false);
 const module = ref<Module>('dashboard');
 const shop = ref<Shop | null>(null);
 const period = ref(new Date().toISOString().slice(0, 7));
+const sidebarCollapsed = ref(false);
+const toggleSidebar = () => { sidebarCollapsed.value = !sidebarCollapsed.value; };
 
 onMounted(() => {
   if (getToken()) {
@@ -45,6 +47,9 @@ const navIcon: Record<Module, string> = {
   audit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>',
   manual: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
 };
+// 侧栏收起 / 展开 图标(chevron)
+const collapseIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+const expandIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
 const sidebarItems = computed(() => {
   const items: { key: Module; label: string }[] = [
     { key: 'dashboard', label: '数据大屏' },
@@ -63,7 +68,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
 <template>
   <Login v-if="!user" @login="onLogin" />
 
-  <div v-else class="od-shell" :data-od-active="module">
+  <div v-else class="od-shell" :class="{ collapsed: sidebarCollapsed }" :data-od-active="module">
     <!-- 侧边栏:结构/样式取 app-shell.html,下方为绑定契约 -->
     <aside class="od-sidebar">
       <div class="od-brand">{{ BRAND }}</div>
@@ -89,6 +94,11 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
         </div>
       </header>
 
+      <!-- 侧栏收起/展开把手:贴在侧栏右沿(主区左边沿),随侧栏宽度滑动,点击切换 -->
+      <button class="od-side-handle" @click="toggleSidebar" :title="sidebarCollapsed ? '展开侧栏' : '收起侧栏'">
+        <span class="od-ico" v-html="sidebarCollapsed ? expandIcon : collapseIcon"></span>
+      </button>
+
       <!-- 内容区 -->
       <main class="od-content">
         <Dashboard v-if="module === 'dashboard'" v-model:period="period" />
@@ -111,19 +121,25 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
 .od-shell {
   height: 100vh;
   display: grid;
-  grid-template-columns: var(--od-sidebar-w) 1fr;
+  grid-template-columns: auto 1fr;
   background: var(--od-surface);
   overflow: hidden;
 }
 
 /* 侧边栏 */
 .od-sidebar {
+  width: var(--od-sidebar-w);
   background: var(--od-surface);
   border-right: 1px solid var(--od-border);
   display: flex;
   flex-direction: column;
-  transition: all .2s ease;
+  transition: width .2s ease;
   min-width: 0;
+  overflow: hidden;
+}
+.od-shell.collapsed .od-sidebar {
+  width: 0;
+  border-right-width: 0;
 }
 .od-brand {
   height: var(--od-topbar-h);
@@ -188,9 +204,35 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
   align-items: center;
   justify-content: center;
 }
+/* 侧栏收起/展开把手:贴在侧栏右沿(主区左边沿),随侧栏宽度滑动 */
+.od-side-handle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--od-border);
+  border-left: none;
+  border-radius: 0 var(--od-radius-md) var(--od-radius-md) 0;
+  background: var(--od-surface);
+  color: var(--od-text-muted);
+  cursor: pointer;
+  z-index: 20;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
+}
+.od-side-handle:hover {
+  color: var(--od-primary);
+  border-color: var(--od-primary);
+  background: var(--od-primary-soft);
+}
 
 /* 主区 */
 .od-main {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
