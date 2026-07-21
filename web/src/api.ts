@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo } from './types';
+import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind } from './types';
 
 const TOKEN_KEY = 'token';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
@@ -141,4 +141,11 @@ export const api = {
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '' && v !== null) sp.set(k, String(v));
     return req<AuditLogPage>(`/api/audit/logs?${sp.toString()}`);
   },
+  getAiSettings: () => req<AiSettings>('/api/settings/ai'),
+  refreshAiModels: () => req<{ ok: boolean; fetched: number }>('/api/settings/ai/models/refresh', { method: 'POST' }),
+  addAiModel: (b: { model_id: string; label: string; kind: AiModelKind }) =>
+    req<{ ok: boolean }>('/api/settings/ai/models', { method: 'POST', body: JSON.stringify(b) }),
+  delAiModel: (id: number) => req<{ ok: boolean }>(`/api/settings/ai/models/${id}`, { method: 'DELETE' }),
+  assignAiFeature: (feature: 'chat' | 'poster' | 'extraction', model_id: string) =>
+    req<{ ok: boolean }>(`/api/settings/ai/features/${feature}`, { method: 'PUT', body: JSON.stringify({ model_id }) }),
 };

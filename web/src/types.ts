@@ -61,6 +61,16 @@ export interface AuditLogEntry {
 }
 export interface AuditLogPage { items: AuditLogEntry[]; total: number; page: number; pageSize: number }
 
+export type AiModelKind = 'chat' | 'image' | 'other';
+export interface AiModel {
+  id: number; model_id: string; label: string; kind: AiModelKind;
+  status: string | null; task_type: string[] | null; fetched_at: string | null; enabled: boolean;
+}
+export interface AiSettings {
+  models: AiModel[];
+  features: { chat: string | null; poster: string | null; extraction: string | null };
+}
+
 export interface DashboardOverview {
   granularity: 'day' | 'week' | 'month' | 'year';
   date: string;            // YYYY-MM-DD(请求的锚点日)
