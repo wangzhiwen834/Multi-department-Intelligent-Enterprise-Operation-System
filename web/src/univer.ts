@@ -27,7 +27,9 @@ export function buildFromTemplate(api: FUniver, template: TemplateDef, title: st
   });
   const wb = api.createWorkbook({ name: title, sheets } as any);
   template.sheets.forEach(s => {
-    const sheet = wb.getSheetByName(s.label);
+    // 优先按 sheetId(=模板 key,建表时 id 即 s.key;重命名只改 name 不改 id,故跨重命名稳定)
+    // 回退按表名:兼容旧快照或删表后同名重建
+    const sheet = wb.getSheetBySheetId(s.key) ?? wb.getSheetByName(s.label);
     if (!sheet) return;
     s.columns.forEach((c, ci) => {
       sheet.getRange(0, ci).setValue(c.label);
@@ -47,7 +49,9 @@ export function extractForSync(wb: any, template: TemplateDef) {
   const dailyMetrics: any[] = [];
   const expenses: any[] = [];
   template.sheets.forEach(s => {
-    const sheet = wb.getSheetByName(s.label);
+    // 优先按 sheetId(=模板 key,建表时 id 即 s.key;重命名只改 name 不改 id,故跨重命名稳定)
+    // 回退按表名:兼容旧快照或删表后同名重建
+    const sheet = wb.getSheetBySheetId(s.key) ?? wb.getSheetByName(s.label);
     if (!sheet) return;
     const dateCol = s.columns.findIndex(c => c.key === 'date' || c.key === 'pay_date');
     for (let r = 1; r < 400; r++) {
