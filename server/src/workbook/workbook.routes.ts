@@ -10,6 +10,18 @@ workbookRouter.use(authRequired);
 
 const CreateBody = z.object({ shopId: z.number().int(), period: z.string().regex(/^\d{4}-\d{2}$/) });
 
+// 复制上月快照:每表只保留第 0 行(表头)cellData,清空其余行;保留 styles/sheetOrder/列宽/行高/合并
+const headersOnlySnapshot = (snap: any): any => {
+  const sheets: Record<string, any> = {};
+  for (const sid of Object.keys(snap.sheets || {})) {
+    const sh = snap.sheets[sid];
+    const cellData = sh.cellData || {};
+    const kept: Record<string, any> = cellData['0'] ? { 0: cellData['0'] } : {};
+    sheets[sid] = { ...sh, cellData: kept };
+  }
+  return { ...snap, sheets };
+};
+
 // 创建(或返回已存在)工作簿
 workbookRouter.post('/workbooks', async (req, res, next) => {
   try {
@@ -68,6 +80,33 @@ workbookRouter.delete('/workbooks/:id', auditLog('workbook.delete'), async (req,
     if (lock) return res.status(409).json({ error: '工作簿正在被编辑,无法删除' });
     const r = await query('UPDATE workbook SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL RETURNING id', [id]);
     if (!r.rows.length) return res.status(404).json({ error: '工作簿不存在或已删除' });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// 从上月复制新建(只复制表头/结构,清空数据,不结转期初)
+workbookRouter.post('/workbooks/:id/copy-from', auditLog('workbook.copy'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { fromPeriod } = z.object({ fromPeriod: z.string().regex(/^\d{4}-\d{2}$/) }).parse(req.body);
+    const target = (await query<{ shop_id: number; period: string; deleted_at: string | null }>(
+      'SELECT shop_id, period, deleted_at FROM workbook WHERE id=$1', [id],
+    )).rows[0];
+    if (!target || target.deleted_at) return res.status(404).json({ error: '目标工作簿不存在' });
+    if (fromPeriod === target.period) return res.status(400).json({ error: '源月份与目标月份相同' });
+    const src = (await query<{ id: number }>(
+      'SELECT id FROM workbook WHERE shop_id=$1 AND period=$2 AND deleted_at IS NULL', [target.shop_id, fromPeriod],
+    )).rows[0];
+    if (!src) return res.status(404).json({ error: '上月工作簿不存在' });
+    const srcSnap = (await query<{ data: any }>('SELECT data FROM workbook_snapshot WHERE workbook_id=$1', [src.id])).rows[0];
+    if (!srcSnap) return res.status(400).json({ error: '上月工作簿无快照' });
+    const transformed = headersOnlySnapshot(srcSnap.data);
+    await query(
+      `INSERT INTO workbook_snapshot (workbook_id, data, updated_at) VALUES ($1,$2,now())
+       ON CONFLICT (workbook_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+      [id, JSON.stringify(transformed)],
+    );
+    await query('UPDATE workbook SET updated_at=now() WHERE id=$1', [id]);
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
