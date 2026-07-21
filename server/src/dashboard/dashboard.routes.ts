@@ -8,6 +8,12 @@ dashboardRouter.use(authRequired);
 
 const VALID_GRAINS: Granularity[] = ['day', 'week', 'month', 'year'];
 
+// I-1 兜底:metrics 是无 schema JSONB,读侧每个数值键强转前先正则判定,非数字当 0(防脏数据 500)。
+const KPI_KEYS = ['revenue','customers_total','recharge_total','total_clocks','new_members','therapist_attendance','therapist_wage','member_consume','customers_member','customers_group','customers_walkin','clocks_arranged','clocks_requested','clocks_added','recharge_first','recharge_renew','recharge_gift','footbath_revenue','spa_revenue','minor_revenue','cash','douyin','meituan','pos','alipay','wechat'];
+const numGuard = (key: string, prefix = 'metrics') =>
+  `CASE WHEN ${prefix}->>'${key}' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (${prefix}->>'${key}')::numeric ELSE 0 END`;
+const KPI_SELECT = KPI_KEYS.map(k => `COALESCE(SUM(${numGuard(k)}),0) AS ${k}`).join(',\n         ');
+
 const todayISO = () => {
   const n = new Date();
   const pad = (x: number) => String(x).padStart(2, '0');
@@ -75,32 +81,7 @@ dashboardRouter.get('/dashboard/overview', async (req, res, next) => {
     const k = rangeShop(rangeStart, rangeEnd);
     const kpiRow = (await query(
       `SELECT
-         COALESCE(SUM((metrics->>'revenue')::numeric),0) AS revenue,
-         COALESCE(SUM((metrics->>'customers_total')::numeric),0) AS customers_total,
-         COALESCE(SUM((metrics->>'recharge_total')::numeric),0) AS recharge_total,
-         COALESCE(SUM((metrics->>'total_clocks')::numeric),0) AS total_clocks,
-         COALESCE(SUM((metrics->>'new_members')::numeric),0) AS new_members,
-         COALESCE(SUM((metrics->>'therapist_attendance')::numeric),0) AS therapist_attendance,
-         COALESCE(SUM((metrics->>'therapist_wage')::numeric),0) AS therapist_wage,
-         COALESCE(SUM((metrics->>'member_consume')::numeric),0) AS member_consume,
-         COALESCE(SUM((metrics->>'customers_member')::numeric),0) AS customers_member,
-         COALESCE(SUM((metrics->>'customers_group')::numeric),0) AS customers_group,
-         COALESCE(SUM((metrics->>'customers_walkin')::numeric),0) AS customers_walkin,
-         COALESCE(SUM((metrics->>'clocks_arranged')::numeric),0) AS clocks_arranged,
-         COALESCE(SUM((metrics->>'clocks_requested')::numeric),0) AS clocks_requested,
-         COALESCE(SUM((metrics->>'clocks_added')::numeric),0) AS clocks_added,
-         COALESCE(SUM((metrics->>'recharge_first')::numeric),0) AS recharge_first,
-         COALESCE(SUM((metrics->>'recharge_renew')::numeric),0) AS recharge_renew,
-         COALESCE(SUM((metrics->>'recharge_gift')::numeric),0) AS recharge_gift,
-         COALESCE(SUM((metrics->>'footbath_revenue')::numeric),0) AS footbath_revenue,
-         COALESCE(SUM((metrics->>'spa_revenue')::numeric),0) AS spa_revenue,
-         COALESCE(SUM((metrics->>'minor_revenue')::numeric),0) AS minor_revenue,
-         COALESCE(SUM((metrics->>'cash')::numeric),0) AS cash,
-         COALESCE(SUM((metrics->>'douyin')::numeric),0) AS douyin,
-         COALESCE(SUM((metrics->>'meituan')::numeric),0) AS meituan,
-         COALESCE(SUM((metrics->>'pos')::numeric),0) AS pos,
-         COALESCE(SUM((metrics->>'alipay')::numeric),0) AS alipay,
-         COALESCE(SUM((metrics->>'wechat')::numeric),0) AS wechat
+         ${KPI_SELECT}
        FROM daily_metric WHERE date BETWEEN $1 AND $2 ${k.sql}`,
       k.params,
     )).rows[0];
@@ -123,7 +104,7 @@ dashboardRouter.get('/dashboard/overview', async (req, res, next) => {
     // 同营收时按店名升序,保证排序确定(避免抖动)。
     const shopRanking = (await query(
       `SELECT s.id, s.name,
-         COALESCE(SUM((d.metrics->>'revenue')::numeric),0) AS revenue
+         COALESCE(SUM(${numGuard('revenue', 'd.metrics')}),0) AS revenue
        FROM shop s LEFT JOIN daily_metric d ON d.shop_id=s.id AND d.date BETWEEN $1 AND $2
        GROUP BY s.id, s.name ORDER BY revenue DESC, s.name ASC`,
       [rangeStart, rangeEnd],
@@ -138,7 +119,7 @@ dashboardRouter.get('/dashboard/overview', async (req, res, next) => {
     const tSql = shopId ? 'AND shop_id=$4' : '';
     const trendRows = (await query(
       `SELECT to_char(date_trunc($1, date), 'YYYY-MM-DD') AS bucket,
-         COALESCE(SUM((metrics->>'revenue')::numeric),0) AS revenue
+         COALESCE(SUM(${numGuard('revenue')}),0) AS revenue
        FROM daily_metric WHERE date BETWEEN $2 AND $3 ${tSql}
        GROUP BY bucket ORDER BY bucket`,
       tParams,
