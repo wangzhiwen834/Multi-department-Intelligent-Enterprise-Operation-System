@@ -25,6 +25,19 @@ export async function getFeatureModel(feature: AiFeature): Promise<string> {
   return r?.model_id || ENV_FALLBACK[feature];
 }
 
+// 读全部设置:模型列表 + 三功能分配(未分配为 null)。供设置页。
+export async function getAiSettings(): Promise<{ models: AiModel[]; features: Record<AiFeature, string | null> }> {
+  const models = (await query<AiModel>(
+    'SELECT id, model_id, label, kind, status, task_type, fetched_at, enabled FROM ai_model ORDER BY kind, model_id',
+  )).rows;
+  const fcfg = (await query<{ feature: string; model_id: string }>(
+    'SELECT feature, model_id FROM ai_feature_config',
+  )).rows;
+  const features: Record<AiFeature, string | null> = { chat: null, poster: null, extraction: null };
+  for (const f of fcfg) (features as Record<string, string | null>)[f.feature] = f.model_id;
+  return { models, features };
+}
+
 // task_type -> kind:文生图类->image;文本生成类->chat;其余->other
 export function classifyKind(taskType: string[] | null | undefined): AiModelKind {
   const t = taskType || [];

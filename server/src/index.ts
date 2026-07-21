@@ -10,6 +10,7 @@ import { templateRouter } from './template/template.routes.js';
 import { workbookRouter } from './workbook/workbook.routes.js';
 import { lockRouter } from './lock/lock.routes.js';
 import { extractRouter } from './extraction/extraction.routes.js';
+import { settingsRouter } from './settings/settings.routes.js';
 import { startScheduler } from './extraction/extraction.scheduler.js';
 import { reportRouter } from './report/report.routes.js';
 import { shopRouter } from './shop/shop.routes.js';
@@ -41,6 +42,7 @@ app.use('/api', templateRouter);   // /api/templates
 app.use('/api', workbookRouter);   // /api/workbooks
 app.use('/api', lockRouter);       // /api/workbooks/:id/locks/:sheetKey
 app.use('/api', extractRouter);    // /api/workbooks/:id/extract
+app.use('/api', settingsRouter);   // /api/settings/ai
 app.use('/api', reportRouter);     // /api/shops/:id/ledger
 app.use('/api', shopRouter);       // /api/shops
 app.use('/api', dashboardRouter);  // /api/dashboard/overview
