@@ -13,6 +13,8 @@ const busy = ref(false);
 const selectedPeriod = ref<string | null>(null);
 const lockHolder = ref<string | null>(null);
 const curPeriod = new Date().toISOString().slice(0, 7);
+const showCreate = ref(false);
+const newPeriod = ref(curPeriod);
 
 async function load() {
   err.value = '';
@@ -46,18 +48,33 @@ const prevPeriod = computed(() => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 });
 const hasPrev = computed(() => prevPeriod.value ? items.value.some(w => w.period === prevPeriod.value) : false);
-const existsCurrent = computed(() => items.value.some(w => w.period === curPeriod));
 
 function pick(period: string) {
   selectedPeriod.value = period;
   lockHolder.value = items.value.find(x => x.period === period)?.lockedBy ?? null;
 }
 
-async function createCurrent() {
-  busy.value = true; msg.value = '';
-  try { await api.createWorkbook(props.shop.id, curPeriod); await load(); pick(curPeriod); msg.value = '已新建当月工作簿'; }
-  catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
+function toggleCreate() {
+  showCreate.value = !showCreate.value;
+  if (showCreate.value) newPeriod.value = curPeriod;
 }
+
+async function createNew() {
+  if (items.value.some(w => w.period === newPeriod.value)) {
+    msg.value = `${newPeriod.value} 工作簿已存在`;
+    return;
+  }
+  busy.value = true; msg.value = '';
+  try {
+    await api.createWorkbook(props.shop.id, newPeriod.value);
+    await load();
+    pick(newPeriod.value);
+    showCreate.value = false;
+    msg.value = `已创建 ${newPeriod.value} 工作簿`;
+  } catch (e: any) { msg.value = e.message; } finally { busy.value = false; }
+}
+
+function cancelCreate() { showCreate.value = false; }
 
 async function copyFromPrev() {
   if (!selected.value || !prevPeriod.value) return;
@@ -84,9 +101,16 @@ async function remove() {
       <aside class="wm-tree">
         <div class="wm-tree-head">
           <span>{{ shop.name }}</span>
-          <button class="wm-btn-primary" @click="createCurrent" :disabled="busy || existsCurrent" title="新建当月工作簿">+ 新建当月</button>
+          <button class="wm-btn-primary" @click="toggleCreate" title="新建工作簿">+ 新建工作簿</button>
         </div>
-        <div v-if="!byYear.length && !err" class="wm-empty">该店还没有工作簿,点「新建当月」开始</div>
+        <div v-if="showCreate" class="wm-create">
+          <input type="month" v-model="newPeriod" class="wm-month" />
+          <div class="wm-create-btns">
+            <button class="wm-btn-primary" :disabled="busy" @click="createNew">创建</button>
+            <button class="wm-btn-ghost" @click="cancelCreate">取消</button>
+          </div>
+        </div>
+        <div v-if="!byYear.length && !err" class="wm-empty">该店还没有工作簿,点「新建工作簿」开始</div>
         <div v-for="g in byYear" :key="g.year" class="wm-year">
           <button class="wm-year-btn" @click="toggleYear(g.year)">
             <span class="wm-tri">{{ expanded.has(g.year) ? '▼' : '▶' }}</span>{{ g.year }} 年
@@ -113,7 +137,7 @@ async function remove() {
           <div class="wm-d-meta">最近保存：{{ selected.updated_at?.slice(0, 16).replace('T', ' ') || '-' }}</div>
           <div class="wm-d-actions">
             <button class="wm-btn-primary" @click="emit('open', selected.period)">打开工作簿</button>
-            <button class="wm-btn-ghost" :disabled="!hasPrev || busy" @click="copyFromPrev" :title="hasPrev ? `从 ${prevPeriod} 复制表头` : '无上月工作簿'">从上月复制新建</button>
+            <button class="wm-btn-ghost" :disabled="!hasPrev || busy" @click="copyFromPrev" :title="hasPrev ? `从 ${prevPeriod} 复制表头` : '无上月工作簿'">从上月复制表头</button>
             <button class="wm-btn-danger" :disabled="busy" @click="remove">删除</button>
           </div>
           <div v-if="msg" class="wm-msg">{{ msg }}</div>
@@ -163,5 +187,10 @@ async function remove() {
 .wm-btn-danger { background: var(--od-surface); color: var(--od-danger); border: 1px solid var(--od-border); }
 .wm-btn-danger:hover { background: var(--od-danger-soft); border-color: var(--od-danger); }
 .wm-btn-primary:disabled, .wm-btn-ghost:disabled, .wm-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+.wm-create { display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--od-space-3); padding: var(--od-space-3); background: var(--od-surface-2); border-radius: var(--od-radius-md); }
+.wm-create-btns { display: flex; gap: 8px; }
+.wm-create-btns .wm-btn-primary, .wm-create-btns .wm-btn-ghost { height: 30px; padding: 0 10px; }
+input.wm-month { display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border: 1px solid var(--od-border); border-radius: var(--od-radius-md); background: var(--od-surface); font-family: inherit; font-size: var(--od-text-sm); font-weight: var(--od-weight-medium); color: var(--od-text); cursor: pointer; transition: border-color .15s ease; }
+input.wm-month:hover { border-color: var(--od-primary); }
 @media (max-width: 760px) { .wm-body { grid-template-columns: 1fr; } }
 </style>
