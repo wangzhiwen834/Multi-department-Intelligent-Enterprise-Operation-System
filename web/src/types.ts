@@ -22,6 +22,11 @@ export interface Logo {
 }
 export interface Workbook { id: number; shop_id: number; period: string; template_version: number; status: string }
 
+export interface WorkbookListItem {
+  id: number; shop_id: number; period: string; template_version: number;
+  status: string; updated_at: string; lockedBy: string | null;
+}
+
 export interface LockStatus {
   user_id?: number; user_name?: string; expires_at?: string; acquired_at?: string; held?: boolean;
 }
