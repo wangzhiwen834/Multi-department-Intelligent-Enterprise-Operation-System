@@ -121,7 +121,7 @@ export const api = {
     req<DashboardOverview>(`/api/dashboard/overview?granularity=${granularity}&date=${date}${shopId ? `&shopId=${shopId}` : ''}`),
   aiChat: (message: string, period: string) =>
     req<{ answer: string; configured: boolean; error?: string }>('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message, period }) }),
-  aiInfo: () => req<{ chatModel: string; posterModel: string; configured: boolean }>('/api/ai/info'),
+  aiInfo: () => req<{ chatModel: string; posterModel: string; extractionModel: string; configured: boolean }>('/api/ai/info'),
   posterGenerate: (prompt: string, size?: string) =>
     req<{ image: string }>('/api/poster/generate', { method: 'POST', body: JSON.stringify({ prompt, size }) }),
   posterLogos: () => req<Logo[]>('/api/poster/logos'),

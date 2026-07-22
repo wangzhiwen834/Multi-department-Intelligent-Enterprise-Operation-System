@@ -108,3 +108,19 @@ describe('POST /api/settings/ai/models/refresh', () => {
     expect(r.status).toBe(403);
   });
 });
+
+describe('GET /api/ai/info(随 DB 分配同步)', () => {
+  it('无分配 -> env 兜底;分配后 -> DB 值', async () => {
+    const r0 = await request(app).get('/api/ai/info').set('Authorization', `Bearer ${chairT}`);
+    expect(r0.status).toBe(200);
+    expect(r0.body.configured).toBe(true);
+    expect(r0.body.chatModel).toBeTruthy();
+    // 分配 chat -> m-chat
+    await addModel(chairT, 'm-chat', 'chat');
+    await request(app).put('/api/settings/ai/features/chat').set('Authorization', `Bearer ${chairT}`).send({ model_id: 'm-chat' });
+    const r1 = await request(app).get('/api/ai/info').set('Authorization', `Bearer ${chairT}`);
+    expect(r1.body.chatModel).toBe('m-chat');
+    // poster 未分配仍 env 兜底
+    expect(r1.body.posterModel).not.toBe('m-chat');
+  });
+});
