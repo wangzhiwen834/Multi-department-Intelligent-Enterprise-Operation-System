@@ -63,7 +63,7 @@ const sidebarItems = computed(() => {
     { key: 'dashboard', label: '数据大屏' },
     { key: 'ops', label: '公司经营' },
     { key: 'chat', label: 'AI 分析' },
-    { key: 'poster', label: 'AI 每日海报' },
+    { key: 'poster', label: 'AI 海报' },
   ];
   if (showEmployees.value) items.push({ key: 'employees', label: '员工管理' });
   if (showAudit.value) items.push({ key: 'audit', label: '操作日志' });

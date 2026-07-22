@@ -156,7 +156,7 @@ const download = () => {
   <div class="od-poster">
     <div class="page-head">
       <div>
-        <h1 class="page-title">AI 每日海报</h1>
+        <h1 class="page-title">AI 海报</h1>
         <p class="page-sub">选填店铺与日期,AI 生成文生图背景,生成后可在图上编辑文字、裁剪、加图层。</p>
       </div>
       <div class="model-tag"><span class="model-dot"></span>模型 <b>{{ model || '加载中…' }}</b></div>
