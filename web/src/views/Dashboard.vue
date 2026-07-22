@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, reactive } from 'vue';
 import type { EChartsOption } from 'echarts';
 import { api } from '../api';
 import { THEMES, type Theme } from '../theme';
+import { useTheme } from '../composables/theme-store';
 import type { DashboardOverview, Shop } from '../types';
 import Chart from '../components/Chart.vue';
 
-const theme: Theme = THEMES['light'];
+const theme = reactive<Theme>({ ...THEMES.light });
+const { theme: themeKey } = useTheme();
+watch(themeKey, k => Object.assign(theme, THEMES[k] ?? THEMES.light), { immediate: true });
 
 // ---- 日期状态(Dashboard 自管,无 period prop) ----
 const pad = (x: number) => String(x).padStart(2, '0');

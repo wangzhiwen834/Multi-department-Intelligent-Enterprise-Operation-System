@@ -13,6 +13,7 @@ import Employees from './views/Employees.vue';
 import AuditLog from './views/AuditLog.vue';
 import Manual from './views/Manual.vue';
 import Settings from './views/Settings.vue';
+import { useTheme } from './composables/theme-store';
 
 type Module = 'dashboard' | 'ops' | 'chat' | 'poster' | 'employees' | 'audit' | 'manual' | 'settings';
 
@@ -25,6 +26,7 @@ const openedPeriod = ref<string | null>(null);
 const period = ref(new Date().toISOString().slice(0, 7));
 const sidebarCollapsed = ref(false);
 const toggleSidebar = () => { sidebarCollapsed.value = !sidebarCollapsed.value; };
+const { theme, toggle } = useTheme();
 
 onMounted(() => {
   if (getToken()) {
@@ -96,6 +98,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
           <input type="month" :value="period"
             v-if="!(module === 'ops' && shop) && module !== 'dashboard'"
             @change="period = ($event.target as HTMLInputElement).value" class="od-month" />
+          <button class="od-theme-toggle" @click="toggle" :title="theme === 'dark' ? '切换浅色' : '切换深色'">{{ theme === 'dark' ? '☀' : '🌙' }}</button>
           <span class="od-user">{{ user?.name }} · {{ user?.role === 'chairman' ? '董事长' : user?.role === 'manager' ? '经理' : '员工' }}</span>
           <button class="od-logout" @click="onLogout">退出</button>
         </div>
@@ -310,6 +313,15 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
   border-color: var(--od-danger);
   background: var(--od-danger-soft);
 }
+.od-theme-toggle {
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--od-border); border-radius: var(--od-radius-md);
+  background: var(--od-surface); color: var(--od-text);
+  font-size: 16px; line-height: 1; cursor: pointer;
+  transition: all .15s ease;
+}
+.od-theme-toggle:hover { border-color: var(--od-primary); color: var(--od-primary); }
 
 /* 内容区:flex-1 占满剩余高度,old views(h-full)据此填满 */
 .od-content {

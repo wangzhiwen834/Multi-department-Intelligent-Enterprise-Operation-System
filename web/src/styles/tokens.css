@@ -16,3 +16,16 @@
   --od-shadow-lg:0 12px 32px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
   --od-sidebar-w:232px;--od-sidebar-w-collapsed:64px;--od-topbar-h:56px;
 }
+
+/* 深色主题:覆盖颜色变量,布局/字号/间距/圆角同 :root */
+[data-theme="dark"]{
+  --od-bg:#0B1220;--od-surface:#0f172a;--od-surface-2:#1e293b;--od-border:#1e293b;
+  --od-text:#E2E8F0;--od-text-muted:#94A3B8;--od-primary:#22D3EE;--od-primary-hover:#06b6d4;
+  --od-gold:#FBBF24;--od-success:#34D399;--od-warning:#F59E0B;--od-danger:#F87171;
+  --od-palette-1:#22D3EE;--od-palette-2:#60A5FA;--od-palette-3:#34D399;--od-palette-4:#A78BFA;--od-palette-5:#FBBF24;
+  --od-primary-soft:rgba(34,211,238,.14);--od-success-soft:rgba(52,211,153,.14);--od-warning-soft:rgba(245,158,11,.14);--od-danger-soft:rgba(248,113,113,.14);--od-gold-soft:rgba(251,191,36,.14);
+  --od-scrim:rgba(0,0,0,.6);
+  --od-shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --od-shadow-md:0 4px 12px rgba(0,0,0,.35);
+  --od-shadow-lg:0 12px 32px rgba(0,0,0,.45);
+}
