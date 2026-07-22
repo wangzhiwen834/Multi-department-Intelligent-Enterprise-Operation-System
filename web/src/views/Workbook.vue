@@ -28,6 +28,7 @@ const extractResult = ref<ExtractResult | null>(null);
 interface ProgressSheet { key: string; label: string; state: 'pending' | 'active' | 'done'; rowsOut?: number; errorCount?: number }
 const extracting = ref(false);
 const progress = ref<{ sheets: ProgressSheet[]; writing: boolean } | null>(null);
+const extractModel = ref('');
 const onProgress = (e: any) => {
   if (e.stage === 'start') {
     progress.value = { sheets: (e.sheets as { key: string; label: string }[]).map(s => ({ key: s.key, label: s.label, state: 'pending' as const })), writing: false };
@@ -232,6 +233,7 @@ const mountWithSnapshot = (snapshot: any) => {
 };
 onMounted(async () => {
   me.value = await api.me().catch(() => null);
+  api.aiInfo().then(i => extractModel.value = i.extractionModel).catch(() => {});
   await mountUniver();
   // 复用 bootstrap 已返回的 lockStatus,避免 onMounted 再发一次 lockStatus 请求
   const st: any = bootLockStatus ?? { held: false };
@@ -273,7 +275,7 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
     </div>
     <!-- AI 抽取进度可视化(SSE 事件驱动) -->
     <div v-if="progress" class="od-wb-progress">
-      <div class="od-wb-progress-title">{{ extracting ? 'AI 抽取中…' : 'AI 抽取完成' }}</div>
+      <div class="od-wb-progress-title">{{ extracting ? 'AI 抽取中…' : 'AI 抽取完成' }}<span v-if="extractModel" class="od-wb-progress-model">模型:{{ extractModel }}</span></div>
       <div v-for="s in progress.sheets" :key="s.key" class="od-wb-step" :class="s.state">
         <span class="od-wb-step-icon">{{ s.state === 'done' ? '✓' : s.state === 'active' ? '⟳' : '·' }}</span>
         <span class="od-wb-step-label">{{ s.label }}</span>
@@ -435,7 +437,8 @@ onBeforeUnmount(() => { stopStatusPoll(); stopTakeoverPoll(); if (initReadOnlyTi
   border-bottom: 1px solid var(--od-border);
   font-size: var(--od-text-sm);
 }
-.od-wb-progress-title { font-weight: var(--od-weight-medium); margin-bottom: 6px; color: var(--od-primary-hover); }
+.od-wb-progress-title { font-weight: var(--od-weight-medium); margin-bottom: 6px; color: var(--od-primary-hover); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.od-wb-progress-model { font-size: var(--od-text-xs); color: var(--od-text-muted); font-weight: var(--od-weight-normal); font-family: var(--od-font-mono); }
 .od-wb-step { display: flex; align-items: center; gap: 8px; padding: 2px 0; color: var(--od-text-muted); }
 .od-wb-step.active { color: var(--od-primary-hover); }
 .od-wb-step.done { color: var(--od-text); }
