@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { pool } from '../src/db/pool.js';
 import { FOOTBATH_BUSINESS_CODE, FOOTBATH_SHOPS, footbathTemplate } from '../src/template/footbath.template.js';
+import { HOTEL_BUSINESS_CODE, hotelTemplate } from '../src/template/hotel.template.js';
 import { hashPassword } from '../src/auth/password.js';
 
 async function main() {
@@ -66,7 +67,17 @@ async function main() {
     [await hashPassword('mgr123'), bossId],
   );
 
-  console.log('seed done: 静水楼台(足浴) + 4 shops + template v1 + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
+  // ---- 酒店(hotel)业务 + 模板 v1(子项目2 样板业态)----
+  let hb = (await pool.query("SELECT id FROM business WHERE code=$1", [HOTEL_BUSINESS_CODE])).rows[0];
+  if (!hb) {
+    hb = (await pool.query("INSERT INTO business (code,name) VALUES ($1,'汉庭酒店') RETURNING id", [HOTEL_BUSINESS_CODE])).rows[0];
+  }
+  const hotelTplExists = (await pool.query("SELECT 1 FROM template WHERE business_id=$1 AND version=1", [hb.id])).rows[0];
+  if (!hotelTplExists) {
+    await pool.query("INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)", [hb.id, JSON.stringify(hotelTemplate)]);
+  }
+
+  console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
   await pool.end();
 }
 
