@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { api, getToken, setToken, clearToken } from './api';
-import type { Shop, User } from './types';
+import type { Shop, User, Business } from './types';
 import Login from './views/Login.vue';
 import ShopList from './views/ShopList.vue';
 import Workbook from './views/Workbook.vue';
@@ -28,10 +28,19 @@ const sidebarCollapsed = ref(false);
 const toggleSidebar = () => { sidebarCollapsed.value = !sidebarCollapsed.value; };
 const { theme, toggle } = useTheme();
 
+// 多业务:侧边栏「公司经营」业务子菜单
+const businesses = ref<Business[]>([]);
+const selectedBusiness = ref<string | null>(null);  // null = 全部业务(卡片总览)
+const opsExpanded = ref(false);                     // 公司经营子菜单展开
+const loadBusinesses = () => api.businesses().then(r => businesses.value = r).catch(() => {});
+const onSelectBusiness = (code: string | null) => { selectedBusiness.value = code; module.value = 'ops'; shop.value = null; openedPeriod.value = null; };
+const onBusinessesChanged = () => loadBusinesses();
+
 onMounted(() => {
   if (getToken()) {
     api.me().then(u => { user.value = u; booted.value = true; }).catch(() => { clearToken(); booted.value = true; });
   } else { booted.value = true; }
+  loadBusinesses();
 });
 
 const onLogin = (u: User, t: string) => { setToken(t); user.value = u; module.value = 'dashboard'; };
@@ -41,6 +50,12 @@ const onOpenPeriod = (p: string) => { period.value = p; openedPeriod.value = p; 
 const onWorkbookBack = () => { openedPeriod.value = null; };                   // 工作簿返回 -> 回管理器
 const onManagerBack = () => { shop.value = null; openedPeriod.value = null; }; // 管理器返回 -> 回店铺列表
 const setModule = (m: Module) => { if (m !== 'ops') { shop.value = null; openedPeriod.value = null; } module.value = m; };
+const toggleOps = () => {
+  if (module.value !== 'ops') { module.value = 'ops'; shop.value = null; openedPeriod.value = null; }
+  if (!sidebarCollapsed.value) opsExpanded.value = !opsExpanded.value;
+  // 收起态下点公司经营直接走总览
+  if (sidebarCollapsed.value) { selectedBusiness.value = null; opsExpanded.value = false; }
+};
 
 const showEmployees = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
 const showAudit = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
@@ -82,9 +97,16 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
     <aside class="od-sidebar">
       <div class="od-brand">{{ BRAND }}</div>
       <nav class="od-nav">
-        <button v-for="it in sidebarItems" :key="it.key"
-          class="od-nav-item" :class="{ active: module === it.key || (it.key === 'ops' && shop) }"
-          @click="setModule(it.key)">
+        <button class="od-nav-item" :class="{ active: module === 'ops' }" @click="toggleOps">
+          <span class="od-ico" v-html="navIcon['ops']"></span><span>公司经营</span>
+          <span class="od-chevron" :class="{ open: opsExpanded }" v-if="!sidebarCollapsed">▾</span>
+        </button>
+        <div v-if="opsExpanded && !sidebarCollapsed" class="od-subnav">
+          <button class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === null }" @click="onSelectBusiness(null)">全部业务</button>
+          <button v-for="b in businesses" :key="b.id" class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === b.code }" @click="onSelectBusiness(b.code)">{{ b.name }}</button>
+        </div>
+        <button v-for="it in sidebarItems.filter(i => i.key !== 'ops')" :key="it.key"
+          class="od-nav-item" :class="{ active: module === it.key }" @click="setModule(it.key)">
           <span class="od-ico" v-html="navIcon[it.key]"></span><span>{{ it.label }}</span>
         </button>
       </nav>
@@ -112,7 +134,9 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
       <!-- 内容区 -->
       <main class="od-content">
         <Dashboard v-if="module === 'dashboard'" />
-        <ShopList v-else-if="module === 'ops' && !shop" :user="user" :period="period" @pick="onPick" />
+        <ShopList v-else-if="module === 'ops' && !shop" :user="user" :period="period"
+          :businesses="businesses" :business-code="selectedBusiness"
+          @select-business="onSelectBusiness" @businesses-changed="onBusinessesChanged" @pick="onPick" />
         <WorkbookManager v-else-if="module === 'ops' && shop && !openedPeriod" :shop="shop" @open="onOpenPeriod" @back="onManagerBack" />
         <Workbook v-else-if="module === 'ops' && shop && openedPeriod" :shop="shop" :period="openedPeriod" @back="onWorkbookBack" />
         <Chat v-else-if="module === 'chat'" :period="period" />
@@ -344,4 +368,16 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
   font-size: var(--od-text-lg);
   z-index: 9999;
 }
+.od-nav-sub {
+  display: block; width: 100%; text-align: left; padding: 0 10px 0 42px; height: 34px;
+  border: none; background: none; cursor: pointer; color: var(--od-text-muted);
+  font-family: inherit; font-size: var(--od-text-sm); border-radius: var(--od-radius-md);
+  margin-bottom: 2px; transition: all .15s ease;
+}
+.od-nav-sub:hover { background: var(--od-surface-2); color: var(--od-text); }
+.od-nav-sub.active { color: var(--od-primary); font-weight: var(--od-weight-semibold); background: var(--od-primary-soft); }
+.od-chevron { margin-left: auto; font-size: 12px; transition: transform .18s; color: var(--od-text-muted); }
+.od-chevron.open { transform: rotate(0); }
+.od-chevron:not(.open) { transform: rotate(-90deg); }
+.od-subnav { padding: 2px 0 4px; }
 </style>
