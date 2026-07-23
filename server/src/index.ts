@@ -18,6 +18,7 @@ import { dashboardRouter } from './dashboard/dashboard.routes.js';
 import { aiRouter } from './ai/ai.routes.js';
 import { posterRouter } from './poster/poster.routes.js';
 import { auditRouter } from './audit/audit.routes.js';
+import { businessRouter } from './business/business.routes.js';
 
 export const app = express();
 // SSE(text/event-stream)不压缩:compression 会缓冲流破坏实时进度推送
@@ -35,6 +36,10 @@ const logosDir = path.join(config.uploadsDir, 'logos');
 fs.mkdirSync(logosDir, { recursive: true });
 app.use('/api/uploads/logos', express.static(logosDir));
 
+const bizLogosDir = path.join(config.uploadsDir, 'business-logos');
+fs.mkdirSync(bizLogosDir, { recursive: true });
+app.use('/api/uploads/business-logos', express.static(bizLogosDir));
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
@@ -45,6 +50,7 @@ app.use('/api', extractRouter);    // /api/workbooks/:id/extract
 app.use('/api', settingsRouter);   // /api/settings/ai
 app.use('/api', reportRouter);     // /api/shops/:id/ledger
 app.use('/api', shopRouter);       // /api/shops
+app.use('/api', businessRouter);   // /api/businesses
 app.use('/api', dashboardRouter);  // /api/dashboard/overview
 app.use('/api', aiRouter);         // /api/ai/chat
 app.use('/api', posterRouter);     // /api/poster/generate, /api/poster/logos
