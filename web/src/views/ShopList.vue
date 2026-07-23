@@ -1,49 +1,31 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { api } from '../api';
-import type { Shop, User } from '../types';
+import type { Business, Shop, User } from '../types';
 
-const props = defineProps<{ user: User | null }>();
-const emit = defineEmits<{ (e: 'pick', s: Shop): void }>();
+const props = defineProps<{ user: User | null; businesses: Business[]; businessCode: string | null }>();
+const emit = defineEmits<{
+  (e: 'select-business', code: string | null): void;
+  (e: 'businesses-changed'): void;
+  (e: 'pick', s: Shop): void;
+}>();
 
 const shops = ref<Shop[]>([]);
 const err = ref('');
-const load = () => api.shops().then(r => shops.value = r).catch(e => err.value = e.message);
-onMounted(load);
+const loadShops = () => api.shops().then(r => shops.value = r).catch(e => err.value = e.message);
+onMounted(loadShops);
 
-// 按 business 分组(暂仅足浴;未来新增业务自动成组)
-const groups = computed(() => {
-  const m = new Map<string, { code: string; name: string; shops: Shop[] }>();
-  for (const s of shops.value) {
-    const g = m.get(s.business_code) ?? { code: s.business_code, name: s.business_name, shops: [] };
-    g.shops.push(s); m.set(s.business_code, g);
-  }
-  return [...m.values()];
-});
+// 选中业务(由父组件 App.vue 侧边栏子菜单驱动;null=卡片总览)
+const selectedGroup = computed(() =>
+  props.businessCode ? props.businesses.find(b => b.code === props.businessCode) ?? null : null,
+);
 
-// 两级钻取:选中业务 code(null = 业务模块列表态)
-const selected = ref<string | null>(null);
-const selectedGroup = computed(() => groups.value.find(g => g.code === selected.value) ?? null);
-const selectGroup = (code: string) => { selected.value = code; };
-const backToModules = () => { selected.value = null; };
+const selectBiz = (code: string | null) => emit('select-business', code);
 
-// 5 店店标色,按 index 循环取 --od-palette-1..5
-const palette = [
-  'var(--od-palette-1)', 'var(--od-palette-2)', 'var(--od-palette-3)',
-  'var(--od-palette-4)', 'var(--od-palette-5)',
-];
-const swatch = (i: number) => palette[i % palette.length];
-const firstChar = (name: string) => name.charAt(0);
-
-// 业务模块卡 logo:按业务 code 取静态资源,无则回退到通用 SVG。
-// footbath=足浴品牌 logo(静水楼台LOGO),其余业务暂无 logo 走占位图标。
-const bizLogo = (code: string): string | undefined =>
-  code === 'footbath' ? '/footbath-logo.png' : undefined;
-
-// 门店增删改:仅董事长
+// 董事长可管理业务
 const canManage = computed(() => props.user?.role === 'chairman');
 
-// 新增门店
+// ---- 业务 CRUD ----
 const creating = ref(false);
 const newName = ref('');
 const saveErr = ref('');
@@ -53,32 +35,96 @@ const submitCreate = async () => {
   const name = newName.value.trim();
   if (!name) return;
   saveErr.value = '';
-  try { await api.createShop(name); await load(); cancelCreate(); }
+  try { await api.createBusiness(name); emit('businesses-changed'); cancelCreate(); }
   catch (e: any) { saveErr.value = e.message; }
 };
 
-// 重命名(行内编辑)
 const renamingId = ref<number | null>(null);
 const renameValue = ref('');
-const startRename = (s: Shop) => { renamingId.value = s.id; renameValue.value = s.name; saveErr.value = ''; };
+const startRename = (b: Business) => { renamingId.value = b.id; renameValue.value = b.name; saveErr.value = ''; };
 const cancelRename = () => { renamingId.value = null; renameValue.value = ''; };
-const submitRename = async (s: Shop) => {
+const submitRename = async (b: Business) => {
   const name = renameValue.value.trim();
-  if (!name || name === s.name) { cancelRename(); return; }
+  if (!name || name === b.name) { cancelRename(); return; }
   saveErr.value = '';
-  try { await api.renameShop(s.id, name); await load(); cancelRename(); }
+  try { await api.renameBusiness(b.id, name); emit('businesses-changed'); cancelRename(); }
   catch (e: any) { saveErr.value = e.message; }
 };
 
-// 删除(软删)
 const deleting = ref(false);
-const removeShop = async (s: Shop) => {
-  if (!confirm(`确定删除门店「${s.name}」?\n历史工作簿/大屏累计数据保留,仅从门店列表移除。`)) return;
+const removeBusiness = async (b: Business) => {
+  const typed = prompt(`确定删除业务「${b.name}」?\n这将一并删除其下所有门店/工作簿/历史指标,不可逆!\n请输入业务全名确认:`);
+  if (typed !== b.name) { if (typed !== null) saveErr.value = '输入的业务名不匹配,已取消'; return; }
   deleting.value = true; saveErr.value = '';
-  try { await api.deleteShop(s.id); await load(); }
+  try { await api.deleteBusiness(b.id); emit('businesses-changed'); }
   catch (e: any) { saveErr.value = e.message; }
   finally { deleting.value = false; }
 };
+
+// ---- logo 上传 ----
+const onLogoFile = async (b: Business, e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  saveErr.value = '';
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try { await api.uploadBusinessLogo(b.id, String(reader.result), file.name); emit('businesses-changed'); }
+    catch (er: any) { saveErr.value = er.message; }
+    finally { (e.target as HTMLInputElement).value = ''; }
+  };
+  reader.readAsDataURL(file);
+};
+const removeLogo = async (b: Business) => {
+  if (!confirm(`删除业务「${b.name}」的 logo?`)) return;
+  saveErr.value = '';
+  try { await api.deleteBusinessLogo(b.id); emit('businesses-changed'); }
+  catch (e: any) { saveErr.value = e.message; }
+};
+
+// ---- 状态 B 门店列表 ----
+const groupShops = computed(() => selectedGroup.value
+  ? shops.value.filter(s => s.business_code === selectedGroup.value!.code) : []);
+
+// 门店店标色
+const palette = ['var(--od-palette-1)','var(--od-palette-2)','var(--od-palette-3)','var(--od-palette-4)','var(--od-palette-5)'];
+const swatch = (i: number) => palette[i % palette.length];
+const firstChar = (name: string) => name.charAt(0);
+
+// 状态 B 下门店增删改(沿用上一轮已做)—— 门店操作后刷新 shops
+
+// 门店新增(状态 B)
+const newShopName = ref('');
+const addingShop = ref(false);
+const startAddShop = () => { addingShop.value = true; newShopName.value = ''; };
+const cancelAddShop = () => { addingShop.value = false; newShopName.value = ''; };
+const submitAddShop = async () => {
+  const name = newShopName.value.trim();
+  if (!name || !selectedGroup.value) return;
+  saveErr.value = '';
+  try { await api.createShop(name, selectedGroup.value!.id); await loadShops(); cancelAddShop(); }
+  catch (e: any) { saveErr.value = e.message; }
+};
+// 门店重命名/删除复用既有逻辑(见下模板内联)
+const renamingShopId = ref<number | null>(null);
+const renameShopValue = ref('');
+const startRenameShop = (s: Shop) => { renamingShopId.value = s.id; renameShopValue.value = s.name; saveErr.value = ''; };
+const cancelRenameShop = () => { renamingShopId.value = null; renameShopValue.value = ''; };
+const submitRenameShop = async (s: Shop) => {
+  const name = renameShopValue.value.trim();
+  if (!name || name === s.name) { cancelRenameShop(); return; }
+  saveErr.value = '';
+  try { await api.renameShop(s.id, name); await loadShops(); cancelRenameShop(); }
+  catch (e: any) { saveErr.value = e.message; }
+};
+const removeShop = async (s: Shop) => {
+  if (!confirm(`确定删除门店「${s.name}」?\n历史工作簿/大屏累计数据保留,仅从列表移除。`)) return;
+  saveErr.value = '';
+  try { await api.deleteShop(s.id); await loadShops(); }
+  catch (e: any) { saveErr.value = e.message; }
+};
+
+// 侧边栏切换业务时,若在状态 B 则保持;父组件改 businessCode 即可
+watch(() => props.businessCode, () => { /* 由父组件驱动;无需本地 selected */ });
 </script>
 
 <template>
@@ -86,92 +132,92 @@ const removeShop = async (s: Shop) => {
     <div v-if="err" class="ops-err">{{ err }}</div>
     <div v-if="saveErr" class="ops-err">{{ saveErr }}</div>
 
-    <!-- 状态 A:业务模块列表 -->
+    <!-- 状态 A:业务模块卡片总览 -->
     <template v-if="!selectedGroup">
-      <nav class="crumb" aria-label="breadcrumb">
-        <b>公司经营</b>
-      </nav>
+      <nav class="crumb"><b>公司经营</b></nav>
       <div class="content-h">业务模块</div>
       <div class="content-desc">选择业务模块查看下属门店。点击门店卡进入 Univer 经营报表。</div>
 
       <div class="grid grid-2">
-        <div v-for="g in groups" :key="g.code" class="biz-card"
+        <div v-for="g in businesses" :key="g.id" class="biz-card"
           style="background:linear-gradient(135deg,color-mix(in oklab,var(--od-primary-soft),white 45%),var(--od-surface-2))"
-          @click="selectGroup(g.code)">
+          @click="selectBiz(g.code)">
           <div class="top">
             <div class="biz-ico" style="background:var(--od-primary-soft);color:var(--od-primary)">
-              <img v-if="bizLogo(g.code)" :src="bizLogo(g.code)" :alt="g.name" class="biz-logo-img" />
+              <img v-if="g.logo_path" :src="g.logo_path" :alt="g.name" class="biz-logo-img" />
               <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 10.5 5.5 15.2a6.5 6.5 0 0 0 13 0C18.5 10.5 12 3 12 3Z" fill="currentColor"/></svg>
             </div>
             <div class="go-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
           </div>
           <div>
-            <h3>{{ g.name }}</h3>
+            <h3 v-if="renamingId !== g.id">{{ g.name }}</h3>
+            <div v-else class="rename-row" @click.stop>
+              <input class="rename-input" v-model="renameValue" @keyup.enter="submitRename(g)" @keyup.esc="cancelRename" />
+              <button class="mini-btn ok" @click="submitRename(g)">✓</button>
+              <button class="mini-btn" @click="cancelRename">✕</button>
+            </div>
             <div class="biz-name">{{ g.name }} · 综合经营</div>
           </div>
           <div class="biz-stats">
-            <div class="biz-stat"><div class="v">{{ g.shops.length }}</div><div class="l">门店数</div></div>
+            <div class="biz-stat"><div class="v">{{ g.shop_count }}</div><div class="l">门店数</div></div>
+          </div>
+          <!-- 业务管理操作(董事长):重命名 / logo 上传 / 删 logo / 删除业务 -->
+          <div v-if="canManage" class="biz-actions" @click.stop>
+            <button class="icon-btn" :disabled="renamingId === g.id" @click="startRename(g)" title="重命名"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            <label class="icon-btn" title="上传 logo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg><input type="file" accept="image/png,image/jpeg,image/webp" hidden @change="onLogoFile(g, $event)" /></label>
+            <button v-if="g.logo_path" class="icon-btn" @click="removeLogo(g)" title="删 logo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button class="icon-btn danger" :disabled="deleting" @click="removeBusiness(g)" title="删除业务"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
           </div>
         </div>
 
-        <div class="placeholder-card">
-          <div class="ph-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
-          <h4>后续新增业务</h4>
-          <p>如:餐饮 / 零售 / 美容 - 即将上线</p>
+        <!-- 新增业务卡(董事长) -->
+        <div v-if="canManage" class="biz-card add-card">
+          <template v-if="!creating">
+            <button class="add-btn" @click="startCreate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>新增业务</span></button>
+          </template>
+          <div v-else class="add-form" @click.stop>
+            <input class="rename-input" v-model="newName" placeholder="业务名称(如 汉庭酒店)" @keyup.enter="submitCreate" @keyup.esc="cancelCreate" />
+            <div class="add-form-actions"><button class="mini-btn ok" @click="submitCreate">✓</button><button class="mini-btn" @click="cancelCreate">✕</button></div>
+          </div>
         </div>
       </div>
     </template>
 
-    <!-- 状态 B:选中业务的店铺列表 -->
+    <!-- 状态 B:选中业务的门店列表 -->
     <template v-else>
-      <nav class="crumb" aria-label="breadcrumb">
-        <a href="#" @click.prevent="backToModules">公司经营</a><span class="sep">/</span><b>{{ selectedGroup.name }}</b>
+      <nav class="crumb">
+        <a href="#" @click.prevent="selectBiz(null)">公司经营</a><span class="sep">/</span><b>{{ selectedGroup.name }}</b>
       </nav>
-      <div class="content-h">{{ selectedGroup.name }} · {{ selectedGroup.shops.length }} 家门店</div>
-      <div class="content-desc">点击门店进入该店 Univer 经营报表(经营报表 / 收入对账 / 费用明细 / 资金台账)。</div>
+      <div class="content-h">{{ selectedGroup.name }} · {{ groupShops.length }} 家门店</div>
+      <div class="content-desc">点击门店进入该店 Univer 经营报表。</div>
 
       <div class="grid grid-5">
-        <div v-for="(s, i) in selectedGroup.shops" :key="s.id" class="store-card">
+        <div v-for="(s, i) in groupShops" :key="s.id" class="store-card">
           <div class="store-sw" :style="{ background: swatch(i) }" @click="emit('pick', s)">{{ firstChar(s.name) }}</div>
-          <div class="store-info" @click="renamingId === s.id ? null : emit('pick', s)">
-            <!-- 重命名:行内输入框替换标题 -->
-            <h4 v-if="renamingId !== s.id">{{ s.name }}</h4>
+          <div class="store-info" @click="renamingShopId === s.id ? null : emit('pick', s)">
+            <h4 v-if="renamingShopId !== s.id">{{ s.name }}</h4>
             <div v-else class="rename-row" @click.stop>
-              <input class="rename-input" v-model="renameValue"
-                @keyup.enter="submitRename(s)" @keyup.esc="cancelRename"
-                :aria-label="`重命名 ${s.name}`" />
-              <button class="mini-btn ok" @click="submitRename(s)" title="保存">✓</button>
-              <button class="mini-btn" @click="cancelRename" title="取消">✕</button>
+              <input class="rename-input" v-model="renameShopValue" @keyup.enter="submitRenameShop(s)" @keyup.esc="cancelRenameShop" />
+              <button class="mini-btn ok" @click="submitRenameShop(s)">✓</button>
+              <button class="mini-btn" @click="cancelRenameShop">✕</button>
             </div>
-            <div class="biz">{{ s.business_name }}</div>
+            <div class="biz">{{ selectedGroup.name }}</div>
           </div>
-          <!-- 管理操作(董事长可见):重命名 / 删除 -->
           <div v-if="canManage" class="store-actions" @click.stop>
-            <button class="icon-btn" :disabled="renamingId === s.id" @click="startRename(s)" title="重命名">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-            </button>
-            <button class="icon-btn danger" :disabled="deleting" @click="removeShop(s)" title="删除">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            </button>
+            <button class="icon-btn" :disabled="renamingShopId === s.id" @click="startRenameShop(s)" title="重命名"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            <button class="icon-btn danger" @click="removeShop(s)" title="删除"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
           </div>
           <div v-else class="store-go" @click="emit('pick', s)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>
         </div>
 
-        <!-- 新增门店卡(董事长可见) -->
+        <!-- 新增门店卡(董事长) -->
         <div v-if="canManage" class="store-card add-card">
-          <template v-if="!creating">
-            <button class="add-btn" @click="startCreate">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-              <span>新增门店</span>
-            </button>
+          <template v-if="!addingShop">
+            <button class="add-btn" @click="startAddShop"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>新增门店</span></button>
           </template>
           <div v-else class="add-form" @click.stop>
-            <input class="rename-input" v-model="newName" placeholder="门店名称"
-              @keyup.enter="submitCreate" @keyup.esc="cancelCreate" aria-label="门店名称" />
-            <div class="add-form-actions">
-              <button class="mini-btn ok" @click="submitCreate" title="保存">✓</button>
-              <button class="mini-btn" @click="cancelCreate" title="取消">✕</button>
-            </div>
+            <input class="rename-input" v-model="newShopName" placeholder="门店名称" @keyup.enter="submitAddShop" @keyup.esc="cancelAddShop" />
+            <div class="add-form-actions"><button class="mini-btn ok" @click="submitAddShop">✓</button><button class="mini-btn" @click="cancelAddShop">✕</button></div>
           </div>
         </div>
       </div>
@@ -227,13 +273,6 @@ const removeShop = async (s: Shop) => {
 .biz-stat .v { font-size: var(--od-text-xl); font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); }
 .biz-stat .l { font-size: var(--od-text-sm); color: var(--od-text-muted); }
 
-/* 虚线占位卡 */
-.placeholder-card { border: 2px dashed var(--od-border); border-radius: var(--od-radius-lg); padding: var(--od-space-6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--od-text-muted); min-height: 200px; background: transparent; cursor: default; }
-.placeholder-card:hover { border-color: color-mix(in oklab, var(--od-border), black 8%); background: var(--od-surface-2); }
-.placeholder-card .ph-ico { width: 44px; height: 44px; border-radius: var(--od-radius-md); background: var(--od-surface-2); display: grid; place-items: center; }
-.placeholder-card h4 { font-size: var(--od-text-base); color: var(--od-text); font-weight: var(--od-weight-medium); }
-.placeholder-card p { font-size: var(--od-text-xs); }
-
 /* 店铺卡 */
 .store-card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); padding: var(--od-space-5); box-shadow: var(--od-shadow-sm); transition: all .18s ease; display: flex; align-items: center; gap: var(--od-space-4); }
 .store-card:hover { box-shadow: var(--od-shadow-md); border-color: var(--od-primary); }
@@ -283,4 +322,8 @@ const removeShop = async (s: Shop) => {
 .add-btn:hover { color: var(--od-primary); }
 .add-form { flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .add-form-actions { display: flex; gap: 6px; }
+
+/* 业务卡管理操作组 */
+.biz-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+.biz-actions label.icon-btn { cursor: pointer; }
 </style>

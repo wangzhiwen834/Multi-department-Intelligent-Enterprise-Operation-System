@@ -18,6 +18,7 @@ import { dashboardRouter } from './dashboard/dashboard.routes.js';
 import { aiRouter } from './ai/ai.routes.js';
 import { posterRouter } from './poster/poster.routes.js';
 import { auditRouter } from './audit/audit.routes.js';
+import { businessRouter } from './business/business.routes.js';
 
 export const app = express();
 // SSE(text/event-stream)不压缩:compression 会缓冲流破坏实时进度推送
@@ -33,7 +34,13 @@ app.use(express.json({ limit: '10mb' }));
 // 路径 /api/uploads/logos 自动走 vite proxy(开发)与 Nginx /api 反代(生产),无需改部署。
 const logosDir = path.join(config.uploadsDir, 'logos');
 fs.mkdirSync(logosDir, { recursive: true });
-app.use('/api/uploads/logos', express.static(logosDir));
+// fallthrough:false -> 文件不存在时直接 404,避免 fallthrough 到 /api 下的 authRequired 返回 401
+app.use('/api/uploads/logos', express.static(logosDir, { fallthrough: false }));
+
+const bizLogosDir = path.join(config.uploadsDir, 'business-logos');
+fs.mkdirSync(bizLogosDir, { recursive: true });
+// fallthrough:false -> 文件不存在时直接 404,避免 fallthrough 到 /api 下的 authRequired 返回 401
+app.use('/api/uploads/business-logos', express.static(bizLogosDir, { fallthrough: false }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
@@ -45,6 +52,7 @@ app.use('/api', extractRouter);    // /api/workbooks/:id/extract
 app.use('/api', settingsRouter);   // /api/settings/ai
 app.use('/api', reportRouter);     // /api/shops/:id/ledger
 app.use('/api', shopRouter);       // /api/shops
+app.use('/api', businessRouter);   // /api/businesses
 app.use('/api', dashboardRouter);  // /api/dashboard/overview
 app.use('/api', aiRouter);         // /api/ai/chat
 app.use('/api', posterRouter);     // /api/poster/generate, /api/poster/logos
@@ -54,6 +62,18 @@ app.use('/api/audit', auditRouter); // /api/audit/logs (董事长/经理)
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: 'validation', issues: err.issues });
+  }
+  // 静态资源(如 fallthrough:false 的 logos/business-logos)抛 ENOENT 或携带 404 时,透传 404
+  const status = (err as { statusCode?: number; status?: number })?.statusCode
+    ?? (err as { status?: number })?.status;
+  const code = (err as { code?: string })?.code;
+  if (status === 404 || code === 'ENOENT') {
+    return res.status(404).json({ error: 'not found' });
+  }
+  if (status && status >= 400 && status < 600) {
+    // 非 404 状态:仍走统一 internal,避免误报 "not found"
+    console.error(err);
+    return res.status(500).json({ error: 'internal' });
   }
   console.error(err);
   res.status(500).json({ error: 'internal' });

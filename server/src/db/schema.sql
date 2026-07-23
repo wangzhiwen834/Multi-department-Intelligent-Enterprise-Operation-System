@@ -128,6 +128,9 @@ CREATE TABLE IF NOT EXISTS poster_logo (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 05 多业务基建:业务 logo_path(存 img src 路径,可空)。足浴=仓库静态资源,新业务=上传文件。
+ALTER TABLE business ADD COLUMN IF NOT EXISTS logo_path TEXT;
+
 -- 子项目1:工作簿软删除(保留 snapshot 与已同步 metric,大屏数据不受影响)
 ALTER TABLE workbook ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_workbook_shop_period_live ON workbook(shop_id, period) WHERE deleted_at IS NULL;

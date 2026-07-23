@@ -13,6 +13,9 @@ async function main() {
     await pool.query("UPDATE business SET name='静水楼台' WHERE code=$1", [FOOTBATH_BUSINESS_CODE]);
   }
 
+  // 足浴 logo 纳入数据驱动(前端不再 hardcode bizLogo)
+  await pool.query("UPDATE business SET logo_path='/footbath-logo.png' WHERE code=$1", [FOOTBATH_BUSINESS_CODE]);
+
   // 一次性数据迁移:剥离既有店名中的「静水楼台」前缀(历史种子/手录可能带前缀)。
   // 幂等:无前缀时 REPLACE 不变。同时清理可能残留的首尾空格。
   await pool.query(

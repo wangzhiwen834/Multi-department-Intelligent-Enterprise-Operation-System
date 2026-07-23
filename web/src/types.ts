@@ -10,6 +10,14 @@ export interface Shop {
   phone: string | null;
 }
 
+export interface Business {
+  id: number;
+  code: string;
+  name: string;
+  logo_path: string | null;
+  shop_count: number;
+}
+
 // 企业 logo(全局共享,海报素材)
 export interface Logo {
   id: number;
