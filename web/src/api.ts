@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind } from './types';
+import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind, Business } from './types';
 
 const TOKEN_KEY = 'token';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
@@ -89,6 +89,17 @@ export const api = {
     req<Shop>(`/api/shops/${id}/rename`, { method: 'PATCH', body: JSON.stringify({ name }) }),
   deleteShop: (id: number) =>
     req<{ ok: boolean }>(`/api/shops/${id}`, { method: 'DELETE' }),
+  businesses: () => req<Business[]>('/api/businesses'),
+  createBusiness: (name: string) =>
+    req<Business>('/api/businesses', { method: 'POST', body: JSON.stringify({ name }) }),
+  renameBusiness: (id: number, name: string) =>
+    req<Business>(`/api/businesses/${id}/rename`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+  deleteBusiness: (id: number) =>
+    req<{ ok: boolean }>(`/api/businesses/${id}`, { method: 'DELETE' }),
+  uploadBusinessLogo: (id: number, image: string, originalName: string) =>
+    req<Business>(`/api/businesses/${id}/logo`, { method: 'POST', body: JSON.stringify({ image, originalName }) }),
+  deleteBusinessLogo: (id: number) =>
+    req<Business>(`/api/businesses/${id}/logo`, { method: 'DELETE' }),
   template: (code: string) => req<Template>(`/api/templates/${code}`),
   getWorkbook: (shopId: number, period: string) =>
     req<Workbook | null>(`/api/workbooks?shopId=${shopId}&period=${period}`),
