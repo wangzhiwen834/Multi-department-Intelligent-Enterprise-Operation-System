@@ -65,3 +65,32 @@ businessRouter.patch('/businesses/:id/rename', requireRole('chairman'), auditLog
     res.json(rows[0]);
   } catch (e) { next(e); }
 });
+
+// DELETE /api/businesses/:id -> 董事长硬删级联。单连接事务:workbook(带 snapshot/lock)→ daily_metric → expense → shop → template → business。
+// 不改各表外键为 CASCADE(避免影响门店日常软删),显式按序删。删后清上传 logo 文件。
+businessRouter.delete('/businesses/:id', requireRole('chairman'), auditLog('business.delete'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: '无效 id' });
+    const found = (await query<{ logo_path: string | null }>('SELECT logo_path FROM business WHERE id=$1', [id])).rows[0];
+    if (!found) return res.status(404).json({ error: '业务不存在' });
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query(`DELETE FROM workbook WHERE shop_id IN (SELECT id FROM shop WHERE business_id=$1)`, [id]);
+      await c.query(`DELETE FROM daily_metric WHERE shop_id IN (SELECT id FROM shop WHERE business_id=$1)`, [id]);
+      await c.query(`DELETE FROM expense WHERE shop_id IN (SELECT id FROM shop WHERE business_id=$1)`, [id]);
+      await c.query(`DELETE FROM shop WHERE business_id=$1`, [id]);
+      await c.query(`DELETE FROM template WHERE business_id=$1`, [id]);
+      await c.query(`DELETE FROM business WHERE id=$1`, [id]);
+      await c.query('COMMIT');
+    } catch (e) {
+      await c.query('ROLLBACK');
+      throw e;
+    } finally {
+      c.release();
+    }
+    await cleanupLogoFile(found.logo_path);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});

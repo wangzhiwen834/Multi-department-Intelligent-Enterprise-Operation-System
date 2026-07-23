@@ -72,3 +72,47 @@ describe('PATCH /api/businesses/:id/rename', () => {
     expect(r.status).toBe(404);
   });
 });
+
+describe('DELETE /api/businesses/:id (硬删级联,董事长)', () => {
+  it('级联删 business/shop/workbook/daily_metric/expense/template', async () => {
+    // 建临时业务 + 模板 + 2 店 + 工作簿/指标/费用
+    const b = (await query("INSERT INTO business (code,name) VALUES ('tmp','临时业务') RETURNING id")).rows[0];
+    await query('INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)', [b.id, JSON.stringify({ sheets: [] })]);
+    const s1 = (await query("INSERT INTO shop (business_id, code, name) VALUES ($1,'s1','A店') RETURNING id", [b.id])).rows[0];
+    const s2 = (await query("INSERT INTO shop (business_id, code, name) VALUES ($1,'s2','B店') RETURNING id", [b.id])).rows[0];
+    await query("INSERT INTO workbook (shop_id, period, template_version) VALUES ($1,'2026-07',1)", [s1.id]);
+    await query("INSERT INTO workbook (shop_id, period, template_version) VALUES ($1,'2026-07',1)", [s2.id]);
+    await query("INSERT INTO daily_metric (shop_id, date, business_code, metrics) VALUES ($1,'2026-07-01','tmp','{}')", [s1.id]);
+    await query("INSERT INTO expense (shop_id, amount) VALUES ($1,100)", [s1.id]);
+
+    const r = await request(app).delete(`/api/businesses/${b.id}`).set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(200);
+    expect(r.body.ok).toBe(true);
+
+    // business/shop/template 删除后为 0(business 表无 business_id 列,按 id 查)
+    const cBiz = (await query('SELECT COUNT(*)::int AS c FROM business WHERE id=$1', [b.id])).rows[0].c;
+    expect(cBiz).toBe(0);
+    for (const t of ['shop', 'template']) {
+      const c = (await query(`SELECT COUNT(*)::int AS c FROM ${t} WHERE business_id=$1`, [b.id])).rows[0].c;
+      expect(c).toBe(0);
+    }
+    // workbook/daily_metric/expense 全表为 0(resetDb 已清空,本用例只插了这些)
+    for (const t of ['workbook', 'daily_metric', 'expense']) {
+      const c = (await query(`SELECT COUNT(*)::int AS c FROM ${t}`)).rows[0].c;
+      expect(c).toBe(0);
+    }
+  });
+
+  it('经理删 403 且数据不动', async () => {
+    const b = (await query("INSERT INTO business (code,name) VALUES ('tmp','临时业务') RETURNING id")).rows[0];
+    const r = await request(app).delete(`/api/businesses/${b.id}`).set('Authorization', `Bearer ${mgrT}`);
+    expect(r.status).toBe(403);
+    const c = (await query('SELECT COUNT(*)::int AS c FROM business WHERE id=$1', [b.id])).rows[0].c;
+    expect(c).toBe(1);
+  });
+
+  it('不存在 404', async () => {
+    const r = await request(app).delete('/api/businesses/9999').set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(404);
+  });
+});
