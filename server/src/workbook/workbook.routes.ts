@@ -47,7 +47,7 @@ workbookRouter.post('/workbooks', async (req, res, next) => {
     const tpl = (await query<{ version: number }>(
       'SELECT version FROM template WHERE business_id=$1 ORDER BY version DESC LIMIT 1', [shop.business_id],
     )).rows[0];
-    if (!tpl) return res.status(400).json({ error: 'no template for business' });
+    if (!tpl) return res.status(400).json({ error: '模板待定义' });
     const wb = await upsertWorkbook(shopId, period, tpl.version);
     res.status(201).json(wb);
   } catch (e) { next(e); }
@@ -134,7 +134,7 @@ workbookRouter.post('/workbooks/bootstrap', async (req, res, next) => {
       `SELECT t.id, b.code, t.version, t.definition FROM template t JOIN business b ON b.id=t.business_id
        WHERE t.business_id=$1 ORDER BY t.version DESC LIMIT 1`, [shop.business_id],
     )).rows[0];
-    if (!tpl) return res.status(400).json({ error: 'no template for business' });
+    if (!tpl) return res.status(400).json({ error: '模板待定义' });
     const wbId = (await upsertWorkbook(shopId, period, tpl.version)).id;
     const snap = (await query<{ data: any; updated_at: string }>('SELECT data, updated_at FROM workbook_snapshot WHERE workbook_id=$1', [wbId])).rows[0];
     const snapshot = snap ? { data: snap.data, updated_at: snap.updated_at } : null;

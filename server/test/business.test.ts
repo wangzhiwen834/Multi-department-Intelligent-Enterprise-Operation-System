@@ -149,3 +149,13 @@ describe('business logo 上传/删除', () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe('新业务门店开工作簿(无模板)', () => {
+  it('建后开工作簿 -> 400 模板待定义', async () => {
+    const b = (await request(app).post('/api/businesses').set('Authorization', `Bearer ${bossT}`).send({ name: '汉庭酒店' })).body;
+    const s = (await query("INSERT INTO shop (business_id, code, name) VALUES ($1,'h1','酒店A店') RETURNING id", [b.id])).rows[0];
+    const r = await request(app).post('/api/workbooks').set('Authorization', `Bearer ${bossT}`).send({ shopId: s.id, period: '2026-07' });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toBe('模板待定义');
+  });
+});
