@@ -6,12 +6,12 @@
 
 export const FOOTBATH_BUSINESS_CODE = 'footbath';
 
+// 品牌=静水楼台,4 家门店(店名不带品牌前缀;业务/品牌名在业务模块卡上统一展示)。
 export const FOOTBATH_SHOPS = [
-  { code: 'dahekang', name: '大河坎店' },
-  { code: 'jiangbei', name: '江北店' },
-  { code: 'hantai', name: '汉台店' },
-  { code: 'nanzheng', name: '南郑店' },
-  { code: 'chenggu', name: '城固店' },
+  { code: 'dahekan', name: '大河坎店' },
+  { code: 'zhuyuan', name: '竹园店' },
+  { code: 'shuidiaogetou', name: '水调歌头店' },
+  { code: 'wuyue', name: '吾悦店' },
 ];
 
 export const footbathTemplate = {

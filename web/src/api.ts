@@ -83,6 +83,12 @@ export const api = {
   shops: () => req<Shop[]>('/api/shops'),
   updateShopContact: (id: number, body: { address: string; phone: string }) =>
     req<Shop>(`/api/shops/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createShop: (name: string) =>
+    req<Shop>('/api/shops', { method: 'POST', body: JSON.stringify({ name }) }),
+  renameShop: (id: number, name: string) =>
+    req<Shop>(`/api/shops/${id}/rename`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+  deleteShop: (id: number) =>
+    req<{ ok: boolean }>(`/api/shops/${id}`, { method: 'DELETE' }),
   template: (code: string) => req<Template>(`/api/templates/${code}`),
   getWorkbook: (shopId: number, period: string) =>
     req<Workbook | null>(`/api/workbooks?shopId=${shopId}&period=${period}`),

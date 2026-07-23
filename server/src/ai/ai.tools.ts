@@ -93,8 +93,8 @@ async function getKpis(args: { period?: string; shopId?: number }, ctx: AiCtx) {
   const revenue = Number(kpi.revenue);
   const customers = Number(kpi.customers);
   const target = shopId
-    ? Number((await query('SELECT monthly_target FROM shop WHERE id=$1', [shopId])).rows[0]?.monthly_target || 0)
-    : Number((await query('SELECT COALESCE(SUM(monthly_target),0) AS t FROM shop')).rows[0]?.t || 0);
+    ? Number((await query('SELECT monthly_target FROM shop WHERE id=$1 AND status=$2', [shopId, 'active'])).rows[0]?.monthly_target || 0)
+    : Number((await query("SELECT COALESCE(SUM(monthly_target),0) AS t FROM shop WHERE status='active'")).rows[0]?.t || 0);
   const now = new Date();
   const [yy, mm] = period.split('-').map(Number);
   const daysInMonth = new Date(yy, mm, 0).getDate();
@@ -142,6 +142,7 @@ async function compareShops(args: { period?: string; metricKey?: string }, ctx: 
   const { rows } = await query(
     `SELECT s.name, COALESCE(SUM((d.metrics->>$2)::numeric),0) AS value
      FROM shop s LEFT JOIN daily_metric d ON d.shop_id=s.id AND to_char(d.date,'YYYY-MM')=$1
+     WHERE s.status='active'
      GROUP BY s.name ORDER BY value DESC`, [period, key],
   );
   return rows.map((r: any) => ({ shopName: r.name, value: Number(r.value) }));

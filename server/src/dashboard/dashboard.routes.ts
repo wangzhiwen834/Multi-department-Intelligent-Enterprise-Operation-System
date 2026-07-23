@@ -106,6 +106,7 @@ dashboardRouter.get('/dashboard/overview', async (req, res, next) => {
       `SELECT s.id, s.name,
          COALESCE(SUM(${numGuard('revenue', 'd.metrics')}),0) AS revenue
        FROM shop s LEFT JOIN daily_metric d ON d.shop_id=s.id AND d.date BETWEEN $1 AND $2
+       WHERE s.status='active'
        GROUP BY s.id, s.name ORDER BY revenue DESC, s.name ASC`,
       [rangeStart, rangeEnd],
     )).rows.map((r: any) => ({ shopId: r.id, shopName: r.name, revenue: Number(r.revenue) }));
