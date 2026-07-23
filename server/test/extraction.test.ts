@@ -8,7 +8,7 @@ vi.mock('../src/ai/ai.gateway.js', () => ({
   NotConfigured: class NotConfigured extends Error { constructor(m = 'AI 未配置') { super(m); this.name = 'NotConfigured'; } },
 }));
 const { callDoubaoJson, NotConfigured } = await import('../src/ai/ai.gateway.js');
-const { extractWorkbook } = await import('../src/extraction/extraction.service.js');
+const { extractWorkbook, buildMessages } = await import('../src/extraction/extraction.service.js');
 
 let wbId: number;
 let shopId: number;
@@ -225,5 +225,21 @@ describe('extractWorkbook', () => {
     expect(Number(dm1.rows[0].metrics.revenue)).toBe(8026);
     expect(Number(dm1.rows[0].metrics.customers_total)).toBe(25);
     expect(Number(dm1.rows[0].metrics.therapist_attendance)).toBe(16); // 技师出勤（人）-> 技师出勤 匹配
+  });
+});
+
+describe('buildMessages prompt 去硬编码', () => {
+  const sheet = { key: 'reconciliation', label: '收入对账', layout: 'row_per_day', grain: 'per_day',
+    columns: [{ key: 'date', label: '日期', type: 'date', kind: 'entry' }, { key: 'cash', label: '现金', type: 'number', kind: 'entry' }] };
+
+  it('system prompt 用业务名(汉庭酒店),不含「足浴」', () => {
+    const msgs = buildMessages(sheet as any, 'TSV DATA', '汉庭酒店');
+    expect(msgs[0].content).toContain('汉庭酒店');
+    expect(msgs[0].content).not.toContain('足浴');
+  });
+
+  it('字段列表来自 sheet 列', () => {
+    const msgs = buildMessages(sheet as any, 'TSV', '汉庭酒店');
+    expect(msgs[1].content).toContain('cash=现金');
   });
 });

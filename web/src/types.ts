@@ -105,3 +105,20 @@ export interface DashboardOverview {
   expenseBySubject: { subject: string; amount: number }[];
   shopRanking: { shopId: number; shopName: string; revenue: number }[];
 }
+
+export interface HotelOverview {
+  granularity: 'day' | 'week' | 'month' | 'year';
+  date: string; rangeStart: string; rangeEnd: string; shopId: number | null;
+  kpis: {
+    hotelRevenue: number; dailyCashTotal: number; roomRevenue: number;
+    breakfastRevenue: number; memberBenefit: number;
+    overnightRooms: number; cleanedRooms: number;
+    adr: number; occupancy: number; revpar: number;     // 日均
+  };
+  revenueTrend: { label: string; revenue: number }[];
+  revenueStructure: { room: number; breakfast: number; guestDamage: number; member: number; other: number; offlineRoom: number };
+  roomTypeStructure: { bigBed: number; suite: number; family: number; superiorBigBed: number; businessBigBed: number; superiorTwin: number; businessTwin: number };
+  channelStructure: { meituan: number; ctrip: number; huazhu: number; selfuse: number; walkin: number };
+  expenseBySubject: { subject: string; amount: number }[];
+  shopRanking: { shopId: number; shopName: string; revenue: number }[];
+}

@@ -55,15 +55,15 @@ export function serializeSheet(sheet: any): { tsv: string; rowsIn: number } {  c
   return { tsv: lines.join('\n'), rowsIn };
 }
 
-export function buildMessages(sheet: TplSheet, tsv: string) {
+export function buildMessages(sheet: TplSheet, tsv: string, businessName = '足浴') {
   const isExpense = sheet.key === 'expense';
   const entryCols = sheet.columns.filter(c => c.kind === 'entry' && c.key !== 'date' && c.key !== 'pay_date');
   const fields = entryCols.map(c => `- ${c.key}=${c.label || c.key}`).join('\n');
   const system = isExpense
-    ? `你是足浴店财务数据抽取助手。从工作表数据(TSV,第1行表头)中识别费用明细,输出 JSON。
+    ? `你是${businessName}财务数据抽取助手。从工作表数据(TSV,第1行表头)中识别费用明细,输出 JSON。
 规则:按表头文字匹配目标字段(见用户消息);数值纯数字不带单位/千分位,空留 null;日期 YYYY-MM-DD。
 严格输出 {"expenses":[{"pay_date":"YYYY-MM-DD","attribution_month":"...","summary":"...","amount":数值,"payee":"...","subject":"..."}]},不要 markdown/解释。`
-    : `你是足浴店财务数据抽取助手。从工作表数据(TSV,第1行表头)中识别每日经营指标,输出 JSON。
+    : `你是${businessName}财务数据抽取助手。从工作表数据(TSV,第1行表头)中识别每日经营指标,输出 JSON。
 规则:按表头文字匹配目标字段(见用户消息);只填目标字段;数值纯数字不带单位/千分位,空留 null;日期 YYYY-MM-DD。
 严格输出 {"rows":[{"date":"YYYY-MM-DD","metrics":{"字段key":数值}}]},不要 markdown/解释。`;
   const user = `表名:${sheet.label || sheet.key}(${sheet.key})\n目标字段(key=中文标签):\n${fields}\n\nTSV 数据:\n${tsv}`;
@@ -158,8 +158,8 @@ export async function extractWorkbook(
   const snap = (await query<{ data: any }>('SELECT data FROM workbook_snapshot WHERE workbook_id=$1', [wbId])).rows[0];
   if (!snap || !snap.data) return { ok: false, code: 'not_found', error: '工作簿无快照' };
   // 3. 模板(经 shop -> business -> template)
-  const shopBiz = (await query<{ bid: number; bcode: string }>(
-    'SELECT s.business_id AS bid, b.code AS bcode FROM shop s JOIN business b ON b.id=s.business_id WHERE s.id=$1', [wb.shop_id],
+  const shopBiz = (await query<{ bid: number; bcode: string; bname: string }>(
+    'SELECT s.business_id AS bid, b.code AS bcode, b.name AS bname FROM shop s JOIN business b ON b.id=s.business_id WHERE s.id=$1', [wb.shop_id],
   )).rows[0];
   if (!shopBiz) return { ok: false, code: 'not_found', error: '门店不存在' };
   const tplRow = (await query<{ definition: TemplateDef }>(
@@ -208,7 +208,7 @@ export async function extractWorkbook(
     }
     let llmResult: any;
     try {
-      llmResult = await withTimeout(callDoubaoJson(buildMessages(s, tsv)), config.extractTimeoutMs);
+      llmResult = await withTimeout(callDoubaoJson(buildMessages(s, tsv, shopBiz.bname)), config.extractTimeoutMs);
     } catch (e: any) {
       if (e instanceof NotConfigured || e?.name === 'NotConfigured') { notConfigured = true; break; }
       errors.push({ sheetKey: s.key, date: '', key: '', msg: `LLM 调用失败:${e.message}` });
