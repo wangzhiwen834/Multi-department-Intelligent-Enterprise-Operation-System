@@ -57,6 +57,16 @@ const toggleOps = () => {
   if (sidebarCollapsed.value) { selectedBusiness.value = null; opsExpanded.value = false; }
 };
 
+// 数据大屏:业务子菜单(复用 businesses 列表)
+const dashboardBusiness = ref<string | null>('footbath');
+const dashExpanded = ref(false);
+const onSelectDashboardBusiness = (code: string) => { dashboardBusiness.value = code; module.value = 'dashboard'; };
+const toggleDash = () => {
+  if (module.value !== 'dashboard') module.value = 'dashboard';
+  if (!sidebarCollapsed.value) dashExpanded.value = !dashExpanded.value;
+  if (sidebarCollapsed.value) { dashboardBusiness.value = 'footbath'; dashExpanded.value = false; }
+};
+
 const showEmployees = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
 const showAudit = computed(() => user.value?.role === 'chairman' || user.value?.role === 'manager');
 // 侧栏图标:Lucide 风格线条 SVG,stroke=currentColor 跟随 nav-item 配色
@@ -105,7 +115,16 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
           <button class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === null }" @click="onSelectBusiness(null)">全部业务</button>
           <button v-for="b in businesses" :key="b.id" class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === b.code }" @click="onSelectBusiness(b.code)">{{ b.name }}</button>
         </div>
-        <button v-for="it in sidebarItems.filter(i => i.key !== 'ops')" :key="it.key"
+        <button class="od-nav-item" :class="{ active: module === 'dashboard' }" @click="toggleDash">
+          <span class="od-ico" v-html="navIcon['dashboard']"></span><span>数据大屏</span>
+          <span class="od-chevron" :class="{ open: dashExpanded }" v-if="!sidebarCollapsed">▾</span>
+        </button>
+        <div v-if="dashExpanded && !sidebarCollapsed" class="od-subnav">
+          <button v-for="b in businesses" :key="b.id" class="od-nav-sub"
+            :class="{ active: module === 'dashboard' && dashboardBusiness === b.code }"
+            @click="onSelectDashboardBusiness(b.code)">{{ b.name }}</button>
+        </div>
+        <button v-for="it in sidebarItems.filter(i => i.key !== 'ops' && i.key !== 'dashboard')" :key="it.key"
           class="od-nav-item" :class="{ active: module === it.key }" @click="setModule(it.key)">
           <span class="od-ico" v-html="navIcon[it.key]"></span><span>{{ it.label }}</span>
         </button>
@@ -133,7 +152,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
 
       <!-- 内容区 -->
       <main class="od-content">
-        <Dashboard v-if="module === 'dashboard'" />
+        <Dashboard v-if="module === 'dashboard'" :business-code="dashboardBusiness ?? undefined" />
         <ShopList v-else-if="module === 'ops' && !shop" :user="user"
           :businesses="businesses" :business-code="selectedBusiness"
           @select-business="onSelectBusiness" @businesses-changed="onBusinessesChanged" @pick="onPick" />
