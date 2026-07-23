@@ -64,7 +64,6 @@ const rangeLabel = computed(() => {
 const scopeLabel = computed(() => shopId.value ? (shops.value.find(s => s.id === shopId.value)?.name ?? '单店') : `全部 ${shops.value.length} 店`);
 const title = computed(() => businessCode.value === 'hotel' ? '汉庭酒店·经营驾驶舱' : '静水楼台·经营驾驶舱');
 const onPickShop = (id: number) => { shopId.value = id; };
-const placeholder = computed(() => businessCode.value !== 'footbath' && businessCode.value !== 'hotel');
 </script>
 
 <template>
