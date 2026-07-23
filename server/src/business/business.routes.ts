@@ -94,3 +94,52 @@ businessRouter.delete('/businesses/:id', requireRole('chairman'), auditLog('busi
     res.json({ ok: true });
   } catch (e) { next(e); }
 });
+
+const LogoBody = z.object({
+  image: z.string().min(1).max(5 * 1024 * 1024), // dataUrl 字符串
+  originalName: z.string().min(1).max(255),
+});
+
+// POST /api/businesses/:id/logo -> 董事长上传 logo(base64 dataURL → 磁盘文件,旧上传文件清理)
+businessRouter.post('/businesses/:id/logo', requireRole('chairman'), auditLog('business.logo.upload'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: '无效 id' });
+    const { image, originalName } = LogoBody.parse(req.body);
+    const m = image.match(/^data:([^;]+);base64,(.+)$/);
+    if (!m) return res.status(400).json({ error: '图片格式不正确(需 data URL)' });
+    const mime = m[1].toLowerCase();
+    const ext = ALLOWED_MIME[mime];
+    if (!ext) return res.status(400).json({ error: '仅支持 PNG / JPEG / WebP 格式' });
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > MAX_BIZ_LOGO_BYTES) return res.status(413).json({ error: 'logo 过大,请压缩到 2MB 以内' });
+    const old = (await query<{ logo_path: string | null }>('SELECT logo_path FROM business WHERE id=$1', [id])).rows[0];
+    if (!old) return res.status(404).json({ error: '业务不存在' });
+    await mkdir(bizLogosDir, { recursive: true });
+    const filename = `${randomUUID()}.${ext}`;
+    await writeFile(path.join(bizLogosDir, filename), buf);
+    const logoPath = `${LOGO_PREFIX}${filename}`;
+    const { rows } = await query(
+      `UPDATE business SET logo_path=$2 WHERE id=$1 RETURNING id, code, name, logo_path`,
+      [id, logoPath],
+    );
+    await cleanupLogoFile(old.logo_path); // 删旧上传文件(足浴仓库资源不删)
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});
+
+// DELETE /api/businesses/:id/logo -> 董事长删 logo(清 logo_path + 删磁盘文件)
+businessRouter.delete('/businesses/:id/logo', requireRole('chairman'), auditLog('business.logo.delete'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: '无效 id' });
+    const old = (await query<{ logo_path: string | null }>('SELECT logo_path FROM business WHERE id=$1', [id])).rows[0];
+    if (!old) return res.status(404).json({ error: '业务不存在' });
+    const { rows } = await query(
+      `UPDATE business SET logo_path=NULL WHERE id=$1 RETURNING id, code, name, logo_path`,
+      [id],
+    );
+    await cleanupLogoFile(old.logo_path);
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});

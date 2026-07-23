@@ -116,3 +116,36 @@ describe('DELETE /api/businesses/:id (硬删级联,董事长)', () => {
     expect(r.status).toBe(404);
   });
 });
+
+const PNG_1x1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1QwAAAAC0lEQVR42mNkYAAAAAYAAjCB0N8AAAAASUVORK5CYII=';
+
+describe('business logo 上传/删除', () => {
+  it('上传 -> 文件落盘 + logo_path 指向 + GET 取到', async () => {
+    const r = await request(app).post(`/api/businesses/${businessId}/logo`).set('Authorization', `Bearer ${bossT}`).send({ image: PNG_1x1, originalName: 't.png' });
+    expect(r.status).toBe(200);
+    expect(r.body.logo_path).toMatch(/^\/api\/uploads\/business-logos\/.+\.png$/);
+    const row = (await query('SELECT logo_path FROM business WHERE id=$1', [businessId])).rows[0];
+    expect(row.logo_path).toBe(r.body.logo_path);
+    const g = await request(app).get(r.body.logo_path);
+    expect(g.status).toBe(200);
+  });
+
+  it('删 logo -> logo_path=null + 磁盘文件删', async () => {
+    const up = (await request(app).post(`/api/businesses/${businessId}/logo`).set('Authorization', `Bearer ${bossT}`).send({ image: PNG_1x1, originalName: 't.png' })).body;
+    const r = await request(app).delete(`/api/businesses/${businessId}/logo`).set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(200);
+    expect(r.body.logo_path).toBeNull();
+    const g = await request(app).get(up.logo_path);
+    expect(g.status).toBe(404);
+  });
+
+  it('经理上传 403', async () => {
+    const r = await request(app).post(`/api/businesses/${businessId}/logo`).set('Authorization', `Bearer ${mgrT}`).send({ image: PNG_1x1, originalName: 't.png' });
+    expect(r.status).toBe(403);
+  });
+
+  it('非 data URL 400', async () => {
+    const r = await request(app).post(`/api/businesses/${businessId}/logo`).set('Authorization', `Bearer ${bossT}`).send({ image: 'not-a-data-url', originalName: 't.png' });
+    expect(r.status).toBe(400);
+  });
+});
