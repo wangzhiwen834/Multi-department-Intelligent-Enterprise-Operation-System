@@ -50,3 +50,18 @@ businessRouter.post('/businesses', requireRole('chairman'), auditLog('business.c
     res.status(201).json({ ...rows[0], shop_count: 0 });
   } catch (e) { next(e); }
 });
+
+// PATCH /api/businesses/:id/rename -> 董事长改名
+businessRouter.patch('/businesses/:id/rename', requireRole('chairman'), auditLog('business.rename'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: '无效 id' });
+    const { name } = NameBody.parse(req.body);
+    const { rows } = await query(
+      `UPDATE business SET name=$2 WHERE id=$1 RETURNING id, code, name, logo_path`,
+      [id, name],
+    );
+    if (!rows.length) return res.status(404).json({ error: '业务不存在' });
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});

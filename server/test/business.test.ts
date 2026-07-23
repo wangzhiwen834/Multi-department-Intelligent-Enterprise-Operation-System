@@ -54,3 +54,21 @@ describe('POST /api/businesses (创建,董事长)', () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe('PATCH /api/businesses/:id/rename', () => {
+  it('董事长可改名', async () => {
+    const r = await request(app).patch(`/api/businesses/${businessId}/rename`).set('Authorization', `Bearer ${bossT}`).send({ name: '静水楼台足浴' });
+    expect(r.status).toBe(200);
+    expect(r.body.name).toBe('静水楼台足浴');
+  });
+
+  it('经理 403', async () => {
+    const r = await request(app).patch(`/api/businesses/${businessId}/rename`).set('Authorization', `Bearer ${mgrT}`).send({ name: 'X' });
+    expect(r.status).toBe(403);
+  });
+
+  it('不存在 404', async () => {
+    const r = await request(app).patch('/api/businesses/9999/rename').set('Authorization', `Bearer ${bossT}`).send({ name: 'X' });
+    expect(r.status).toBe(404);
+  });
+});
