@@ -417,3 +417,30 @@ describe('dashboard.helpers 纯函数', () => {
     });
   });
 });
+
+describe('businessCode 分派与校验', () => {
+  it('缺省 businessCode = footbath(向后兼容)', async () => {
+    const r = await request(app).get('/api/dashboard/overview?granularity=month&date=2026-07-15').set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(200);
+    expect(r.body.kpis).toBeDefined();
+  });
+
+  it('非法 businessCode -> 404', async () => {
+    const r = await request(app).get('/api/dashboard/overview?businessCode=xyz&granularity=month&date=2026-07-15').set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(404);
+  });
+
+  it('业务无大屏处理器 -> 501', async () => {
+    await query("INSERT INTO business (code,name) VALUES ('foo','测试业务')");
+    const r = await request(app).get('/api/dashboard/overview?businessCode=foo&granularity=month&date=2026-07-15').set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(501);
+  });
+
+  it('shopId 不属于该业务 -> 400', async () => {
+    // shop1 属 footbath;造一个别的业务的店,用其 id 访 footbath
+    const otherBiz = (await query("INSERT INTO business (code,name) VALUES ('other','其它') RETURNING id")).rows[0];
+    const otherShop = (await query("INSERT INTO shop (business_id, code, name) VALUES ($1,'os','其它店') RETURNING id", [otherBiz.id])).rows[0];
+    const r = await request(app).get(`/api/dashboard/overview?businessCode=footbath&granularity=month&date=2026-07-15&shopId=${otherShop.id}`).set('Authorization', `Bearer ${bossT}`);
+    expect(r.status).toBe(400);
+  });
+});
