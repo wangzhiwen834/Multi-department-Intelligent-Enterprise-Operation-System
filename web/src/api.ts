@@ -1,4 +1,4 @@
-import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind, Business } from './types';
+import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind, Business, HotelOverview } from './types';
 
 const TOKEN_KEY = 'token';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
@@ -134,8 +134,8 @@ export const api = {
     req<{ lastExtractedAt: string | null }>(`/api/workbooks/${id}/extract/status`),
   ledger: (shopId: number, period: string) =>
     req<{ period: string; days: { date: string; revenue: number; expense: number; running_balance: number }[] }>(`/api/shops/${shopId}/ledger?period=${period}`),
-  dashboardOverview: (granularity: 'day' | 'week' | 'month' | 'year', date: string, shopId?: number) =>
-    req<DashboardOverview>(`/api/dashboard/overview?granularity=${granularity}&date=${date}${shopId ? `&shopId=${shopId}` : ''}`),
+  dashboardOverview: (granularity: 'day' | 'week' | 'month' | 'year', date: string, shopId?: number, businessCode = 'footbath') =>
+    req<DashboardOverview | HotelOverview>(`/api/dashboard/overview?granularity=${granularity}&date=${date}${shopId ? `&shopId=${shopId}` : ''}&businessCode=${businessCode}`),
   aiChat: (message: string, period: string) =>
     req<{ answer: string; configured: boolean; error?: string }>('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message, period }) }),
   aiInfo: () => req<{ chatModel: string; posterModel: string; extractionModel: string; configured: boolean }>('/api/ai/info'),

@@ -38,7 +38,7 @@ const load = () => {
   err.value = '';
   const id = ++reqId;
   api.dashboardOverview(granularity.value, refDate.value, shopId.value ?? undefined)
-    .then(r => { if (id === reqId) data.value = r; })
+    .then(r => { if (id === reqId) data.value = r as DashboardOverview; })
     .catch(e => { if (id === reqId) err.value = e.message; });
 };
 onMounted(() => {
