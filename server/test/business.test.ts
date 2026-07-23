@@ -33,3 +33,24 @@ describe('GET /api/businesses', () => {
     expect(r.body[0]).toMatchObject({ code: 'footbath', name: '静水楼台', logo_path: '/footbath-logo.png', shop_count: 1 });
   });
 });
+
+describe('POST /api/businesses (创建,董事长)', () => {
+  it('董事长可建业务,code 自动,logo_path=null,无模板', async () => {
+    const r = await request(app).post('/api/businesses').set('Authorization', `Bearer ${bossT}`).send({ name: '汉庭酒店' });
+    expect(r.status).toBe(201);
+    expect(r.body).toMatchObject({ name: '汉庭酒店', logo_path: null, shop_count: 0 });
+    expect(r.body.code).toMatch(/^b/);
+    const tpl = (await query('SELECT 1 FROM template WHERE business_id=$1', [r.body.id])).rows;
+    expect(tpl).toHaveLength(0);
+  });
+
+  it('经理建被拒 403', async () => {
+    const r = await request(app).post('/api/businesses').set('Authorization', `Bearer ${mgrT}`).send({ name: 'X' });
+    expect(r.status).toBe(403);
+  });
+
+  it('空名 400', async () => {
+    const r = await request(app).post('/api/businesses').set('Authorization', `Bearer ${bossT}`).send({ name: '   ' });
+    expect(r.status).toBe(400);
+  });
+});

@@ -35,3 +35,18 @@ businessRouter.get('/businesses', async (_req, res, next) => {
     res.json(rows);
   } catch (e) { next(e); }
 });
+
+const NameBody = z.object({ name: z.string().trim().min(1).max(80) });
+
+// POST /api/businesses -> 董事长新建业务。code 自动(用户只填名);不建模板(子项目2 再定制)。
+businessRouter.post('/businesses', requireRole('chairman'), auditLog('business.create'), async (req, res, next) => {
+  try {
+    const { name } = NameBody.parse(req.body);
+    const code = `b${Date.now().toString(36)}`;
+    const { rows } = await query(
+      `INSERT INTO business (code, name) VALUES ($1, $2) RETURNING id, code, name, logo_path`,
+      [code, name],
+    );
+    res.status(201).json({ ...rows[0], shop_count: 0 });
+  } catch (e) { next(e); }
+});
