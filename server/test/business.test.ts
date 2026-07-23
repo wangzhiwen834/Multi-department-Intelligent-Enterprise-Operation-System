@@ -159,3 +159,27 @@ describe('新业务门店开工作簿(无模板)', () => {
     expect(r.body.error).toBe('模板待定义');
   });
 });
+
+describe('POST /api/shops 按所选业务创建(guard mis-assign 回归)', () => {
+  it('传 businessId 指定非足浴业务 -> 201 且 business_code 为该业务(非 footbath)', async () => {
+    // 建一个非足浴业务
+    const biz = (await request(app).post('/api/businesses').set('Authorization', `Bearer ${bossT}`).send({ name: '汉庭酒店' })).body;
+    expect(biz.code).not.toBe('footbath');
+    // 传 businessId 建门店
+    const r = await request(app).post('/api/shops').set('Authorization', `Bearer ${bossT}`).send({ name: '酒店A店', businessId: biz.id });
+    expect(r.status).toBe(201);
+    expect(r.body.name).toBe('酒店A店');
+    // GET /api/shops -> 新店 business_code 为该非足浴业务(非 footbath)
+    const list = await request(app).get('/api/shops').set('Authorization', `Bearer ${bossT}`);
+    const created = list.body.find((s: any) => s.name === '酒店A店');
+    expect(created).toBeTruthy();
+    expect(created.business_code).toBe(biz.code);
+    expect(created.business_code).not.toBe('footbath');
+  });
+
+  it('传不存在的 businessId -> 404', async () => {
+    const r = await request(app).post('/api/shops').set('Authorization', `Bearer ${bossT}`).send({ name: 'X店', businessId: 9999 });
+    expect(r.status).toBe(404);
+    expect(r.body.error).toBe('业务不存在');
+  });
+});

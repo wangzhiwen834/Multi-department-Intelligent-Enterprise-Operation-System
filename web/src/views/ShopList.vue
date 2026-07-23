@@ -91,7 +91,6 @@ const swatch = (i: number) => palette[i % palette.length];
 const firstChar = (name: string) => name.charAt(0);
 
 // 状态 B 下门店增删改(沿用上一轮已做)—— 门店操作后刷新 shops
-const refreshShops = () => loadShops();
 
 // 门店新增(状态 B)
 const newShopName = ref('');
@@ -102,7 +101,7 @@ const submitAddShop = async () => {
   const name = newShopName.value.trim();
   if (!name || !selectedGroup.value) return;
   saveErr.value = '';
-  try { await api.createShop(name); await loadShops(); cancelAddShop(); }
+  try { await api.createShop(name, selectedGroup.value!.id); await loadShops(); cancelAddShop(); }
   catch (e: any) { saveErr.value = e.message; }
 };
 // 门店重命名/删除复用既有逻辑(见下模板内联)
@@ -273,13 +272,6 @@ watch(() => props.businessCode, () => { /* 由父组件驱动;无需本地 selec
 .biz-stats { display: flex; gap: var(--od-space-6); padding-top: var(--od-space-4); border-top: 1px solid var(--od-border); }
 .biz-stat .v { font-size: var(--od-text-xl); font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); }
 .biz-stat .l { font-size: var(--od-text-sm); color: var(--od-text-muted); }
-
-/* 虚线占位卡 */
-.placeholder-card { border: 2px dashed var(--od-border); border-radius: var(--od-radius-lg); padding: var(--od-space-6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--od-text-muted); min-height: 200px; background: transparent; cursor: default; }
-.placeholder-card:hover { border-color: color-mix(in oklab, var(--od-border), black 8%); background: var(--od-surface-2); }
-.placeholder-card .ph-ico { width: 44px; height: 44px; border-radius: var(--od-radius-md); background: var(--od-surface-2); display: grid; place-items: center; }
-.placeholder-card h4 { font-size: var(--od-text-base); color: var(--od-text); font-weight: var(--od-weight-medium); }
-.placeholder-card p { font-size: var(--od-text-xs); }
 
 /* 店铺卡 */
 .store-card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); padding: var(--od-space-5); box-shadow: var(--od-shadow-sm); transition: all .18s ease; display: flex; align-items: center; gap: var(--od-space-4); }

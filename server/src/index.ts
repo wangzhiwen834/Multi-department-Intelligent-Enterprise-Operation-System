@@ -34,7 +34,8 @@ app.use(express.json({ limit: '10mb' }));
 // 路径 /api/uploads/logos 自动走 vite proxy(开发)与 Nginx /api 反代(生产),无需改部署。
 const logosDir = path.join(config.uploadsDir, 'logos');
 fs.mkdirSync(logosDir, { recursive: true });
-app.use('/api/uploads/logos', express.static(logosDir));
+// fallthrough:false -> 文件不存在时直接 404,避免 fallthrough 到 /api 下的 authRequired 返回 401
+app.use('/api/uploads/logos', express.static(logosDir, { fallthrough: false }));
 
 const bizLogosDir = path.join(config.uploadsDir, 'business-logos');
 fs.mkdirSync(bizLogosDir, { recursive: true });
@@ -62,11 +63,17 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: 'validation', issues: err.issues });
   }
-  // 静态资源(如 fallthrough:false 的 business-logos)抛 ENOENT 时携带 statusCode=404,透传之
+  // 静态资源(如 fallthrough:false 的 logos/business-logos)抛 ENOENT 或携带 404 时,透传 404
   const status = (err as { statusCode?: number; status?: number })?.statusCode
     ?? (err as { status?: number })?.status;
+  const code = (err as { code?: string })?.code;
+  if (status === 404 || code === 'ENOENT') {
+    return res.status(404).json({ error: 'not found' });
+  }
   if (status && status >= 400 && status < 600) {
-    return res.status(status).json({ error: 'not found' });
+    // 非 404 状态:仍走统一 internal,避免误报 "not found"
+    console.error(err);
+    return res.status(500).json({ error: 'internal' });
   }
   console.error(err);
   res.status(500).json({ error: 'internal' });

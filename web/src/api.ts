@@ -83,8 +83,8 @@ export const api = {
   shops: () => req<Shop[]>('/api/shops'),
   updateShopContact: (id: number, body: { address: string; phone: string }) =>
     req<Shop>(`/api/shops/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  createShop: (name: string) =>
-    req<Shop>('/api/shops', { method: 'POST', body: JSON.stringify({ name }) }),
+  createShop: (name: string, businessId?: number) =>
+    req<Shop>('/api/shops', { method: 'POST', body: JSON.stringify({ name, businessId }) }),
   renameShop: (id: number, name: string) =>
     req<Shop>(`/api/shops/${id}/rename`, { method: 'PATCH', body: JSON.stringify({ name }) }),
   deleteShop: (id: number) =>

@@ -134,7 +134,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
       <!-- 内容区 -->
       <main class="od-content">
         <Dashboard v-if="module === 'dashboard'" />
-        <ShopList v-else-if="module === 'ops' && !shop" :user="user" :period="period"
+        <ShopList v-else-if="module === 'ops' && !shop" :user="user"
           :businesses="businesses" :business-code="selectedBusiness"
           @select-business="onSelectBusiness" @businesses-changed="onBusinessesChanged" @pick="onPick" />
         <WorkbookManager v-else-if="module === 'ops' && shop && !openedPeriod" :shop="shop" @open="onOpenPeriod" @back="onManagerBack" />
