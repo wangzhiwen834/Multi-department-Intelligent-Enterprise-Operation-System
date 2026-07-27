@@ -153,9 +153,22 @@ export function parseRowPerDay(sheet: any, tplSheet: TplSheet): { rows: { date: 
   const errors: ExtractError[] = [];
   if (!rowIdx.length) return { rows: [], errors };
 
-  // 1. 找数据行:col0 为可解析日期(Excel 序列号或日期串)
+  // 1. 找表头锚点行:col0 匹配模板日期列标签(如"日期")。调理馆等报表在表头上方有 meta 行
+  //    (col0 填报表起始日期),若不锚定会把 meta 行误当数据行,导致表头区只剩标题、0 行命中。
+  const dateCol = tplSheet.columns.find(c => c.key === 'date' || c.key === 'pay_date');
+  const dateLabelVariants = dateCol ? labelVariants(dateCol.label || dateCol.key) : ['日期'];
+  let headerAnchor = -1;
+  for (const r of rowIdx) {
+    const v = cd[r]?.[0]?.v;
+    if (v == null || v === '') continue;
+    if (labelVariants(String(v)).some(lv => dateLabelVariants.includes(lv))) { headerAnchor = r; break; }
+  }
+
+  // 2. 数据行 = 锚点行之后(无锚点则全表)col0 为可解析日期的行
+  const startScan = headerAnchor >= 0 ? headerAnchor + 1 : 0;
   const dataRows: { row: number; iso: string }[] = [];
   for (const r of rowIdx) {
+    if (r < startScan) continue;
     const v = cd[r]?.[0]?.v;
     if (v == null || v === '') continue;
     const iso = typeof v === 'number' ? excelSerialToISO(v) : normalizeDate(v);
@@ -163,9 +176,11 @@ export function parseRowPerDay(sheet: any, tplSheet: TplSheet): { rows: { date: 
   }
   if (dataRows.length < 1) return { rows: [], errors }; // 非行式表 -> 回退 LLM
 
-  // 2. 表头区 = 首个数据行之前的所有行;每列取最深层非空单元格作标签(headerRows 升序,后写覆盖)
+  // 3. 表头区 = 锚点行 ~ 首数据行之前(无锚点则首数据行之前所有行);每列取最深层非空单元格作标签
   const firstDataRow = dataRows[0].row;
-  const headerRows = rowIdx.filter(r => r < firstDataRow);
+  const headerRows = headerAnchor >= 0
+    ? rowIdx.filter(r => r >= headerAnchor && r < firstDataRow)
+    : rowIdx.filter(r => r < firstDataRow);
   const colLabel = new Map<number, string>();
   for (const r of headerRows) {
     const row = cd[r] || {};

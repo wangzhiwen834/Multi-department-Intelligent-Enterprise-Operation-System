@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { pool } from '../src/db/pool.js';
 import { FOOTBATH_BUSINESS_CODE, FOOTBATH_SHOPS, footbathTemplate } from '../src/template/footbath.template.js';
 import { HOTEL_BUSINESS_CODE, hotelTemplate } from '../src/template/hotel.template.js';
+import { TIAOLI_BUSINESS_CODE, tiaoliTemplate } from '../src/template/tiaoli.template.js';
 import { hashPassword } from '../src/auth/password.js';
 
 async function main() {
@@ -79,7 +80,22 @@ async function main() {
     [hb.id, JSON.stringify(hotelTemplate)],
   );
 
-  console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
+  // ---- 调理馆(tiaoli)业务 + 模板 v1 ----
+  // 匹配用户已建的调理馆业务(按 name),把 code 改成稳定值 'tiaoli'(大屏 HANDLERS 按 code 分派)。
+  let tgb = (await pool.query("SELECT id FROM business WHERE name='禧悦健康调理馆'")).rows[0]
+    ?? (await pool.query('SELECT id FROM business WHERE code=$1', [TIAOLI_BUSINESS_CODE])).rows[0];
+  if (!tgb) {
+    tgb = (await pool.query("INSERT INTO business (code,name) VALUES ($1,'禧悦健康调理馆') RETURNING id", [TIAOLI_BUSINESS_CODE])).rows[0];
+  } else {
+    await pool.query("UPDATE business SET code=$1, name='禧悦健康调理馆' WHERE id=$2", [TIAOLI_BUSINESS_CODE, tgb.id]);
+  }
+  await pool.query(
+    `INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)
+     ON CONFLICT (business_id, version) DO UPDATE SET definition=EXCLUDED.definition`,
+    [tgb.id, JSON.stringify(tiaoliTemplate)],
+  );
+
+  console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 禧悦调理馆 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
   await pool.end();
 }
 

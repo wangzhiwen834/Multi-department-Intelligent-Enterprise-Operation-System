@@ -4,6 +4,7 @@ import { authRequired } from '../auth/auth.middleware.js';
 import { computeRange, isValidYmd, type Granularity } from './dashboard.helpers.js';
 import { computeFootbathOverview } from './footbath.js';
 import { computeHotelOverview } from './hotel.js';
+import { computeTiaoliOverview } from './tiaoli.js';
 
 export const dashboardRouter = Router();
 dashboardRouter.use(authRequired);
@@ -19,6 +20,7 @@ const todayISO = () => {
 const HANDLERS: Record<string, (p: any) => Promise<any>> = {
   footbath: computeFootbathOverview,
   hotel: computeHotelOverview,
+  tiaoli: computeTiaoliOverview,
 };
 
 // GET /api/dashboard/overview?businessCode=footbath|hotel&granularity=...&date=YYYY-MM-DD&shopId=...

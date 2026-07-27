@@ -122,3 +122,14 @@ export interface HotelOverview {
   expenseBySubject: { subject: string; amount: number }[];
   shopRanking: { shopId: number; shopName: string; revenue: number }[];
 }
+
+export interface TiaoliOverview {
+  granularity: 'day' | 'week' | 'month' | 'year';
+  date: string; rangeStart: string; rangeEnd: string; shopId: number | null;
+  kpis: { totalReceipt: number; refundTotal: number; netReceipt: number };
+  revenueTrend: { label: string; revenue: number }[];
+  xispaStructure: { cika: number; swimwear: number; swimming: number; baby_herbal: number; haircut: number; diaper: number; other_goods: number };
+  yuespaStructure: { birth_checkup: number; bone_conditioning: number; skin_care: number; postpartum_rehab: number; assistive_device: number; fat_loss: number; head_therapy: number; fahan: number; lactation: number; card: number };
+  expenseBySubject: { subject: string; amount: number }[];
+  shopRanking: { shopId: number; shopName: string; revenue: number }[];
+}

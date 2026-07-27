@@ -11,8 +11,8 @@ const MAX_ROWS = 400;
 // 模板 sheet key -> 可能的 Excel 工作表名(模板 label 优先,别名兜底)
 const ALIASES: Record<string, string[]> = {
   daily_ops: ['经营报表', '酒店运营', '酒店运营数据统计表'],
-  reconciliation: ['收入对账', '收入统计', '账户管理明细', '账户管理'],
-  expense: ['费用明细', '日常开销明细', '管理费用明细'],
+  reconciliation: ['收入对账', '收入统计', '账户管理明细', '账户管理', '账户明细表'],
+  expense: ['费用明细', '日常开销明细', '管理费用明细', '费用明细表'],
 };
 
 // ---------- exceljs -> Univer 样式/值转换(移植自 sheet-io.ts)----------
