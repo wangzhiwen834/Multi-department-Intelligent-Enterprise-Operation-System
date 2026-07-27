@@ -15,9 +15,13 @@ Excel_exampel/
 Thumbs.db
 *.log
 *.local
+# Office 临时锁文件
+~$*
 
 # 构建产物
 dist/
 build/
 .next/
 .turbo/
+# 打包的构建产物
+*.tar.gz
