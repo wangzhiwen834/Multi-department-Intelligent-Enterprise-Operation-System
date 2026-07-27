@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="377.1pt" height="158.544pt" viewBox="0 0 377.1 158.544" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-07-26T00:25:13.251401</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 158.544 
+L 377.1 158.544 
+L 377.1 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 25.335 103.15872 
+L 76.113 103.15872 
+Q 77.2011 103.15872 77.2011 101.9232 
+L 77.2011 73.0944 
+Q 77.2011 71.85888 76.113 71.85888 
+L 25.335 71.85888 
+Q 24.2469 71.85888 24.2469 73.0944 
+L 24.2469 101.9232 
+Q 24.2469 103.15872 25.335 103.15872 
+z
+" clip-path="url(#p4ddb5f384a)" style="fill: #f1f5f9; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 116.01 103.15872 
+L 174.042 103.15872 
+Q 175.1301 103.15872 175.1301 101.9232 
+L 175.1301 73.0944 
+Q 175.1301 71.85888 174.042 71.85888 
+L 116.01 71.85888 
+Q 114.9219 71.85888 114.9219 73.0944 
+L 114.9219 101.9232 
+Q 114.9219 103.15872 116.01 103.15872 
+z
+" clip-path="url(#p4ddb5f384a)" style="fill: #dbeafe; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 217.566 70.21152 
+L 275.598 70.21152 
+Q 276.6861 70.21152 276.6861 68.976 
+L 276.6861 40.1472 
+Q 276.6861 38.91168 275.598 38.91168 
+L 217.566 38.91168 
+Q 216.4779 38.91168 216.4779 40.1472 
+L 216.4779 68.976 
+Q 216.4779 70.21152 217.566 70.21152 
+z
+" clip-path="url(#p4ddb5f384a)" style="fill: #fef3c7; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 217.566 136.10592 
+L 275.598 136.10592 
+Q 276.6861 136.10592 276.6861 134.8704 
+L 276.6861 106.0416 
+Q 276.6861 104.80608 275.598 104.80608 
+L 217.566 104.80608 
+Q 216.4779 104.80608 216.4779 106.0416 
+L 216.4779 134.8704 
+Q 216.4779 136.10592 217.566 136.10592 
+z
+" clip-path="url(#p4ddb5f384a)" style="fill: #fecaca; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(43.724 85.149376)">空闲</text>
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(43.606422 94.95963)">Free</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(131.026 85.088126)">持锁编辑</text>
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(133.194906 95.110021)">Locked</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(232.582 52.174832)">待办接管</text>
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(231.862313 62.162821)">Takeover</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(236.082 118.055561)">心跳断</text>
+    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(234.205125 127.231439)">Expired</text>
+   </g>
+   <g id="patch_6">
+    <path d="M 78.114668 87.5088 
+Q 96.060828 87.5088 112.888953 87.5088 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 110.088953 86.1088 
+L 112.888953 87.5088 
+L 110.088953 88.9088 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="96.0615" y="81.3312" transform="rotate(-0 96.0615 81.3312)">acquire</text>
+   </g>
+   <g id="patch_7">
+    <path d="M 175.638553 86.300227 
+Q 195.805133 71.034342 215.080285 56.443259 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 212.002812 57.016985 
+L 215.080285 56.443259 
+L 213.692782 59.249473 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="192.177" y="62.7984" transform="rotate(-0 192.177 62.7984)">request</text>
+   </g>
+   <g id="patch_8">
+    <path d="M 175.782004 96.733473 
+Q 195.805627 108.101724 214.856985 118.917979 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 213.113255 116.318093 
+L 214.856985 118.917979 
+L 211.730838 118.753031 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="192.177" y="116.3376" transform="rotate(-0 192.177 116.3376)">timeout</text>
+   </g>
+   <g id="patch_9">
+    <path d="M 275.598 56.566002 
+Q 275.598 63.831476 275.598 69.978916 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 276.998 67.178916 
+L 275.598 69.978916 
+L 274.198 67.178916 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="281.0385" y="64.8576" transform="rotate(-0 281.0385 64.8576)">yield</text>
+   </g>
+   <g id="patch_10">
+    <path d="M 275.598 118.451598 
+Q 275.598 111.186124 275.598 105.038684 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 274.198 107.838684 
+L 275.598 105.038684 
+L 276.998 107.838684 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="281.0385" y="112.2192" transform="rotate(-0 281.0385 112.2192)">clean</text>
+   </g>
+   <g id="patch_11">
+    <path d="M 145.026 103.923077 
+Q 145.026 114.278932 145.026 123.516752 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 146.426 120.716752 
+L 145.026 123.516752 
+L 143.626 120.716752 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 143.025881 126.6336 
+Q 97.876324 126.6336 53.8448 126.6336 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 56.6448 128.0336 
+L 53.8448 126.6336 
+L 56.6448 125.2336 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 50.724 124.633723 
+Q 50.724 114.277868 50.724 105.040048 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <path d="M 49.324 107.840048 
+L 50.724 105.040048 
+L 52.124 107.840048 
+" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="97.875" y="132.8112" transform="rotate(-0 97.875 132.8112)">save+release</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1e293b" x="188.55" y="19.5552" transform="rotate(-0 188.55 19.5552)">Fig. 5 悲观锁状态转换图 / Pessimistic Lock State Machine</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p4ddb5f384a">
+   <rect x="7.2" y="7.2" width="362.7" height="144.144"/>
+  </clipPath>
+ </defs>
+</svg>

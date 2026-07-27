@@ -1,0 +1,231 @@
+# 多部门智能经营系统的设计与实现
+
+**摘要**: 中小企业经营数据长期依赖散乱 Excel 与纸质笔记,存在跨表公式脆弱与重复录入的突出问题。为此设计并实现了一个基于 Univer 在线表格与豆包大模型的多业态智能经营系统。系统采用"录入与展示分离"架构,以 PostgreSQL 为唯一事实源、Univer 为录入面;以 AI 语义抽取作为唯一入库路径,以大模型按表头文字语义对齐字段替代位置式同步,实现抗布局变化、跨业务可复用、近确定性可复现的经营数据入库;并以工作表级悲观锁替代操作变换实现轻量协同录入。系统已部署上线并交付真实门店使用,以足浴门店真实经营数据验证了抽取管线的有效性,遗留 Excel 的公式错误值被校验机制正确拦截。研究表明大语言模型可作为结构化数据入库的语义对齐层,为中小企业经营数字化提供了可复用的设计模式。
+
+**Abstract**: Small and medium-sized enterprises (SMEs) have long relied on scattered local Excel spreadsheets and paper notes for financial and operational data management, which suffers from formula fragility (`#REF!`/`#DIV/0!`), cross-sheet duplicate entry, and the inability to aggregate across stores or periods. This paper presents the design and implementation of a multi-business intelligent management system based on the Univer online spreadsheet and the Doubao large language model (LLM). The system adopts an "entry-presentation separation" architecture with PostgreSQL as the single source of truth and Univer as the entry surface only. Its core contribution is an AI semantic extraction pipeline that serves as the sole data ingestion path: the LLM aligns fields by header text semantics rather than cell coordinates, replacing fragile positional synchronization with layout-resistant, cross-business-reusable, and near-deterministic ingestion. A worksheet-level pessimistic lock replaces Operational Transformation for lightweight collaborative entry. The complete system, covering collaborative entry, business visualization dashboard, AI analysis, AI poster generation, and RBAC, has been deployed and is in use at real stores. Validation with real footbath-store operational data for July 2026 shows 16 valid business days successfully ingested, while formula-error cells were correctly rejected by the `coerceMetric` validation layer.
+
+**Keywords**: small and medium-sized enterprises; business data; large language model; information extraction; online spreadsheet; pessimistic lock
+
+---
+
+## 1 引言
+
+中小企业经营数据长期依赖散乱的本地 Excel 与纸质笔记进行管理,存在三类突出痛点:跨表公式脆弱--`#REF!`、`#DIV/0!` 类错误频发,报表一旦调整行列即崩溃[3][4];跨表重复录入--资金台账等报表依赖经营报表与费用明细的跨表公式滚动累加,同一数据多次录入;数据分散--各门店各月数据无法汇总与可视化。这些问题制约了中小企业的财务数字化进程[5][6]。
+
+针对上述问题,现有路径可归纳为三类,各有缺陷。第一类以电子表格本身作为事实源,报表靠跨表公式衍生,这正是公式脆弱与重复录入的根因。第二类为位置式同步,即按单元格坐标将表格数据映射入库,一旦表头改列或整表转置便静默错位漏读,且不同业务表头不可复用。第三类基于操作变换(OT)的实时协同表格[7][8],需商业授权与额外协同服务进程,对财务录入这类单编辑者并发场景为过度设计。综上,现有工作缺少一种既保留电子表格录入体验(低学习成本)、又抗布局变化且跨业务可复用、同时轻量可部署的经营数据入库机制。
+
+近年来大语言模型(LLM)能力显著提升[10],结构化输出与语义理解趋于成熟;中小企业智能化转型需求同步增强,为上述空白的填补提供了时机。据此设计并实现了一个基于 Univer 在线表格[9]与豆包大模型的多业态智能经营系统,主要贡献包括:
+
+(1) "录入与展示分离"架构--以 PostgreSQL 为唯一事实源、Univer 仅作录入面,从源头消除公式脆弱性与跨表重复录入;
+
+(2) AI 语义抽取作为唯一入库路径--以大模型按表头文字语义对齐字段,替代位置式同步,实现抗布局变化、跨业务可复用、近确定性可复现的经营数据入库;
+
+(3) 完整工程实现与部署验证--涵盖协同录入、经营数据可视化、AI 经营分析、AI 海报与角色权限,并以真实经营数据与部署应用验证有效性。
+
+余下部分组织如下:第 2 节综述相关工作;第 3 节给出系统总体设计;第 4 节阐述关键技术;第 5 节介绍系统实现;第 6 节给出测试与应用;第 7 节总结并讨论未来工作。
+
+---
+
+## 2 相关工作
+
+本节从四个方面综述已有工作并定位本研究的立足点。
+
+**在线协同电子表格与协同编辑。** 在线电子表格将传统桌面表格迁移至 Web 并支持多人协同。Univer[9]作为开源统一办公 SDK,提供可嵌入的在线表格能力。协同编辑的核心技术是操作变换(OT),通过变换函数使多个并发编辑收敛一致;文献[7]提出以视图为中心的 OT,文献[8]研究 P2P 环境下基于 OT 的异步协调。OT 适用于多人实时共编同一表的场景,但需额外协同服务与许可成本。本研究沿用 Univer 作录入面,但识别出财务录入为单编辑者并发,改用工作表级悲观锁,将协同层隔离为可替换点。
+
+**大语言模型信息抽取。** 大模型在信息抽取任务上展现出显著能力。文献[1]提出 Pipeline Chain-of-Thought 提示方法用于大模型关系抽取,文献[2]提出验证大模型信息抽取的可学习性框架。这类工作多将 LLM 用于抽取任务本身。本研究进一步将 LLM 用作结构化入库的语义对齐层--以表头文字语义匹配字段,作为经营数据入库的唯一路径,并辅以确定性解析与校验,区别于单纯的抽取研究。
+
+**中小企业财务数字化。** 中小企业财务数字化是长期议题。文献[5]提出中小企业会计信息数字化的简约模型,文献[6]讨论中小企业会计数字化面临的挑战。这类研究多停留在模型与挑战层面,缺乏可落地的具体系统。本研究提供一个面向中小多业态企业、强调低学习成本的完整系统实例。
+
+**电子表格公式脆弱性。** 电子表格错误的研究表明,公式错误普遍且后果严重:文献[3]提出 ExceLint 自动检测公式错误,文献[4]指出表格错误可造成灾难性后果。这类工作以检测与规避为主。本研究从架构层根治--以干净业务表取代跨表公式,从源头消除公式依赖。
+
+**定位。** 综上,现有四方面工作各有进展但未交汇:无人将 LLM 语义抽取作为经营数据的入库路径,与电子表格录入面、中小企业财务数字化相结合。本研究处于四领域交汇处,以"录入与展示分离 + AI 语义抽取作唯一入库路径 + 弃 OT 用悲观锁"的组合为贡献。
+
+---
+
+## 3 系统总体设计
+
+### 3.1 设计目标与硬约束
+
+系统面向中小多业态企业(以足浴、酒店为典型业态)的经营数据管理,核心目标是将散乱 Excel 与纸质笔记载体的财务经营数据,统一为可在线协同录入、可跨店跨期汇总、可智能分析的经营数据底座。设计遵循两条硬约束:可扩展性--新增指标、录入表或业务业态应仅修改配置而非改动代码;低学习成本--面向店长、财务等终端员工的操作须贴近现有 Excel 工作流,不引入表单式录入等新范式。两条约束在后续各设计决策中始终优先。
+
+### 3.2 总体架构
+
+系统采用"录入与展示分离"的架构(下称 Approach B):PostgreSQL 作为衍生视图(报表、数据大屏、AI 问答)的唯一事实源,Univer 在线表格仅作为录入面,二者经 AI 抽取管线衔接(图 1)。数据库同时存储两类数据:干净业务表(`daily_metric`、`expense`),供大屏与 AI 读取;Univer 工作簿快照(`workbook_snapshot`),供回放与持久化。员工仅在录入表填入数据,报表、台账、大屏与 AI 问答全部由干净业务表衍生,从而从源头消除跨表公式依赖与重复录入。
+
+相较"电子表格本身即事实源"的 1:1 复刻方案,该架构以干净业务表取代跨表公式,根治 `#REF!`、`#DIV/0!` 类公式脆弱性[3][4];相较基于操作变换(OT)的实时协同方案[7][8],系统识别出财务录入的并发模型实为单编辑者并发(同一张表同一时刻仅一人编辑,不同人编辑不同表互不影响),故改用工作表级悲观锁,在零商业授权与低部署复杂度下满足需求,并将协同层隔离为可替换点,未来可平滑引入 OT。
+
+### 3.3 模块组成
+
+系统由六个模块构成:(1) 录入闭环模块,基于工作表级悲观锁实现"占锁-心跳续期-保存"的协同录入;(2) 经营数据可视化模块(数据大屏),按日、周、月、年粒度聚合经营 KPI 与趋势,支持多业务分派与深浅主题跟随;(3) AI 经营分析模块,以 function-calling 方式基于当期真实数据生成中文经营简报;(4) AI 海报模块,文生图背景叠加 Canvas 文字层一键成图;(5) 角色权限模块,实现董事长、经理、员工三级 RBAC;(6) 操作日志模块,记录关键操作及其操作者。经营数据可视化模块是面向管理者的核心呈现层,其粒度聚合与多业务分派机制使同一套大屏框架可适配不同业态的指标体系,是可扩展性约束在呈现侧的体现。
+
+### 3.4 数据模型
+
+数据模型沿"业务-门店-模板-工作簿-指标"五级组织,如图 3 所示:`business`(业态)->`shop`(门店)->`template`(模板,`definition` 字段为 JSONB)->`workbook`(按门店与月份)->`daily_metric`(每日每店一个文档,`metrics` 字段为 JSONB,建 GIN 索引)与`expense`(逐笔费用)。模板描述符是一份 JSONB,同时驱动录入表结构生成、抽取解析、报表台账生成、大屏指标选取与 AI 上下文构建五个环节,即"一份描述符、五处复用";新增指标等价于在描述符的 `columns` 数组中追加一行,无需修改表结构或迁移数据。该设计是可扩展性硬约束的工程兑现。
+
+### 3.5 关键设计决策
+
+两条关键决策均以"可替换点隔离"为原则。协同层以悲观锁替代 OT[7][8],如 3.2 节所述;录入面以 Univer[9] 为底座,但其与数据底座之间仅通过快照与抽取管线耦合,未来替换为其他在线表格方案不影响干净业务表。两条硬约束在设计中始终优先:当员工操作简洁性与后端纯粹性冲突时取前者;当可扩展性的通用性与特定业态的定制性冲突时,以模板描述符吸收共性、以手写处理器接纳差异,在不过度抽象的前提下兼顾二者。
+
+---
+
+## 4 关键技术
+
+### 4.1 AI 语义抽取作为唯一入库路径
+
+#### 4.1.1 位置式同步的局限
+
+早期的录入归一依赖"位置式同步":前端按列下标逐行读取单元格并写入数据库。该方式存在三类缺陷:依赖位置--当表头改列或整表转置时读取静默错位,大屏缺数而无报错;无定时保鲜--必须人工触发同步,员工遗漏则大屏停留于旧数据;数值校验缺失--非数字字符串混入数值键可致整个大屏接口异常。系统以 AI 语义抽取整体替代位置式同步,作为唯一的入库路径。
+
+#### 4.1.2 抽取管线设计
+
+抽取管线读取工作簿快照,对每张录入表依次执行序列化、识别、校验、写库,流程如图 4 所示。首先将表的 cellData 序列化为紧凑 TSV(首行表头、其余数据行),随后按表头文字语义匹配模板字段。设录入表首行表头为 H=(h_1,…,h_m)、模板字段键集合为 F={f_1,…,f_n}。位置式同步依赖固定的列下标映射 π:F->{1,…,m},表头改列或整表转置即静默错位;本文以大模型产生偏映射 σ:F->H,使 σ(f) 为与 f 表头语义等价的单元格,如式(1)所示,从而与列位置解耦。
+
+$$\sigma: F \to H,\quad \sigma(f) = h \iff h \equiv f$$
+
+其中 ≡ 表示由大模型判定的表头文字语义等价。对经营报表等转置表(日期作列、指标作行),采用确定性解析:先定位含三个以上可解析日期的日期行,再以标签归一化变体(去除全角括号等差异)建立指标到模板键的索引,逐日期列取值,无需调用大模型;对非转置表或未检出转置结构者,回退至大模型,以 `response_format=json_object` 与 `temperature=0` 约束输出为合法 JSON,并按表头文字匹配目标字段。该机制将大模型用作结构化入库的语义对齐层[1][2],而非对话工具,使入库抗布局变化且可跨业务复用。
+
+入库前以 `coerceMetric` 作双保险校验:按字段类型 τ∈{currency,integer,ratio} 清洗货币符号、千分位与全角字符并强转数值,非法值记入错误清单而不静默丢弃,空值跳过,如式(2)所示。
+
+$$c(v, \tau) = \mathrm{parse}(\mathrm{strip}(v), \tau) \in \mathbb{R} \cup \{\bot\}$$
+
+其中 strip 去除 ¥、千分位逗号与全角字符,parse 按类型 τ 强转数值;返回 ⊥ 表示拒绝入库(记入错误清单),∈ℝ 表示成功取得数值。
+
+#### 4.1.3 触发、进度与溯源
+
+抽取设三类触发:保存即抽取(由持锁编辑者触发,保留即时性)、经理手动抽取(免锁,供跨工作簿补救)、定时抽取(每日凌晨处理当期工作簿,以更新时间晚于上次抽取时间为增量条件,跳过未更新者)。抽取过程以服务器推送事件(SSE)逐表反馈进度。每条入库记录标注三层溯源:工作簿级 `last_extracted_at`、日指标级 `last_source`、费用级 `source`,以支持数据来源审计。
+
+#### 4.1.4 真实数据验证
+
+以足浴门店 2026 年 7 月真实经营 Excel 为输入,管线解析出 16 个有效经营日的指标并入库;其中 7 天的部分单元格为 `#REF!`、`#DIV/0!` 公式错误值,被 `coerceMetric` 正确拒绝而未入库。该结果同时验证了遗留 Excel 的公式脆弱性[3]与抽取管线的校验价值。
+
+### 4.2 工作表级悲观锁
+
+#### 4.2.1 锁机制
+
+协同录入采用工作表级悲观锁,状态转换如图 5 所示,锁状态存于数据库的 `sheet_lock` 表,以工作簿与表键为联合主键。锁记录可表示为 L=(w, k, holder, t_acq, t_exp),即工作簿 w、表键 k、持有者 holder 与获取、过期时间;锁有效期 Δ=60 秒,前端每 δ=5 秒发送心跳续期,如式(3)所示。
+
+$$t_{\mathrm{exp}} = t_{\mathrm{acq}} + \Delta,\ \Delta = 60\,\mathrm{s};\quad t_{\mathrm{exp}} \leftarrow t_{\mathrm{now}} + \Delta\ (\delta = 5\,\mathrm{s})$$
+
+获取锁时先清理过期记录再以 `INSERT ON CONFLICT DO NOTHING` 占用,仅当不存在活跃锁(已有锁均过期)时成功;断线后约 60 秒自动过期可被接管。接管采用单槽待办机制:请求者登记待办,持锁者心跳探测到待办后先自动保存快照再让出锁(两阶段礼让),保证抢占瞬间不丢数据。保存时以 `isLockHolder` 作所有权校验,非持锁者的保存被拒绝以防止覆盖,如式(4)所示。
+
+$$\mathrm{acquire} \iff \forall L':\ t_{\mathrm{exp}}(L') \leq t_{\mathrm{now}};\quad \mathrm{save} \iff \mathrm{holder}(L) = \mathrm{session}$$
+
+#### 4.2.2 与 OT 的取舍
+
+OT 实时协同[7][8]适用于多人同时编辑同一表的场景,但需额外的协同服务进程与商业授权。系统识别出财务录入的并发模型为单编辑者并发,工作表级粒度保证不同人编辑不同表互不影响,故悲观锁已满足需求;且协同层被隔离为可替换点,未来可引入 OT 而不影响数据底座。
+
+### 4.3 模板描述符驱动与多业务分派
+
+模板描述符为 JSONB,同时驱动录入表生成、抽取解析、报表台账、大屏指标选取与 AI 上下文五个环节(详 3.4 节,如图 6 所示),实现"加指标仅改配置"。多业务泛化方面,大屏路由按 `businessCode` 分派(如图 7 所示),缺省足浴以向后兼容;新增业态时,录入与抽取层由模板描述符自动适配,大屏聚合层因各业态指标语义差异而保留手写处理器,以确定性优先。系统已落地足浴与酒店两套业态。
+
+### 4.4 局限
+
+系统存在如下局限:其一,酒店业态的真实经营报表为行式(日期作行)且列数达 265,而模板声明为转置布局,确定性解析未检出转置结构而回退大模型,宽表致大模型调用超时,酒店核心 KPI 未能完整入库,目前以框架验证呈现;其二,大模型调用存在延迟,部分宽表超时;其三,`temperature=0` 仅趋近确定性而非完全可复现,即 T->0 时同一输入的输出分布趋于集中(式(5))但不等于 1;
+
+$$T \to 0 \;\Rightarrow\; P(\sigma \mid H, F) \to 1$$
+
+其四,经营数据经公有云大模型处理,存在数据出域的隐私考量。
+
+---
+
+## 5 系统实现
+
+### 5.1 技术栈与代码规模
+
+系统采用前后端同构的 TypeScript 技术栈。后端基于 Node.js 与 Express,以 PostgreSQL 为数据底座,集成 bcryptjs 与 JWT 实现认证授权、zod 作参数校验、vitest 作单元测试;前端基于 Vue 3 与 Vite,嵌入 Univer Sheets Preset[9] 作为在线表格录入面,以 ECharts 呈现数据大屏,以 Fabric.js 实现海报画布编辑。AI 能力统一由豆包大模型与火山方舟 Ark 接口提供[10],分别承担语义抽取、经营问答与文生图三类任务。代码规模上,后端约 30 个模块、119 个测试用例,前端约 24 个组件文件。
+
+### 5.2 经营数据可视化
+
+经营数据可视化模块(数据大屏)面向管理者,以 ECharts 渲染。其支持日、周、月、年四种粒度聚合,由纯日期数学函数计算区间与趋势窗口;趋势序列以 `date_trunc` 桶聚合,并对缺失桶作零填充以保证时间序列连续。设粒度 g∈{day,week,month,year},桶函数 B_g(t)=date_trunc(g,t),则桶 b 的聚合值与零填充如式(6)所示。
+
+$$\widetilde{M}_g(b) = \begin{cases} \sum_{t:\, B_g(t)=b} m(t), & \exists\, t: B_g(t)=b \\ 0, & \text{otherwise} \end{cases}$$
+
+其中 m(t) 为日期 t 的指标值,∑ 对落在桶 b 内的日期求和,缺失桶以 0 填充以保证时间序列连续。大屏呈 8 张 KPI 卡片与 8 张图表,覆盖营收、客流、钟数、充值结构等经营维度;配色随深浅主题实时切换。多业务分派上,前端按 `businessCode` 选择对应业务组件,后端按同名分派表选择聚合处理器,使同一套大屏框架适配足浴与酒店两类业态的指标体系。该模块为工程实现亮点,其粒度聚合与零填充机制保证了大屏在数据稀疏时的可视化连续性。
+
+### 5.3 其他模块
+
+AI 经营分析模块以 function-calling 方式工作:大模型不直接生成数字,而是声明查询意图,由服务端执行工具函数查询真实数据后回填,从而抑制幻觉,并以中文输出带经营建议的简报。AI 海报模块以文生图生成背景,前端 Fabric.js 画布叠加店名、日期、联系方式与 Logo 等文字图层,支持裁剪与层级编辑并导出高清图。角色权限模块实现董事长、经理、员工三级 RBAC,经理仅能管理本部门员工。操作日志模块记录关键操作及其操作者。模型管理模块自动从厂商接口拉取可用模型列表并按任务类型分类,支持功能级模型分配与持久化。深浅主题以 CSS 变量与 `data-theme` 属性实现零运行时成本切换。
+
+### 5.4 部署与运行
+
+系统部署于火山引擎 ECS,以 Nginx 反向代理、PM2 守护后端进程、Docker 承载 PostgreSQL。截至撰写时,系统已部署上线并有真实门店投入使用,经营数据可视化模块展示真实经营 KPI 与趋势。该部署运行构成系统可行性与工程完善性的实证[5]。
+
+### 5.5 工程质量
+
+后端 119 个 vitest 用例覆盖悲观锁、抽取管线、数据大屏、RBAC 与模型管理等模块,前端 vue-tsc 类型检查与生产构建均通过。抽取管线以幂等 upsert 写入,支持多次重跑而不产生重复数据。
+
+---
+
+## 6 测试与应用
+
+### 6.1 功能测试
+
+后端以 vitest 编写 119 个单元测试,覆盖工作表级悲观锁的获取、心跳、接管与所有权校验,AI 抽取管线的转置解析、LLM 回退与校验,数据大屏的粒度聚合与零填充,以及 RBAC、模型管理等模块。全部用例通过,前端 vue-tsc 类型检查与生产构建亦通过。
+
+### 6.2 真实数据抽取验证
+
+以足浴门店 2026 年 7 月真实经营 Excel 为输入,经抽取管线入库,得到 16 个有效经营日的每日经营指标(含营收、客流、钟数、充值结构等 20 余项),如图 2 所示。其中 7 天的部分单元格为遗留 Excel 的公式错误值(`#REF!`、`#DIV/0!`),被 `coerceMetric` 校验拦截而未入库,印证了 4.1.4 节所述的管线鲁棒性。酒店业态方面,受模板布局与真实报表格式错配影响(详 4.4 节),其核心 KPI 未能完整入库,仅收入对账的日收银总额入库 22 日;故酒店部分作为多业务框架可扩展性验证呈现,而非数据完整性验证。
+
+### 6.3 应用效果
+
+系统已部署上线并交付真实门店使用,经营数据可视化模块基于上述真实入库数据呈现该门店当月的经营 KPI 与趋势,管理者可按日、周、月、年粒度查看。AI 经营分析模块基于真实数据生成经营简报。该应用效果表明,系统在真实经营场景下可完成从录入、入库到可视化与智能分析的闭环。
+
+### 6.4 性能
+
+针对工作簿冷启动延迟,系统采取两项优化:后端开启 gzip 压缩,减小快照等大 JSON 的传输体积;新增 bootstrap 端点,一次返回工作簿标识、模板、快照与锁状态,将原先四次串行往返压缩为一次。
+
+### 6.5 局限与讨论
+
+本研究存在如下局限。其一,评估规模有限,真实数据验证仅覆盖单一足浴门店的单月数据,泛化性尚需更多门店与更长周期的数据支撑。其二,酒店业态核心 KPI 未完整入库,多业务泛化的数据完整性有待行式宽表解析器的后续工作。其三,AI 语义抽取相较位置式同步的优越性目前为定性论证,基于位置式同步三类缺陷的分析,尚未设计对比实验作定量比较。其四,"低学习成本"作为设计原则提出,尚未经正式的用户可用性评估。其五,经营数据经公有云大模型处理,存在数据出域的隐私考量,未来可由私有化部署的模型缓解。上述局限中,评估规模与酒店数据完整性为最弱环节,已诚实标注。
+
+---
+
+## 7 结论
+
+针对中小企业经营数据依赖散乱 Excel、存在公式脆弱与重复录入的问题,设计并实现了一个基于 Univer 在线表格与豆包大模型的多业态智能经营系统。主要贡献为:提出"录入与展示分离"架构,以 PostgreSQL 为唯一事实源,从源头消除公式脆弱性与跨表重复录入;提出以 AI 语义抽取作为唯一入库路径,以大模型按表头文字语义对齐字段替代位置式同步,实现抗布局变化、跨业务可复用、近确定性可复现的经营数据入库;完成涵盖协同录入、经营数据可视化、AI 分析、AI 海报与角色权限的完整工程实现,并以真实经营数据与部署应用验证其有效性。
+
+该研究最重要的启示在于:大语言模型不仅可用于对话与抽取,还可作为结构化数据入库的语义对齐层,以表头语义匹配取代坐标映射;录入与展示分离则使电子表格在保留低学习成本录入体验的同时,从架构层根治公式脆弱性。系统已部署上线并交付真实门店使用,表明该设计模式在中小企业经营数字化场景下具有可行性,可为同类系统的构建提供参考。
+
+未来工作包括:接入具备多步规划与自主推理能力的更强智能体;为行式宽表设计确定性解析器,以解决酒店等业态的布局错配问题;完成工作表懒加载的接线以进一步优化性能;以及探索大模型的私有化部署,缓解经营数据出域的隐私考量。
+
+---
+
+## 参考文献
+
+[1] ZHAO, YILAHUN, HAMDULLA. Pipeline Chain-of-Thought: A Prompt Method for Large Language Model Relation Extraction[C]// 2023 International Conference on Asian Language Processing (IALP). 2023. DOI: 10.1109/ialp61005.2023.10337264.
+
+[2] ÇETINKAYA, et al. A Systems Approach to Validating Large Language Model Information Extraction: The Learnability Framework Applied to Historical Legal Texts[J]. Information, 2025, 16(11). DOI: 10.3390/info16110960.
+
+[3] BAROWY, BERGER, ZORN. ExceLint: automatically finding spreadsheet formula errors[J]. Proceedings of the ACM on Programming Languages, 2018. DOI: 10.1145/3276518.
+
+[4] THORNE, GRIFFITHS. Spreadsheet errors can have disastrous consequences – yet we keep making the same mistakes[EB/OL]. DOI: 10.64628/ab.u3dpkdqvv.
+
+[5] PHAM, VU. Digitalization in small and medium enterprise: a parsimonious model of digitalization of accounting information for sustainable innovation ecosystem value generation[J]. Asia Pacific Journal of Innovation and Entrepreneurship, 2022. DOI: 10.1108/apjie-02-2022-0013.
+
+[6] Challenges for Micro, Small, And Medium Enterprises Facing Digitalization in Accounting[J]. Soedirman Economics Education Journal, 6(1). DOI: 10.32424/seej.v6i1.12700.
+
+[7] JUNG, SONG. View-centric Operational Transformation for Collaborative Editing[C]// 2006 International Conference on Collaborative Computing (CollaborateCom). 2006. DOI: 10.1109/colcom.2006.361885.
+
+[8] CART, FERRIE. Asynchronous reconciliation based on operational transformation for P2P collaborative environments[C]// 2007 International Conference on Collaborative Computing (CollaborateCom). 2007. DOI: 10.1109/colcom.2007.4553821.
+
+[9] Univer. Univer: open-source unified office SDK[EB/OL]. [2026-07-25]. https://univer.ai.
+
+[10] 火山引擎. 豆包大模型/火山方舟 Ark API[EB/OL]. [2026-07-25]. https://www.volcengine.com/product/ark.
+
+---
+
+## 图题
+
+图 1  系统总体架构图 / System Overall Architecture: 录入层(Univer 在线表格 + 悲观锁) → 数据层(AI 语义抽取管线 + PostgreSQL 唯一事实源) → 视图层(数据大屏、AI 经营分析、AI 海报)。
+
+图 2  足浴门店 2026-07 真实经营数据 / Real Business Data of Footbath Store (Jul 2026): (a) 日营收趋势;(b) 客流构成(会员/团购/散客);(c) 钟数构成(排钟/点钟/加钟)。数据来源:AI 抽取管线对真实 Excel 的入库结果,16 个有效经营日。
+
+图 3  数据模型 ER 图 / Data Model ER Diagram: business(业务) → shop(门店) → template(模板,JSONB) → workbook(工作簿);template 同时关联 daily_metric(日指标,JSONB, GIN)、expense(费用明细)与 workbook_snapshot(工作簿快照)。
+
+图 4  AI 抽取管线流程图 / AI Extraction Pipeline Flow: 工作簿快照 → 序列化 TSV → 转置判断(是→确定性解析 parseTransposed;否→LLM 回退 callDoubaoJson) → coerceMetric 校验 → 写库 daily_metric。
+
+图 5  悲观锁状态转换图 / Pessimistic Lock State Machine: 空闲(Free) → acquire → 持锁编辑(Locked) → request/yield/timeout → 待办接管(Takeover) / 过期(Expired) → clean → 空闲;持锁也可经 save+release 回到空闲。
+
+图 6  模板描述符"一份五用" / Template Descriptor: Five Reuses: 同一份 template.definition(JSONB) 同时驱动录入表结构生成、抽取解析、报表台账生成、大屏指标选取与 AI 上下文构建。
+
+图 7  多业务分派示意图 / Multi-Business Dispatch: Dashboard.vue(通用壳)按 businessCode 分派到 FootbathDashboard / HotelDashboard / ...;后端按同名分派表选择 footbath.ts / hotel.ts 处理器。
