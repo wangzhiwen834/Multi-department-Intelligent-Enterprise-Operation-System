@@ -72,10 +72,12 @@ async function main() {
   if (!hb) {
     hb = (await pool.query("INSERT INTO business (code,name) VALUES ($1,'汉庭酒店') RETURNING id", [HOTEL_BUSINESS_CODE])).rows[0];
   }
-  const hotelTplExists = (await pool.query("SELECT 1 FROM template WHERE business_id=$1 AND version=1", [hb.id])).rows[0];
-  if (!hotelTplExists) {
-    await pool.query("INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)", [hb.id, JSON.stringify(hotelTemplate)]);
-  }
+  // 酒店模板:upsert(definition 随 hotel.template.ts 更新而同步,fix: 行式布局+deterministic+ADR/OCC 标签)
+  await pool.query(
+    `INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)
+     ON CONFLICT (business_id, version) DO UPDATE SET definition=EXCLUDED.definition`,
+    [hb.id, JSON.stringify(hotelTemplate)],
+  );
 
   console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
   await pool.end();

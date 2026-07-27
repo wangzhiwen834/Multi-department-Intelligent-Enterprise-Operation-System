@@ -19,7 +19,7 @@ export interface ExtractResult {
 }
 
 interface TplColumn { key: string; label?: string; type: string; kind: string }
-interface TplSheet { key: string; label?: string; layout?: string; grain?: string; columns: TplColumn[] }
+interface TplSheet { key: string; label?: string; layout?: string; grain?: string; deterministic?: boolean; columns: TplColumn[] }
 interface TemplateDef { sheets: TplSheet[] }
 
 // 抽取进度事件(SSE 推给前端,可视化流程)。done 事件由路由补发(result 在返回值里)。
@@ -83,10 +83,11 @@ function excelSerialToISO(serial: number): string | null {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-// 标签归一化变体:去括号字符(充值（首充）->充值首充)+ 去括号内容组(技师出勤（人）->技师出勤)
+// 标签归一化变体:去所有空白(含换行,Excel 表头常换行如 "ADR\n（入住房间均房价）")
+// + 去括号字符(充值（首充）->充值首充)+ 去括号内容组(技师出勤（人）->技师出勤)
 // 返回多种形式,任一匹配即可(数据用全角括号,模板无括号,差异靠此兜底)
 function labelVariants(s: string): string[] {
-  const t = (s || '').trim();
+  const t = (s || '').replace(/\s+/g, '');   // 先去全部空白(换行/空格/制表符)
   const noParenChars = t.replace(/[（）()]/g, '');
   const noParenGroups = t.replace(/[（(][^）)]*[）)]/g, '');
   return Array.from(new Set([t, noParenChars, noParenGroups].filter(Boolean)));
@@ -139,6 +140,68 @@ export function parseTransposed(sheet: any, tplSheet: TplSheet): { rows: { date:
     }
   }
   const rows = dateCols.map(d => ({ date: d.iso, metrics: byDate.get(d.iso) || {} })).filter(d => Object.keys(d.metrics).length);
+  return { rows, errors };
+}
+
+// 行式表确定性解析(酒店经营报表实际布局):col0=日期,每行一天,指标作列。
+// 多行分组表头:每列取表头区最深层(最大行号)非空单元格作标签(如 col5 浅层"网销"被深层"美团（间）"覆盖)。
+// 与 parseTransposed 不同:本解析**包含 manual_derived 列**(adr/occupancy 等公式值需抽取)。
+// 仅对 sheet.deterministic=true 的 row_per_day 表启用(足浴对账等未标记的仍走 LLM,行为不变)。
+export function parseRowPerDay(sheet: any, tplSheet: TplSheet): { rows: { date: string; metrics: Record<string, unknown> }[]; errors: ExtractError[] } {
+  const cd = sheet?.cellData || {};
+  const rowIdx = Object.keys(cd).map(Number).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
+  const errors: ExtractError[] = [];
+  if (!rowIdx.length) return { rows: [], errors };
+
+  // 1. 找数据行:col0 为可解析日期(Excel 序列号或日期串)
+  const dataRows: { row: number; iso: string }[] = [];
+  for (const r of rowIdx) {
+    const v = cd[r]?.[0]?.v;
+    if (v == null || v === '') continue;
+    const iso = typeof v === 'number' ? excelSerialToISO(v) : normalizeDate(v);
+    if (iso) dataRows.push({ row: r, iso });
+  }
+  if (dataRows.length < 1) return { rows: [], errors }; // 非行式表 -> 回退 LLM
+
+  // 2. 表头区 = 首个数据行之前的所有行;每列取最深层非空单元格作标签(headerRows 升序,后写覆盖)
+  const firstDataRow = dataRows[0].row;
+  const headerRows = rowIdx.filter(r => r < firstDataRow);
+  const colLabel = new Map<number, string>();
+  for (const r of headerRows) {
+    const row = cd[r] || {};
+    for (const c of Object.keys(row).map(Number)) {
+      const v = row[c]?.v;
+      if (v == null || v === '') continue;
+      colLabel.set(c, String(v).trim());
+    }
+  }
+
+  // 3. 列标签 -> 模板 key(经 labelVariants 多键索引;含 manual_derived)
+  const map = new Map<string, { key: string; type: string }>();
+  for (const col of tplSheet.columns) {
+    if (col.key === 'date' || col.key === 'pay_date') continue; // entry + manual_derived 均纳入
+    for (const v of labelVariants(col.label || col.key)) map.set(v, { key: col.key, type: col.type });
+  }
+  const colToKey = new Map<number, { key: string; type: string }>();
+  for (const [c, label] of colLabel) {
+    let mapped: { key: string; type: string } | undefined;
+    for (const v of labelVariants(label)) { mapped = map.get(v); if (mapped) break; }
+    if (mapped) colToKey.set(c, mapped);
+  }
+
+  // 4. 逐数据行取值
+  const rows = dataRows.map(({ iso, row }) => {
+    const metrics: Record<string, unknown> = {};
+    const cells = cd[row] || {};
+    for (const [c, mapped] of colToKey) {
+      const raw = cells[c]?.v;
+      if (raw == null || raw === '') continue;
+      const cr = coerceMetric(mapped.type, raw);
+      if (cr.ok && cr.value !== undefined) metrics[mapped.key] = cr.value;
+      else if (!cr.ok) errors.push({ sheetKey: tplSheet.key, date: iso, key: mapped.key, msg: cr.error });
+    }
+    return { date: iso, metrics };
+  }).filter(d => Object.keys(d.metrics).length);
   return { rows, errors };
 }
 
@@ -199,6 +262,23 @@ export async function extractWorkbook(
         continue;
       }
       // 未检测到转置结构(如旧式行式快照)-> 回退 LLM
+    }
+    // 行式表(酒店经营报表:sheet.deterministic=true):确定性解析,免 LLM(大表 LLM 易超时)
+    if (s.deterministic && s.layout === 'row_per_day') {
+      const parsed = parseRowPerDay(sheet, s);
+      if (parsed.rows.length) {
+        anySheetOk = true;
+        let rowsOut = 0;
+        for (const { date, metrics } of parsed.rows) {
+          if (Object.keys(metrics).length) { dailyByDate.set(date, { ...(dailyByDate.get(date) || {}), ...metrics }); rowsOut++; }
+        }
+        errors.push(...parsed.errors);
+        sheetReports.push({ key: s.key, rowsIn, rowsOut });
+        onProgress?.({ stage: 'sheet_done', key: s.key, rowsIn, rowsOut, errorCount: errors.length - errsBefore });
+        console.log('[extraction] row_per_day(det)', s.key, 'rowsIn=', rowsIn, '-> rowsOut=', rowsOut, 'errs=', parsed.errors.length);
+        continue;
+      }
+      // 行式解析未命中 -> 回退 LLM
     }
     // 空表不调 LLM(避免浪费/超时)
     if (rowsIn === 0) {

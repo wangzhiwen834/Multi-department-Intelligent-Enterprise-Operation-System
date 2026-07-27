@@ -9,8 +9,9 @@ export const hotelTemplate = {
     {
       key: 'daily_ops',
       label: '经营报表',
-      layout: 'transposed',
+      layout: 'row_per_day',
       grain: 'per_day',
+      deterministic: true,   // 酒店经营报表是行式(日期作行),走 parseRowPerDay 确定性解析,免 LLM
       columns: [
         { key: 'date', label: '日期', type: 'date', kind: 'entry' },
         { key: 'hotel_revenue', label: '酒店营业收入', type: 'number', kind: 'entry' },
@@ -37,8 +38,8 @@ export const hotelTemplate = {
         { key: 'huazhu_rooms', label: '华住(间)', type: 'int', kind: 'entry' },
         { key: 'selfuse_rooms', label: '自用/免费房(间)', type: 'int', kind: 'entry' },
         { key: 'walkin_guests', label: '自然客流', type: 'int', kind: 'entry' },
-        { key: 'adr', label: 'ADR均房价', type: 'number', kind: 'manual_derived' },
-        { key: 'occupancy', label: 'OCC入住率', type: 'number', kind: 'manual_derived' },
+        { key: 'adr', label: 'ADR', type: 'number', kind: 'manual_derived' },
+        { key: 'occupancy', label: 'OCC', type: 'number', kind: 'manual_derived' },
         { key: 'revpar', label: 'REVPAR', type: 'number', kind: 'manual_derived' },
         { key: 'online_ratio', label: '网销占比', type: 'number', kind: 'manual_derived' },
       ],

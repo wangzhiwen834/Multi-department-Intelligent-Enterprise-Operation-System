@@ -8,7 +8,7 @@ vi.mock('../src/ai/ai.gateway.js', () => ({
   NotConfigured: class NotConfigured extends Error { constructor(m = 'AI 未配置') { super(m); this.name = 'NotConfigured'; } },
 }));
 const { callDoubaoJson, NotConfigured } = await import('../src/ai/ai.gateway.js');
-const { extractWorkbook, buildMessages } = await import('../src/extraction/extraction.service.js');
+const { extractWorkbook, buildMessages, parseRowPerDay } = await import('../src/extraction/extraction.service.js');
 
 let wbId: number;
 let shopId: number;
@@ -241,5 +241,53 @@ describe('buildMessages prompt 去硬编码', () => {
   it('字段列表来自 sheet 列', () => {
     const msgs = buildMessages(sheet as any, 'TSV', '汉庭酒店');
     expect(msgs[1].content).toContain('cash=现金');
+  });
+});
+
+describe('parseRowPerDay (行式表确定性解析 - 酒店经营报表)', () => {
+  const tpl = { key: 'daily_ops', label: '经营报表', layout: 'row_per_day', grain: 'per_day', deterministic: true,
+    columns: [
+      { key: 'date', label: '日期', type: 'date', kind: 'entry' },
+      { key: 'hotel_revenue', label: '酒店营业收入', type: 'number', kind: 'entry' },
+      { key: 'room_revenue', label: '客房收入', type: 'number', kind: 'entry' },
+      { key: 'big_bed_rooms', label: '大床房', type: 'int', kind: 'entry' },
+      { key: 'adr', label: 'ADR', type: 'number', kind: 'manual_derived' },
+      { key: 'meituan_rooms', label: '美团(间)', type: 'int', kind: 'entry' },
+    ] };
+
+  it('col0 日期 + 多行分组表头取最深层标签 + manual_derived 也抽取', () => {
+    // 模拟酒店 Excel:row0 主表头,row1 分组子表头(网销->美团),row2+ 数据行
+    const sheet = { cellData: {
+      0: { 0: { v: '日期' }, 1: { v: '酒店营业收入' }, 2: { v: '客房收入' }, 3: { v: '大床房' }, 4: { v: 'ADR\n（入住房间均房价）' }, 5: { v: '网销' } },
+      1: { 5: { v: '美团（间）' } },
+      2: { 0: { v: '2026-07-01' }, 1: { v: 13960.8 }, 2: { v: 12569.8 }, 3: { v: 9 }, 4: { v: 184.85 }, 5: { v: 5 } },
+      3: { 0: { v: '2026-07-02' }, 1: { v: 14329.61 }, 2: { v: 13051.61 }, 3: { v: 7 }, 4: { v: 178.79 }, 5: { v: 6 } },
+    } };
+    const parsed = parseRowPerDay(sheet as any, tpl as any);
+    expect(parsed.rows.length).toBe(2);
+    expect(parsed.rows[0].date).toBe('2026-07-01');
+    expect(Number(parsed.rows[0].metrics.hotel_revenue)).toBe(13960.8);
+    expect(Number(parsed.rows[0].metrics.room_revenue)).toBe(12569.8);
+    expect(Number(parsed.rows[0].metrics.big_bed_rooms)).toBe(9);
+    expect(Number(parsed.rows[0].metrics.adr)).toBe(184.85);       // manual_derived 也抽取;ADR（入住房间均房价）-> ADR 标签匹配
+    expect(Number(parsed.rows[0].metrics.meituan_rooms)).toBe(5);   // col5 多行表头:网销(浅)被美团（间）(深)覆盖
+  });
+
+  it('非行式表(col0 无日期数据行)-> 0 行(回退 LLM)', () => {
+    const sheet = { cellData: { 0: { 0: { v: '指标名' }, 1: { v: '7-01' } } } };
+    const parsed = parseRowPerDay(sheet as any, tpl as any);
+    expect(parsed.rows.length).toBe(0);
+  });
+
+  it('占比/时间进度等非模板列被跳过', () => {
+    const sheet = { cellData: {
+      0: { 0: { v: '日期' }, 1: { v: '酒店营业收入' }, 2: { v: '占比' }, 3: { v: '时间进度' } },
+      1: { 0: { v: '2026-07-01' }, 1: { v: 1000 }, 2: { v: 0.5 }, 3: { v: 0.03 } },
+    } };
+    const parsed = parseRowPerDay(sheet as any, tpl as any);
+    expect(parsed.rows.length).toBe(1);
+    expect(parsed.rows[0].metrics.hotel_revenue).toBe(1000);
+    expect(parsed.rows[0].metrics).not.toHaveProperty('占比');
+    expect(Object.keys(parsed.rows[0].metrics)).toHaveLength(1);
   });
 });
