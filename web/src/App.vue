@@ -60,6 +60,7 @@ const toggleOps = () => {
 // 数据大屏:业务子菜单(复用 businesses 列表)
 const dashboardBusiness = ref<string | null>('footbath');
 const dashExpanded = ref(false);
+const dashboardLogo = computed(() => businesses.value.find(b => b.code === dashboardBusiness.value)?.logo_path ?? null);
 const onSelectDashboardBusiness = (code: string) => { dashboardBusiness.value = code; module.value = 'dashboard'; };
 const toggleDash = () => {
   if (module.value !== 'dashboard') module.value = 'dashboard';
@@ -152,7 +153,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
 
       <!-- 内容区 -->
       <main class="od-content">
-        <Dashboard v-if="module === 'dashboard'" :business-code="dashboardBusiness ?? undefined" />
+        <Dashboard v-if="module === 'dashboard'" :business-code="dashboardBusiness ?? undefined" :logo="dashboardLogo" />
         <ShopList v-else-if="module === 'ops' && !shop" :user="user"
           :businesses="businesses" :business-code="selectedBusiness"
           @select-business="onSelectBusiness" @businesses-changed="onBusinessesChanged" @pick="onPick" />
