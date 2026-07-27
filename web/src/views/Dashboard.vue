@@ -5,7 +5,7 @@ import type { DashboardOverview, HotelOverview, Shop } from '../types';
 import FootbathDashboard from './FootbathDashboard.vue';
 import HotelDashboard from './HotelDashboard.vue';
 
-const props = defineProps<{ businessCode?: string; logo?: string | null }>();   // 来自 App.vue(缺省 footbath;logo 为业务 logo_path)
+const props = defineProps<{ businessCode?: string }>();   // 来自 App.vue(缺省 footbath)
 const businessCode = computed(() => props.businessCode || 'footbath');
 
 const pad = (x: number) => String(x).padStart(2, '0');
@@ -70,7 +70,7 @@ const onPickShop = (id: number) => { shopId.value = id; };
   <div class="dashboard-page">
     <div class="dashboard-inner">
       <div class="page-head">
-        <div class="head-left"><img v-if="logo" :src="logo" :alt="title" class="head-logo" /><h1>{{ title }}</h1><div class="sub">{{ scopeLabel }}</div></div>
+        <div class="head-left"><img src="/footbath-logo.png" alt="静水楼台" class="head-logo" /><h1>{{ title }}</h1><div class="sub">{{ scopeLabel }}</div></div>
         <div class="head-tools">
           <div class="gran-nav">
             <div class="gran-seg"><button v-for="g in grains" :key="g.key" class="gran-btn" :class="{ active: granularity === g.key }" @click="granularity = g.key">{{ g.label }}</button></div>

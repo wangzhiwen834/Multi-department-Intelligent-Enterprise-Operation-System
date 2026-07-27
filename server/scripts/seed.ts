@@ -70,9 +70,7 @@ async function main() {
   // ---- 酒店(hotel)业务 + 模板 v1(子项目2 样板业态)----
   let hb = (await pool.query("SELECT id FROM business WHERE code=$1", [HOTEL_BUSINESS_CODE])).rows[0];
   if (!hb) {
-    hb = (await pool.query("INSERT INTO business (code,name,logo_path) VALUES ($1,'汉庭酒店','/footbath-logo.png') RETURNING id", [HOTEL_BUSINESS_CODE])).rows[0];
-  } else {
-    await pool.query("UPDATE business SET logo_path='/footbath-logo.png' WHERE code=$1", [HOTEL_BUSINESS_CODE]);
+    hb = (await pool.query("INSERT INTO business (code,name) VALUES ($1,'汉庭酒店') RETURNING id", [HOTEL_BUSINESS_CODE])).rows[0];
   }
   // 酒店模板:upsert(definition 随 hotel.template.ts 更新而同步,fix: 行式布局+deterministic+ADR/OCC 标签)
   await pool.query(
