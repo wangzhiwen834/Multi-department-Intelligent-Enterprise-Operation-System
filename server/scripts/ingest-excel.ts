@@ -12,7 +12,7 @@ const MAX_ROWS = 400;
 const ALIASES: Record<string, string[]> = {
   daily_ops: ['经营报表', '酒店运营', '酒店运营数据统计表'],
   reconciliation: ['收入对账', '收入统计', '账户管理明细', '账户管理'],
-  expense: ['费用明细'],
+  expense: ['费用明细', '日常开销明细', '管理费用明细'],
 };
 
 // ---------- exceljs -> Univer 样式/值转换(移植自 sheet-io.ts)----------
@@ -107,7 +107,9 @@ async function buildSnapshot(excelPath: string, template: any, title: string) {
   for (const s of template.sheets) {
     const exWs = findWorksheet(wb, s.key, s.label);
     const sheetId = s.key; sheetOrder.push(sheetId);
-    const cols = s.columns.length + 2;
+    // 列上限取 Excel 实际列数与模板列数+2 的较大值:酒店经营报表指标散在 col 0~38(夹占比/前缀列),
+    // 固定用模板列数会截断 col≥31 的房型/渠道指标,故按 Excel 实际宽度保留。
+    const cols = exWs ? Math.max(s.columns.length + 2, exWs.columnCount) : s.columns.length + 2;
     const cellData: any = {}; const mergeData: any[] = []; const columnData: any = {}; const rowData: any = {};
     console.log(`  模板[${s.key}] label="${s.label}" -> ${exWs ? `Excel "${exWs.name}"` : '(未找到,留空)'}`);
     if (exWs) {
