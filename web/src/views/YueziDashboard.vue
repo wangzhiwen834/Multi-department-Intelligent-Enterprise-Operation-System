@@ -90,8 +90,9 @@ const barTrendOpt = computed<EChartsOption>(() => {
 
 // ---- 房间占用情况(纯 HTML 进度条) ----
 const occupancyRate = computed(() => {
-  const v = k()?.kpis?.occupancyRate || 0;
-  return Math.max(0, Math.min(100, Number(v) || 0));
+  let v = Number(k()?.kpis?.occupancyRate || 0);
+  if (v > 0 && v <= 1) v *= 100;   // 后端存 0-1(如 0.956)-> 转百分比 95.6
+  return Math.max(0, Math.min(100, v));
 });
 const occupiedRooms = computed(() => k()?.kpis?.occupiedRooms || 0);
 
