@@ -107,14 +107,6 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
     <aside class="od-sidebar">
       <div class="od-brand">{{ BRAND }}</div>
       <nav class="od-nav">
-        <button class="od-nav-item" :class="{ active: module === 'ops' }" @click="toggleOps">
-          <span class="od-ico" v-html="navIcon['ops']"></span><span>公司经营</span>
-          <span class="od-chevron" :class="{ open: opsExpanded }" v-if="!sidebarCollapsed">▾</span>
-        </button>
-        <div v-if="opsExpanded && !sidebarCollapsed" class="od-subnav">
-          <button class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === null }" @click="onSelectBusiness(null)">全部业务</button>
-          <button v-for="b in businesses" :key="b.id" class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === b.code }" @click="onSelectBusiness(b.code)">{{ b.name }}</button>
-        </div>
         <button class="od-nav-item" :class="{ active: module === 'dashboard' }" @click="toggleDash">
           <span class="od-ico" v-html="navIcon['dashboard']"></span><span>数据大屏</span>
           <span class="od-chevron" :class="{ open: dashExpanded }" v-if="!sidebarCollapsed">▾</span>
@@ -123,6 +115,14 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
           <button v-for="b in businesses" :key="b.id" class="od-nav-sub"
             :class="{ active: module === 'dashboard' && dashboardBusiness === b.code }"
             @click="onSelectDashboardBusiness(b.code)">{{ b.name }}</button>
+        </div>
+        <button class="od-nav-item" :class="{ active: module === 'ops' }" @click="toggleOps">
+          <span class="od-ico" v-html="navIcon['ops']"></span><span>公司经营</span>
+          <span class="od-chevron" :class="{ open: opsExpanded }" v-if="!sidebarCollapsed">▾</span>
+        </button>
+        <div v-if="opsExpanded && !sidebarCollapsed" class="od-subnav">
+          <button class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === null }" @click="onSelectBusiness(null)">全部业务</button>
+          <button v-for="b in businesses" :key="b.id" class="od-nav-sub" :class="{ active: module === 'ops' && selectedBusiness === b.code }" @click="onSelectBusiness(b.code)">{{ b.name }}</button>
         </div>
         <button v-for="it in sidebarItems.filter(i => i.key !== 'ops' && i.key !== 'dashboard')" :key="it.key"
           class="od-nav-item" :class="{ active: module === it.key }" @click="setModule(it.key)">

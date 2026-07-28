@@ -36,6 +36,10 @@ const load = () => {
     .catch(e => { if (id === reqId) err.value = e.message; });
 };
 onMounted(() => { api.shops().then(r => { shops.value = r; }).catch(() => {}); load(); });
+// 门店下拉只显示当前业务的店(避免选到别业务店触发 shopId 不属于该业务 400)
+const shopsForBusiness = computed(() => shops.value.filter(s => s.business_code === businessCode.value));
+// 切业务时清空 shopId(旧业务的店在新业务下非法)
+watch(businessCode, () => { shopId.value = null; });
 watch([granularity, refDate, shopId, businessCode], load);
 
 const step = (dir: 1 | -1) => {
@@ -63,7 +67,7 @@ const rangeLabel = computed(() => {
   if (g === 'week') { const { start, end } = isoWeekRange(refDate.value); return start.slice(0, 4) !== end.slice(0, 4) ? `${start} ~ ${end}` : `${start} ~ ${end.slice(5)}`; }
   if (g === 'month') return `${y} 年 ${m} 月`; return `${y} 年`;
 });
-const scopeLabel = computed(() => shopId.value ? (shops.value.find(s => s.id === shopId.value)?.name ?? '单店') : `全部 ${shops.value.length} 店`);
+const scopeLabel = computed(() => shopId.value ? (shopsForBusiness.value.find(s => s.id === shopId.value)?.name ?? '单店') : `全部 ${shopsForBusiness.value.length} 店`);
 const title = computed(() => businessCode.value === 'hotel' ? '汉庭酒店·经营驾驶舱' : businessCode.value === 'tiaoli' ? '禧悦调理馆·经营驾驶舱' : businessCode.value === 'yuezi' ? '禧悦月子会所·经营驾驶舱' : '静水楼台·经营驾驶舱');
 const onPickShop = (id: number) => { shopId.value = id; };
 </script>
@@ -81,16 +85,16 @@ const onPickShop = (id: number) => { shopId.value = id; };
           </div>
           <span class="pill live"><span class="dot"></span>实时同步</span>
           <select class="shop-select" :value="shopId ?? ''" @change="shopId = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null">
-            <option value="">全部 {{ shops.length }} 店</option>
-            <option v-for="s in shops" :key="s.id" :value="s.id">{{ s.name }}</option>
+            <option value="">全部 {{ shopsForBusiness.length }} 店</option>
+            <option v-for="s in shopsForBusiness" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
         </div>
       </div>
       <div v-if="err" class="err-banner">{{ err }}</div>
-      <FootbathDashboard v-if="businessCode === 'footbath'" :overview="data as DashboardOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
-      <HotelDashboard v-else-if="businessCode === 'hotel'" :overview="data as HotelOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
-      <TiaoliDashboard v-else-if="businessCode === 'tiaoli'" :overview="data as TiaoliOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
-      <YueziDashboard v-else-if="businessCode === 'yuezi'" :overview="data as YueziOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
+      <FootbathDashboard v-if="businessCode === 'footbath'" :overview="data as DashboardOverview | null" :shops="shopsForBusiness" :shop-id="shopId" @pick-shop="onPickShop" />
+      <HotelDashboard v-else-if="businessCode === 'hotel'" :overview="data as HotelOverview | null" :shops="shopsForBusiness" :shop-id="shopId" @pick-shop="onPickShop" />
+      <TiaoliDashboard v-else-if="businessCode === 'tiaoli'" :overview="data as TiaoliOverview | null" :shops="shopsForBusiness" :shop-id="shopId" @pick-shop="onPickShop" />
+      <YueziDashboard v-else-if="businessCode === 'yuezi'" :overview="data as YueziOverview | null" :shops="shopsForBusiness" :shop-id="shopId" @pick-shop="onPickShop" />
       <div v-else class="err-banner">该业务大屏尚未实现</div>
     </div>
   </div>
