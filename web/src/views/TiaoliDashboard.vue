@@ -79,39 +79,91 @@ const rankingOpt = computed<EChartsOption>(() => {
     series: [{ type: 'bar', data: r.map(x => x.revenue), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0, 6, 6, 0] } }] };
 });
 const onRankingClick = (p: any) => { const r = k()?.shopRanking[p.dataIndex]; if (r) emit('pick-shop', r.shopId); };
+
+// ---- 每日收款柱图(revenueTrend 的柱形版本) ----
+const barTrendOpt = computed<EChartsOption>(() => {
+  const t = k()?.revenueTrend || [];
+  return {
+    textStyle: { color: theme.subText },
+    grid: { left: 55, right: 20, top: 20, bottom: 30 },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: t.map(x => x.label), axisLine: { lineStyle: { color: theme.subText } }, axisLabel: { color: theme.subText, interval: 0, rotate: 30, width: 80, overflow: 'truncate' } },
+    yAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
+    series: [{ type: 'bar', data: t.map(x => x.revenue), itemStyle: { color: theme.accent, borderRadius: [6, 6, 0, 0] } }],
+  };
+});
+
+// ---- 禧SPA(儿童) vs 悦SPA(产康) 营收占比饼图 ----
+const spaPieOpt = computed<EChartsOption>(() => {
+  const x = k()?.xispaStructure || {} as any;
+  const y = k()?.yuespaStructure || {} as any;
+  const xTotal = Object.values(x).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+  const yTotal = Object.values(y).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+  const items = [
+    { name: '禧SPA儿童', value: xTotal },
+    { name: '悦SPA产康', value: yTotal },
+  ].filter(i => i.value > 0);
+  return {
+    textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
+    series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'], data: items.length ? items : [{ name: '无数据', value: 1 }], color: [theme.palette[0], theme.palette[3]], label: pieLabel() }],
+  };
+});
+
+// ---- KPI 卡图标/配色(3 个) ----
+const kpiIcons = [
+  // 收款合计 ¥
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  // 退款合计 undo/return
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>',
+  // 净收款 wallet
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>',
+];
+const kpiTints = [
+  { background: 'var(--od-primary-soft)', color: 'var(--od-primary)' },
+  { background: 'var(--od-danger-soft)', color: 'var(--od-danger)' },
+  { background: 'var(--od-success-soft)', color: 'var(--od-success)' },
+];
 </script>
 
 <template>
   <div class="dashboard-inner">
     <div class="grid kpis">
       <div v-for="(kp, i) in kpiCards" :key="kp.label" class="card kpi">
-        <div class="kpi-label">{{ kp.label }}</div>
+        <div class="kpi-label"><span class="kpi-ico" :style="kpiTints[i]" v-html="kpiIcons[i]"></span>{{ kp.label }}</div>
         <div class="kpi-val">{{ kp.val }}</div>
       </div>
     </div>
-    <div class="grid row-2">
+    <div class="grid row-even">
       <div class="card"><div class="card-title"><h3>收款趋势</h3></div><div class="chart-box"><Chart :option="trendOpt" :theme="theme" /></div></div>
-      <div class="card"><div class="card-title"><h3>项目销售</h3></div><div class="chart-box"><Chart :option="itemOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>每日收款</h3></div><div class="chart-box"><Chart :option="barTrendOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><Chart :option="expenseOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>项目销售</h3></div><div class="chart-box"><Chart :option="itemOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>禧SPA / 悦SPA</h3><span class="meta">儿童 / 产康 营收占比</span></div><div class="chart-box"><Chart :option="spaPieOpt" :theme="theme" /></div></div>
+    </div>
+    <div class="grid row-even">
+      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><div v-if="(k()?.expenseBySubject || []).length === 0" class="chart-empty">暂无费用数据</div><Chart v-else :option="expenseOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard-inner { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--od-space-4); }
+.dashboard-inner { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: var(--od-space-5); }
 .card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-5); display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--od-space-4); }
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
-.grid { display: grid; gap: var(--od-space-4); }
+.card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
+.grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(3, 1fr); }
 .row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
 @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-2, .row-even { grid-template-columns: 1fr; } }
-.kpi { gap: 6px; }
-.kpi-label { font-size: var(--od-text-sm); color: var(--od-text-muted); }
+.kpi { gap: 6px; transition: all .18s ease; cursor: default; }
+.kpi:hover { box-shadow: var(--od-shadow-md); transform: translateY(-2px); border-color: color-mix(in oklab, var(--od-border), black 12%); }
+.kpi-label { font-size: var(--od-text-sm); color: var(--od-text-muted); display: flex; align-items: center; gap: 8px; }
+.kpi-ico { width: 30px; height: 30px; border-radius: var(--od-radius-md); display: grid; place-items: center; flex-shrink: 0; }
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; }
 .chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+.chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 </style>

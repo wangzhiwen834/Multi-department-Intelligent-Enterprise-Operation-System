@@ -274,11 +274,11 @@ const kpiTints = [
 
 <style scoped>
 .dashboard-inner {
-  max-width: 1320px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--od-space-4);
+  gap: var(--od-space-5);
 }
 
 /* 卡片 */
@@ -287,7 +287,7 @@ const kpiTints = [
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
 
-.grid { display: grid; gap: var(--od-space-4); }
+.grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(4, 1fr); }
 .row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
@@ -303,4 +303,7 @@ const kpiTints = [
 
 /* 图表卡槽:真实 ECharts 填充 */
 .chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+
+/* 空数据占位 */
+.chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 </style>

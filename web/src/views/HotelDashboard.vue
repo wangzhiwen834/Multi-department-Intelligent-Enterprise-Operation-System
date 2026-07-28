@@ -69,7 +69,7 @@ const roomOpt = computed<EChartsOption>(() => {
     { name: '高级双床', value: s?.superiorTwin || 0 }, { name: '商务双床', value: s?.businessTwin || 0 },
   ];
   return { textStyle: { color: theme.subText }, tooltip: { trigger: 'axis' }, grid: { left: 40, right: 20, top: 20, bottom: 30 },
-    xAxis: { type: 'category', data: items.map(i => i.name), axisLabel: { color: theme.subText, interval: 0 } },
+    xAxis: { type: 'category', data: items.map(i => i.name), axisLabel: { color: theme.subText, interval: 0, rotate: 30, width: 80, overflow: 'truncate' } },
     yAxis: { type: 'value', axisLabel: { color: theme.subText } },
     series: [{ type: 'bar', data: items.map(i => i.value), itemStyle: { color: theme.accent, borderRadius: [6,6,0,0] } }] };
 });
@@ -102,13 +102,37 @@ const rankingOpt = computed<EChartsOption>(() => {
 const onRankingClick = (p: any) => { const r = k()?.shopRanking[p.dataIndex]; if (r) emit('pick-shop', r.shopId); };
 
 const kpiTints = Array.from({ length: 10 }, (_, i) => ({ background: 'var(--od-primary-soft)', color: `var(--od-palette-${(i % 5) + 1})` }));
+
+// ---- KPI 卡图标(10 个,沿用足浴大屏同款 SVG 风格) ----
+const kpiIcons = [
+  // 酒店营业收入 ¥
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  // 日收银总额 banknote
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  // 客房收入 bed
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8a2 2 0 0 1 2 2v0"/></svg>',
+  // 餐券收入 utensils
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M21 15V2a5 5 0 0 0-3 5v8c0 1.1.9 2 2 2h1v6"/></svg>',
+  // 会员权益 award
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>',
+  // 过夜间数 moon
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  // 清扫间数 sparkles
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+  // ADR tag
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1.5"/></svg>',
+  // OCC percent
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+  // REVPAR trending-up
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+];
 </script>
 
 <template>
   <div class="dashboard-inner">
     <div class="grid kpis">
       <div v-for="(kp, i) in kpiCards" :key="kp.label" class="card kpi">
-        <div class="kpi-label"><span class="kpi-ico" :style="kpiTints[i]"></span>{{ kp.label }}</div>
+        <div class="kpi-label"><span class="kpi-ico" :style="kpiTints[i]" v-html="kpiIcons[i]"></span>{{ kp.label }}</div>
         <div class="kpi-val">{{ kp.val }}</div>
       </div>
     </div>
@@ -121,7 +145,7 @@ const kpiTints = Array.from({ length: 10 }, (_, i) => ({ background: 'var(--od-p
       <div class="card"><div class="card-title"><h3>渠道房量</h3></div><div class="chart-box"><Chart :option="chanOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><Chart :option="expenseOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><div v-if="(k()?.expenseBySubject || []).length === 0" class="chart-empty">暂无费用数据</div><Chart v-else :option="expenseOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
@@ -129,11 +153,11 @@ const kpiTints = Array.from({ length: 10 }, (_, i) => ({ background: 'var(--od-p
 
 <style scoped>
 .dashboard-inner {
-  max-width: 1320px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--od-space-4);
+  gap: var(--od-space-5);
 }
 
 /* 卡片 */
@@ -142,7 +166,7 @@ const kpiTints = Array.from({ length: 10 }, (_, i) => ({ background: 'var(--od-p
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
 
-.grid { display: grid; gap: var(--od-space-4); }
+.grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(4, 1fr); }
 .row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
@@ -157,4 +181,7 @@ const kpiTints = Array.from({ length: 10 }, (_, i) => ({ background: 'var(--od-p
 
 /* 图表卡槽:真实 ECharts 填充 */
 .chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+
+/* 空数据占位 */
+.chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 </style>
