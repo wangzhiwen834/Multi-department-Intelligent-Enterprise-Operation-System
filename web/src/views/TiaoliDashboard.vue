@@ -138,16 +138,20 @@ const kpiTints = [
         <div class="kpi-val">{{ kp.val }}</div>
       </div>
     </div>
-    <div class="grid row-even">
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>收款趋势</h3></div><div class="chart-box"><Chart :option="trendOpt" :theme="theme" /></div></div>
+    </div>
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>每日收款</h3></div><div class="chart-box"><Chart :option="barTrendOpt" :theme="theme" /></div></div>
     </div>
-    <div class="grid row-even">
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>项目销售</h3></div><div class="chart-box"><Chart :option="itemOpt" :theme="theme" /></div></div>
-      <div class="card"><div class="card-title"><h3>禧SPA / 悦SPA</h3><span class="meta">儿童 / 产康 营收占比</span></div><div class="chart-box"><Chart :option="spaPieOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
+      <div class="card"><div class="card-title"><h3>禧SPA / 悦SPA</h3><span class="meta">儿童 / 产康 营收占比</span></div><div class="chart-box"><Chart :option="spaPieOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>禧SPA儿童项目</h3></div><div class="chart-box"><Chart :option="xispaPieOpt" :theme="theme" /></div></div>
+    </div>
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
@@ -161,14 +165,14 @@ const kpiTints = [
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
 .grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(3, 1fr); }
-.row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
-@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-2, .row-even { grid-template-columns: 1fr; } }
+.row-full { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-even, .row-full { grid-template-columns: 1fr; } }
 .kpi { gap: 6px; transition: all .18s ease; cursor: default; }
 .kpi:hover { box-shadow: var(--od-shadow-md); transform: translateY(-2px); border-color: color-mix(in oklab, var(--od-border), black 12%); }
 .kpi-label { font-size: var(--od-text-sm); color: var(--od-text-muted); display: flex; align-items: center; gap: 8px; }
 .kpi-ico { width: 30px; height: 30px; border-radius: var(--od-radius-md); display: grid; place-items: center; flex-shrink: 0; }
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; }
-.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 400px; width: 100%; }
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 </style>

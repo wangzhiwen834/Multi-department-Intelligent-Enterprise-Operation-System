@@ -141,16 +141,20 @@ const kpiIcons = [
         <div class="kpi-val">{{ kp.val }}</div>
       </div>
     </div>
-    <div class="grid row-2">
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>营收趋势</h3></div><div class="chart-box"><Chart :option="trendOpt" :theme="theme" /></div></div>
-      <div class="card"><div class="card-title"><h3>收入结构</h3></div><div class="chart-box"><Chart :option="revOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>房型结构</h3></div><div class="chart-box"><Chart :option="roomOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>收入结构</h3></div><div class="chart-box"><Chart :option="revOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>渠道房量</h3></div><div class="chart-box"><Chart :option="chanOpt" :theme="theme" /></div></div>
     </div>
-    <div class="grid row-even">
+    <div class="grid row-full">
+      <div class="card"><div class="card-title"><h3>房型结构</h3></div><div class="chart-box"><Chart :option="roomOpt" :theme="theme" /></div></div>
+    </div>
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>每日营收</h3></div><div class="chart-box"><Chart :option="barTrendOpt" :theme="theme" /></div></div>
+    </div>
+    <div class="grid row-full">
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
@@ -173,9 +177,9 @@ const kpiIcons = [
 
 .grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(4, 1fr); }
-.row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
-@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-2, .row-even { grid-template-columns: 1fr; } }
+.row-full { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-even, .row-full { grid-template-columns: 1fr; } }
 
 /* KPI */
 .kpi { gap: 6px; transition: all .18s ease; cursor: default; }
@@ -185,7 +189,7 @@ const kpiIcons = [
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.2; }
 
 /* 图表卡槽:真实 ECharts 填充 */
-.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 400px; width: 100%; }
 
 /* 空数据占位 */
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }

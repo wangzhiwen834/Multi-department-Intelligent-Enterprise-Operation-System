@@ -222,48 +222,52 @@ const kpiTints = [
       </div>
     </div>
 
-    <!-- 营收趋势 + 客流结构 -->
-    <div class="grid row-2">
+    <!-- 营收趋势(全宽:14+ 日 x 轴点) -->
+    <div class="grid row-full">
       <div class="card">
         <div class="card-title"><h3>营收趋势</h3></div>
         <div class="chart-box"><Chart :option="trendOpt" :theme="theme" /></div>
       </div>
+    </div>
+
+    <!-- 客流结构 + 钟数结构 -->
+    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>客流结构</h3><span class="meta">会员 / 团购 / 散客</span></div>
         <div class="chart-box"><Chart :option="customerOpt" :theme="theme" /></div>
       </div>
-    </div>
-
-    <!-- 钟数结构 + 充值结构 -->
-    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>钟数结构</h3><span class="meta">排钟 / 点钟 / 加钟</span></div>
         <div class="chart-box"><Chart :option="clockOpt" :theme="theme" /></div>
       </div>
+    </div>
+
+    <!-- 充值结构 + 业务结构 -->
+    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>充值结构</h3><span class="meta">首充 / 续充 / 赠送</span></div>
         <div class="chart-box"><Chart :option="rechargeOpt" :theme="theme" /></div>
       </div>
-    </div>
-
-    <!-- 业务结构 + 支付渠道 -->
-    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>业务结构</h3><span class="meta">营收占比</span></div>
         <div class="chart-box"><Chart :option="structOpt" :theme="theme" /></div>
       </div>
+    </div>
+
+    <!-- 客流新老 + 充值与消耗 -->
+    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>客流新老</h3><span class="meta">新增 / 老客</span></div>
         <div class="chart-box"><Chart :option="customerNewOpt" :theme="theme" /></div>
       </div>
-    </div>
-
-    <!-- 费用 Top + 门店营收排名 -->
-    <div class="grid row-even">
       <div class="card">
         <div class="card-title"><h3>充值与消耗</h3><span class="meta">进账 / 出账</span></div>
         <div class="chart-box"><Chart :option="rechargeFlowOpt" :theme="theme" /></div>
       </div>
+    </div>
+
+    <!-- 门店营收排名(全宽:多门店横向柱) -->
+    <div class="grid row-full">
       <div class="card">
         <div class="card-title"><h3>门店营收排名</h3><span class="meta">点击柱子钻取门店</span></div>
         <div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div>
@@ -289,9 +293,9 @@ const kpiTints = [
 
 .grid { display: grid; gap: var(--od-space-5); }
 .kpis { grid-template-columns: repeat(4, 1fr); }
-.row-2 { grid-template-columns: 1.4fr 1fr; }
 .row-even { grid-template-columns: 1fr 1fr; }
-@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-2, .row-even { grid-template-columns: 1fr; } }
+.row-full { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } .row-even, .row-full { grid-template-columns: 1fr; } }
 
 /* KPI */
 .kpi { gap: 6px; transition: all .18s ease; cursor: default; }
@@ -302,7 +306,7 @@ const kpiTints = [
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.2; }
 
 /* 图表卡槽:真实 ECharts 填充 */
-.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 400px; width: 100%; }
 
 /* 空数据占位 */
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
