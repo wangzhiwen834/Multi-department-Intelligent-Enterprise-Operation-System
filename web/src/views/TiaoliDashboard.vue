@@ -63,12 +63,17 @@ const itemOpt = computed<EChartsOption>(() => {
   };
 });
 
-const expenseOpt = computed<EChartsOption>(() => {
-  const items = k()?.expenseBySubject || [];
-  return { textStyle: { color: theme.subText }, tooltip: { trigger: 'axis' }, grid: { left: 75, right: 24, top: 20, bottom: 20 },
-    xAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
-    yAxis: { type: 'category', data: items.map(i => i.subject), axisLabel: { color: theme.text } },
-    series: [{ type: 'bar', data: items.map(i => i.amount), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0, 6, 6, 0] } }] };
+// ---- 禧SPA儿童项目饼图(xispaStructure 7 项) ----
+const xispaPieOpt = computed<EChartsOption>(() => {
+  const x = k()?.xispaStructure || {} as any;
+  const labels: Record<string, string> = {
+    cika: '次卡', swimwear: '泳裤', swimming: '游泳项目', baby_herbal: '婴儿草本', haircut: '理发', diaper: '纸尿裤', other_goods: '其他商品',
+  };
+  const items = Object.entries(x)
+    .map(([key, val]) => ({ name: labels[key] || key, value: Number(val) || 0 }))
+    .filter(i => i.value > 0);
+  return { textStyle: { color: theme.subText }, tooltip: { trigger: 'item' }, legend: { bottom: 0, textStyle: { color: theme.subText } },
+    series: [{ type: 'pie', radius: ['45%', '70%'], center: ['50%', '45%'], data: items.length ? items : [{ name: '无数据', value: 1 }], color: theme.palette, label: pieLabel() }] };
 });
 
 const rankingOpt = computed<EChartsOption>(() => {
@@ -142,7 +147,7 @@ const kpiTints = [
       <div class="card"><div class="card-title"><h3>禧SPA / 悦SPA</h3><span class="meta">儿童 / 产康 营收占比</span></div><div class="chart-box"><Chart :option="spaPieOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><div v-if="(k()?.expenseBySubject || []).length === 0" class="chart-empty">暂无费用数据</div><Chart v-else :option="expenseOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>禧SPA儿童项目</h3></div><div class="chart-box"><Chart :option="xispaPieOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
@@ -150,7 +155,7 @@ const kpiTints = [
 
 <style scoped>
 .dashboard-inner { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: var(--od-space-5); }
-.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-5); display: flex; flex-direction: column; }
+.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-6); display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--od-space-4); }
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
@@ -164,6 +169,6 @@ const kpiTints = [
 .kpi-label { font-size: var(--od-text-sm); color: var(--od-text-muted); display: flex; align-items: center; gap: 8px; }
 .kpi-ico { width: 30px; height: 30px; border-radius: var(--od-radius-md); display: grid; place-items: center; flex-shrink: 0; }
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; }
-.chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 </style>

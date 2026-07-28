@@ -282,7 +282,7 @@ const kpiTints = [
 }
 
 /* 卡片 */
-.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-5); display: flex; flex-direction: column; }
+.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-6); display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--od-space-4); }
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
@@ -302,7 +302,7 @@ const kpiTints = [
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.2; }
 
 /* 图表卡槽:真实 ECharts 填充 */
-.chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
 
 /* 空数据占位 */
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }

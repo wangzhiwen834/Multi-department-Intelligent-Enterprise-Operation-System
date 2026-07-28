@@ -84,12 +84,17 @@ const chanOpt = computed<EChartsOption>(() => {
     series: [{ type: 'pie', radius: ['45%','70%'], center: ['50%','45%'], data: items.length ? items : [{ name: '无数据', value: 1 }], color: theme.palette, label: pieLabel() }] };
 });
 
-const expenseOpt = computed<EChartsOption>(() => {
-  const items = k()?.expenseBySubject || [];
-  return { textStyle: { color: theme.subText }, tooltip: { trigger: 'axis' }, grid: { left: 75, right: 24, top: 20, bottom: 20 },
-    xAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
-    yAxis: { type: 'category', data: items.map(i => i.subject), axisLabel: { color: theme.text } },
-    series: [{ type: 'bar', data: items.map(i => i.amount), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0,6,6,0] } }] };
+// ---- 每日营收柱图(revenueTrend 的柱形版本) ----
+const barTrendOpt = computed<EChartsOption>(() => {
+  const t = k()?.revenueTrend || [];
+  return {
+    textStyle: { color: theme.subText },
+    grid: { left: 55, right: 20, top: 20, bottom: 30 },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: t.map(x => x.label), axisLine: { lineStyle: { color: theme.subText } }, axisLabel: { color: theme.subText, interval: 0, rotate: 30, width: 80, overflow: 'truncate' } },
+    yAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
+    series: [{ type: 'bar', data: t.map(x => x.revenue), itemStyle: { color: theme.accent, borderRadius: [6, 6, 0, 0] } }],
+  };
 });
 
 const rankingOpt = computed<EChartsOption>(() => {
@@ -145,7 +150,7 @@ const kpiIcons = [
       <div class="card"><div class="card-title"><h3>渠道房量</h3></div><div class="chart-box"><Chart :option="chanOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><div v-if="(k()?.expenseBySubject || []).length === 0" class="chart-empty">暂无费用数据</div><Chart v-else :option="expenseOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>每日营收</h3></div><div class="chart-box"><Chart :option="barTrendOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
   </div>
@@ -161,7 +166,7 @@ const kpiIcons = [
 }
 
 /* 卡片 */
-.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-5); display: flex; flex-direction: column; }
+.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-6); display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--od-space-4); }
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
@@ -180,7 +185,7 @@ const kpiIcons = [
 .kpi-val { font-size: 26px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; line-height: 1.2; }
 
 /* 图表卡槽:真实 ECharts 填充 */
-.chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
 
 /* 空数据占位 */
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }

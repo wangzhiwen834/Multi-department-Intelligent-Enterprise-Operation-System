@@ -58,12 +58,17 @@ const pieOpt = (structure: Record<string, number> | undefined, labels: Record<st
 const revOpt = computed<EChartsOption>(() => pieOpt(k()?.revenueStructure, revLabels));
 const refundOpt = computed<EChartsOption>(() => pieOpt(k()?.refundStructure, refundLabels));
 
-const expenseOpt = computed<EChartsOption>(() => {
-  const items = k()?.expenseBySubject || [];
+// ---- 收款项对比柱图(revenueStructure 9 项横向柱,降序) ----
+const revBarOpt = computed<EChartsOption>(() => {
+  const s = k()?.revenueStructure || {};
+  const items = Object.entries(s)
+    .map(([key, val]) => ({ name: revLabels[key] || key, value: Number(val) || 0 }))
+    .filter(i => i.value > 0)
+    .sort((a, b) => b.value - a.value);
   return { textStyle: { color: theme.subText }, tooltip: { trigger: 'axis' }, grid: { left: 75, right: 24, top: 20, bottom: 20 },
     xAxis: { type: 'value', axisLabel: { color: theme.subText }, splitLine: { lineStyle: { color: theme.cardBorder } } },
-    yAxis: { type: 'category', data: items.map(i => i.subject), axisLabel: { color: theme.text } },
-    series: [{ type: 'bar', data: items.map(i => i.amount), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0, 6, 6, 0] } }] };
+    yAxis: { type: 'category', data: items.map(i => i.name), axisLabel: { color: theme.text } },
+    series: [{ type: 'bar', data: items.map(i => i.value), itemStyle: { color: (p: any) => theme.palette[p.dataIndex % theme.palette.length], borderRadius: [0, 6, 6, 0] } }] };
 });
 
 const rankingOpt = computed<EChartsOption>(() => {
@@ -135,7 +140,7 @@ const kpiTints = [
       <div class="card"><div class="card-title"><h3>退款结构</h3></div><div class="chart-box"><Chart :option="refundOpt" :theme="theme" /></div></div>
     </div>
     <div class="grid row-even">
-      <div class="card"><div class="card-title"><h3>费用科目</h3></div><div class="chart-box"><div v-if="(k()?.expenseBySubject || []).length === 0" class="chart-empty">暂无费用数据</div><Chart v-else :option="expenseOpt" :theme="theme" /></div></div>
+      <div class="card"><div class="card-title"><h3>收款项对比</h3></div><div class="chart-box"><Chart :option="revBarOpt" :theme="theme" /></div></div>
       <div class="card"><div class="card-title"><h3>门店营收排名</h3></div><div class="chart-box"><Chart :option="rankingOpt" :theme="theme" :on-click="onRankingClick" /></div></div>
     </div>
     <div class="card">
@@ -155,7 +160,7 @@ const kpiTints = [
 
 <style scoped>
 .dashboard-inner { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: var(--od-space-5); }
-.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-5); display: flex; flex-direction: column; }
+.card { background: var(--od-surface); border: 1px solid var(--od-border); border-radius: var(--od-radius-lg); box-shadow: var(--od-shadow-sm); padding: var(--od-space-6); display: flex; flex-direction: column; }
 .card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--od-space-4); }
 .card-title h3 { font-size: var(--od-text-lg); font-weight: var(--od-weight-semibold); margin: 0; }
 .card-title .meta { font-size: var(--od-text-xs); color: var(--od-text-muted); }
@@ -169,7 +174,7 @@ const kpiTints = [
 .kpi-label { font-size: var(--od-text-sm); color: var(--od-text-muted); display: flex; align-items: center; gap: 8px; }
 .kpi-ico { width: 30px; height: 30px; border-radius: var(--od-radius-md); display: grid; place-items: center; flex-shrink: 0; }
 .kpi-val { font-size: 24px; font-weight: var(--od-weight-bold); font-family: var(--od-font-mono); font-variant-numeric: tabular-nums; }
-.chart-box { flex: 1 1 auto; min-height: 280px; width: 100%; }
+.chart-box { flex: 1 1 auto; min-height: 360px; width: 100%; }
 .chart-empty { flex: 1; display: grid; place-items: center; color: var(--od-text-muted); font-size: var(--od-text-sm); min-height: 280px; }
 
 /* 房间占用情况(纯 HTML 进度条) */
