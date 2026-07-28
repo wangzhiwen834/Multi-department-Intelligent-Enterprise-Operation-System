@@ -43,8 +43,8 @@ onMounted(() => {
   loadBusinesses();
 });
 
-const onLogin = (u: User, t: string) => { setToken(t); user.value = u; module.value = 'dashboard'; };
-const onLogout = () => { clearToken(); user.value = null; shop.value = null; };
+const onLogin = (u: User, t: string) => { setToken(t); user.value = u; module.value = 'dashboard'; loadBusinesses(); };
+const onLogout = () => { clearToken(); user.value = null; shop.value = null; businesses.value = []; };
 const onPick = (s: Shop) => { shop.value = s; openedPeriod.value = null; };   // 选店 -> 进管理器
 const onOpenPeriod = (p: string) => { period.value = p; openedPeriod.value = p; };  // 管理器 -> 进工作簿
 const onWorkbookBack = () => { openedPeriod.value = null; };                   // 工作簿返回 -> 回管理器
