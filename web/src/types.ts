@@ -133,3 +133,14 @@ export interface TiaoliOverview {
   expenseBySubject: { subject: string; amount: number }[];
   shopRanking: { shopId: number; shopName: string; revenue: number }[];
 }
+
+export interface YueziOverview {
+  granularity: 'day' | 'week' | 'month' | 'year';
+  date: string; rangeStart: string; rangeEnd: string; shopId: number | null;
+  kpis: { cashTotal: number; refundTotal: number; netCash: number; occupiedRooms: number; occupancyRate: number };
+  revenueTrend: { label: string; revenue: number }[];
+  revenueStructure: { deposit: number; intent_deposit: number; down_payment: number; balance: number; xiyue_home: number; chankang_sales: number; other_goods: number; renew_balance: number; accompany_fee: number };
+  refundStructure: { refund_deposit: number; other_refund: number; refund_package: number; chankang_refund: number };
+  expenseBySubject: { subject: string; amount: number }[];
+  shopRanking: { shopId: number; shopName: string; revenue: number }[];
+}

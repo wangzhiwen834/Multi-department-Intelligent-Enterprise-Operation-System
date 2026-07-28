@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { api } from '../api';
-import type { DashboardOverview, HotelOverview, TiaoliOverview, Shop } from '../types';
+import type { DashboardOverview, HotelOverview, TiaoliOverview, YueziOverview, Shop } from '../types';
 import FootbathDashboard from './FootbathDashboard.vue';
 import HotelDashboard from './HotelDashboard.vue';
 import TiaoliDashboard from './TiaoliDashboard.vue';
+import YueziDashboard from './YueziDashboard.vue';
 
 const props = defineProps<{ businessCode?: string }>();   // 来自 App.vue(缺省 footbath)
 const businessCode = computed(() => props.businessCode || 'footbath');
@@ -18,7 +19,7 @@ const granularity = ref<'day' | 'week' | 'month' | 'year'>('month');
 const refDate = ref(todayIso);
 const shopId = ref<number | null>(null);
 const shops = ref<Shop[]>([]);
-const data = ref<DashboardOverview | HotelOverview | TiaoliOverview | null>(null);
+const data = ref<DashboardOverview | HotelOverview | TiaoliOverview | YueziOverview | null>(null);
 const err = ref('');
 
 const grains = [
@@ -63,7 +64,7 @@ const rangeLabel = computed(() => {
   if (g === 'month') return `${y} 年 ${m} 月`; return `${y} 年`;
 });
 const scopeLabel = computed(() => shopId.value ? (shops.value.find(s => s.id === shopId.value)?.name ?? '单店') : `全部 ${shops.value.length} 店`);
-const title = computed(() => businessCode.value === 'hotel' ? '汉庭酒店·经营驾驶舱' : businessCode.value === 'tiaoli' ? '禧悦调理馆·经营驾驶舱' : '静水楼台·经营驾驶舱');
+const title = computed(() => businessCode.value === 'hotel' ? '汉庭酒店·经营驾驶舱' : businessCode.value === 'tiaoli' ? '禧悦调理馆·经营驾驶舱' : businessCode.value === 'yuezi' ? '禧悦月子会所·经营驾驶舱' : '静水楼台·经营驾驶舱');
 const onPickShop = (id: number) => { shopId.value = id; };
 </script>
 
@@ -89,6 +90,7 @@ const onPickShop = (id: number) => { shopId.value = id; };
       <FootbathDashboard v-if="businessCode === 'footbath'" :overview="data as DashboardOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
       <HotelDashboard v-else-if="businessCode === 'hotel'" :overview="data as HotelOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
       <TiaoliDashboard v-else-if="businessCode === 'tiaoli'" :overview="data as TiaoliOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
+      <YueziDashboard v-else-if="businessCode === 'yuezi'" :overview="data as YueziOverview | null" :shops="shops" :shop-id="shopId" @pick-shop="onPickShop" />
       <div v-else class="err-banner">该业务大屏尚未实现</div>
     </div>
   </div>

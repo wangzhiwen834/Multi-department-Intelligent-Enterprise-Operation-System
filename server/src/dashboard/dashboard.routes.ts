@@ -5,6 +5,7 @@ import { computeRange, isValidYmd, type Granularity } from './dashboard.helpers.
 import { computeFootbathOverview } from './footbath.js';
 import { computeHotelOverview } from './hotel.js';
 import { computeTiaoliOverview } from './tiaoli.js';
+import { computeYueziOverview } from './yuezi.js';
 
 export const dashboardRouter = Router();
 dashboardRouter.use(authRequired);
@@ -21,6 +22,7 @@ const HANDLERS: Record<string, (p: any) => Promise<any>> = {
   footbath: computeFootbathOverview,
   hotel: computeHotelOverview,
   tiaoli: computeTiaoliOverview,
+  yuezi: computeYueziOverview,
 };
 
 // GET /api/dashboard/overview?businessCode=footbath|hotel&granularity=...&date=YYYY-MM-DD&shopId=...

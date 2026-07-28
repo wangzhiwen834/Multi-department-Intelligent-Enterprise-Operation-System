@@ -4,6 +4,7 @@ import { pool } from '../src/db/pool.js';
 import { FOOTBATH_BUSINESS_CODE, FOOTBATH_SHOPS, footbathTemplate } from '../src/template/footbath.template.js';
 import { HOTEL_BUSINESS_CODE, hotelTemplate } from '../src/template/hotel.template.js';
 import { TIAOLI_BUSINESS_CODE, tiaoliTemplate } from '../src/template/tiaoli.template.js';
+import { YUEZI_BUSINESS_CODE, yueziTemplate } from '../src/template/yuezi.template.js';
 import { hashPassword } from '../src/auth/password.js';
 
 async function main() {
@@ -95,7 +96,22 @@ async function main() {
     [tgb.id, JSON.stringify(tiaoliTemplate)],
   );
 
-  console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 禧悦调理馆 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
+  // ---- 月子会所(yuezi)业务 + 模板 v1 ----
+  // 匹配用户已建的月子会所业务(按 name),code 改稳定值 'yuezi' + 挂模板
+  let yzb = (await pool.query("SELECT id FROM business WHERE name='禧悦国际月子会所'")).rows[0]
+    ?? (await pool.query('SELECT id FROM business WHERE code=$1', [YUEZI_BUSINESS_CODE])).rows[0];
+  if (!yzb) {
+    yzb = (await pool.query("INSERT INTO business (code,name) VALUES ($1,'禧悦国际月子会所') RETURNING id", [YUEZI_BUSINESS_CODE])).rows[0];
+  } else {
+    await pool.query("UPDATE business SET code=$1, name='禧悦国际月子会所' WHERE id=$2", [YUEZI_BUSINESS_CODE, yzb.id]);
+  }
+  await pool.query(
+    `INSERT INTO template (business_id, version, definition) VALUES ($1,1,$2)
+     ON CONFLICT (business_id, version) DO UPDATE SET definition=EXCLUDED.definition`,
+    [yzb.id, JSON.stringify(yueziTemplate)],
+  );
+
+  console.log('seed done: 静水楼台(足浴)+ 汉庭酒店 + 禧悦调理馆 + 禧悦月子会所 + 4 footbath shops + templates + 默认账号(boss/boss123 董事长, mgr/mgr123 经理)');
   await pool.end();
 }
 
