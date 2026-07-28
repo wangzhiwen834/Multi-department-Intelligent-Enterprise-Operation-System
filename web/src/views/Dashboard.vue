@@ -109,11 +109,11 @@ const onPickShop = (id: number) => { shopId.value = id; };
   line-height: 1.5;
 }
 .dashboard-inner {
-  max-width: 1320px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--od-space-4);
+  gap: var(--od-space-5);
 }
 
 /* 页头 */
