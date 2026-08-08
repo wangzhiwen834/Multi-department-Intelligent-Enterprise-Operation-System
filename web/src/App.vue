@@ -13,9 +13,10 @@ import Employees from './views/Employees.vue';
 import AuditLog from './views/AuditLog.vue';
 import Manual from './views/Manual.vue';
 import Settings from './views/Settings.vue';
+import Media from './views/Media.vue';
 import { useTheme } from './composables/theme-store';
 
-type Module = 'dashboard' | 'ops' | 'chat' | 'poster' | 'employees' | 'audit' | 'manual' | 'settings';
+type Module = 'dashboard' | 'ops' | 'chat' | 'poster' | 'media' | 'employees' | 'audit' | 'manual' | 'settings';
 
 const BRAND = '静水楼台企业智能经营系统';
 const user = ref<User | null>(null);
@@ -75,6 +76,7 @@ const navIcon: Record<Module, string> = {
   ops: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg>',
   chat: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   poster: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+  media: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
   employees: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
   audit: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>',
   manual: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
@@ -89,6 +91,7 @@ const sidebarItems = computed(() => {
     { key: 'ops', label: '公司经营' },
     { key: 'chat', label: 'AI 分析' },
     { key: 'poster', label: 'AI 海报' },
+    { key: 'media', label: '媒体发布' },
   ];
   if (showEmployees.value) items.push({ key: 'employees', label: '员工管理' });
   if (showAudit.value) items.push({ key: 'audit', label: '操作日志' });
@@ -160,6 +163,7 @@ const activeLabel = computed(() => sidebarItems.value.find(i => i.key === module
         <Workbook v-else-if="module === 'ops' && shop && openedPeriod" :shop="shop" :period="openedPeriod" @back="onWorkbookBack" />
         <Chat v-else-if="module === 'chat'" :period="period" />
         <Poster v-else-if="module === 'poster'" />
+        <Media v-else-if="module === 'media'" />
         <Employees v-else-if="module === 'employees'" :user="user" />
         <AuditLog v-else-if="module === 'audit'" />
         <Manual v-else-if="module === 'manual'" />

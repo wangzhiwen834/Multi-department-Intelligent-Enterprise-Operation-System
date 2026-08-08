@@ -150,6 +150,44 @@ const download = () => {
   a.download = `海报_${shopName.value || '通用'}_${date.value || '无日期'}.jpg`;
   a.click();
 };
+
+// 存入媒体发布素材库: 导出 dataUrl -> File -> 走媒体上传接口
+const sendingToMaterial = ref(false);
+const materialMsg = ref('');
+const sendToMaterial = async () => {
+  const dataUrl = editorRef.value?.exportJpeg();
+  if (!dataUrl) return;
+  sendingToMaterial.value = true;
+  materialMsg.value = '';
+  try {
+    // dataUrl -> File(JPEG)
+    const [meta, b64] = dataUrl.split(',');
+    const mime = meta.match(/^data:(.*?);/)?.[1] || 'image/jpeg';
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const file = new File([arr], `海报_${shopName.value || '通用'}_${date.value || '无日期'}.jpg`, { type: mime });
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', file.name);
+    const token = sessionStorage.getItem('token') || '';
+    const resp = await fetch('/api/media/files/upload', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${resp.status}`);
+    }
+    materialMsg.value = `已存入素材库: ${file.name}`;
+  } catch (e: any) {
+    materialMsg.value = '存入失败: ' + e.message;
+  } finally {
+    sendingToMaterial.value = false;
+  }
+};
 </script>
 
 <template>
@@ -295,7 +333,12 @@ const download = () => {
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                     下载海报
                   </button>
+                  <button class="btn btn-ghost" style="flex:1" :disabled="sendingToMaterial" @click="sendToMaterial">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    {{ sendingToMaterial ? '存入中…' : '存入素材库' }}
+                  </button>
                 </div>
+                <div v-if="materialMsg" class="poster-cap" :style="{ color: materialMsg.startsWith('已') ? 'var(--od-success)' : 'var(--od-danger)' }">{{ materialMsg }}</div>
                 <div class="poster-cap">竖版 <b>1080 × 1920</b> · 适合朋友圈 / 群发</div>
               </template>
             </div>

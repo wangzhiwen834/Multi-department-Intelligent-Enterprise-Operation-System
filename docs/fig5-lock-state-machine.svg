@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="377.1pt" height="158.544pt" viewBox="0 0 377.1 158.544" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="930.96pt" height="570.96pt" viewBox="0 0 930.96 570.96" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-07-26T00:25:13.251401</dc:date>
+    <dc:date>2026-07-30T14:10:15.008283</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
-      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+      <dc:title>Matplotlib v3.9.2, https://matplotlib.org/</dc:title>
      </cc:Agent>
     </dc:creator>
    </cc:Work>
@@ -21,180 +21,325 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 158.544 
-L 377.1 158.544 
-L 377.1 0 
+   <path d="M 0 570.96 
+L 930.96 570.96 
+L 930.96 0 
 L 0 0 
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 25.335 103.15872 
-L 76.113 103.15872 
-Q 77.2011 103.15872 77.2011 101.9232 
-L 77.2011 73.0944 
-Q 77.2011 71.85888 76.113 71.85888 
-L 25.335 71.85888 
-Q 24.2469 71.85888 24.2469 73.0944 
-L 24.2469 101.9232 
-Q 24.2469 103.15872 25.335 103.15872 
+    <path d="M 77.704615 271.566 
+C 79.57442 271.566 81.367893 270.832967 82.690045 269.528342 
+C 84.012196 268.223717 84.755077 266.454018 84.755077 264.609 
+C 84.755077 262.763982 84.012196 260.994283 82.690045 259.689658 
+C 81.367893 258.385033 79.57442 257.652 77.704615 257.652 
+C 75.834811 257.652 74.041337 258.385033 72.719186 259.689658 
+C 71.397035 260.994283 70.654154 262.763982 70.654154 264.609 
+C 70.654154 266.454018 71.397035 268.223717 72.719186 269.528342 
+C 74.041337 270.832967 75.834811 271.566 77.704615 271.566 
 z
-" clip-path="url(#p4ddb5f384a)" style="fill: #f1f5f9; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+" clip-path="url(#p7afa32659d)" style="fill: #0f172a; stroke: #0f172a; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 116.01 103.15872 
-L 174.042 103.15872 
-Q 175.1301 103.15872 175.1301 101.9232 
-L 175.1301 73.0944 
-Q 175.1301 71.85888 174.042 71.85888 
-L 116.01 71.85888 
-Q 114.9219 71.85888 114.9219 73.0944 
-L 114.9219 101.9232 
-Q 114.9219 103.15872 116.01 103.15872 
+    <path d="M 145.389046 309.48165 
+L 292.038646 309.48165 
+Q 297.679015 309.48165 297.679015 303.91605 
+L 297.679015 225.30195 
+Q 297.679015 219.73635 292.038646 219.73635 
+L 145.389046 219.73635 
+Q 139.748677 219.73635 139.748677 225.30195 
+L 139.748677 303.91605 
+Q 139.748677 309.48165 145.389046 309.48165 
 z
-" clip-path="url(#p4ddb5f384a)" style="fill: #dbeafe; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+" clip-path="url(#p7afa32659d)" style="fill: #f1f5f9; stroke: #334155; stroke-width: 1.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
-    <path d="M 217.566 70.21152 
-L 275.598 70.21152 
-Q 276.6861 70.21152 276.6861 68.976 
-L 276.6861 40.1472 
-Q 276.6861 38.91168 275.598 38.91168 
-L 217.566 38.91168 
-Q 216.4779 38.91168 216.4779 40.1472 
-L 216.4779 68.976 
-Q 216.4779 70.21152 217.566 70.21152 
+    <path d="M 413.306585 312.96015 
+L 588.158031 312.96015 
+Q 593.7984 312.96015 593.7984 307.39455 
+L 593.7984 221.82345 
+Q 593.7984 216.25785 588.158031 216.25785 
+L 413.306585 216.25785 
+Q 407.666215 216.25785 407.666215 221.82345 
+L 407.666215 307.39455 
+Q 407.666215 312.96015 413.306585 312.96015 
 z
-" clip-path="url(#p4ddb5f384a)" style="fill: #fef3c7; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+" clip-path="url(#p7afa32659d)" style="fill: #dbeafe; stroke: #334155; stroke-width: 1.4; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
-    <path d="M 217.566 136.10592 
-L 275.598 136.10592 
-Q 276.6861 136.10592 276.6861 134.8704 
-L 276.6861 106.0416 
-Q 276.6861 104.80608 275.598 104.80608 
-L 217.566 104.80608 
-Q 216.4779 104.80608 216.4779 106.0416 
-L 216.4779 134.8704 
-Q 216.4779 136.10592 217.566 136.10592 
+    <path d="M 684.749354 312.96015 
+L 880.752185 312.96015 
+Q 886.392554 312.96015 886.392554 307.39455 
+L 886.392554 221.82345 
+Q 886.392554 216.25785 880.752185 216.25785 
+L 684.749354 216.25785 
+Q 679.108985 216.25785 679.108985 221.82345 
+L 679.108985 307.39455 
+Q 679.108985 312.96015 684.749354 312.96015 
 z
-" clip-path="url(#p4ddb5f384a)" style="fill: #fecaca; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+" clip-path="url(#p7afa32659d)" style="fill: #fef3c7; stroke: #334155; stroke-width: 1.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(43.724 85.149376)">空闲</text>
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(43.606422 94.95963)">Free</text>
+    <text style="fill: #0f172a; font: 700 12px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="218.713846" y="251.216887" transform="rotate(-0 218.713846 251.216887)">空闲</text>
    </g>
    <g id="text_2">
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(131.026 85.088126)">持锁编辑</text>
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(133.194906 95.110021)">Locked</text>
+    <text style="fill: #475569; font: italic 9.5px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="218.713846" y="267.920911" transform="rotate(-0 218.713846 267.920911)">Free</text>
    </g>
    <g id="text_3">
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(232.582 52.174832)">待办接管</text>
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(231.862313 62.162821)">Takeover</text>
+    <text style="fill: #64748b; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="218.713846" y="287.785" transform="rotate(-0 218.713846 287.785)">entry/ 无活跃锁</text>
    </g>
    <g id="text_4">
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(236.082 118.055561)">心跳断</text>
-    <text style="font-size: 7px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; fill: #1e293b" transform="translate(234.205125 127.231439)">Expired</text>
-   </g>
-   <g id="patch_6">
-    <path d="M 78.114668 87.5088 
-Q 96.060828 87.5088 112.888953 87.5088 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 110.088953 86.1088 
-L 112.888953 87.5088 
-L 110.088953 88.9088 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <text style="fill: #0f172a; font: 700 12px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="500.732308" y="251.216887" transform="rotate(-0 500.732308 251.216887)">持锁编辑</text>
    </g>
    <g id="text_5">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="96.0615" y="81.3312" transform="rotate(-0 96.0615 81.3312)">acquire</text>
-   </g>
-   <g id="patch_7">
-    <path d="M 175.638553 86.300227 
-Q 195.805133 71.034342 215.080285 56.443259 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 212.002812 57.016985 
-L 215.080285 56.443259 
-L 213.692782 59.249473 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <text style="fill: #475569; font: italic 9.5px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="500.732308" y="267.920911" transform="rotate(-0 500.732308 267.920911)">Held</text>
    </g>
    <g id="text_6">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="192.177" y="62.7984" transform="rotate(-0 192.177 62.7984)">request</text>
-   </g>
-   <g id="patch_8">
-    <path d="M 175.782004 96.733473 
-Q 195.805627 108.101724 214.856985 118.917979 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 213.113255 116.318093 
-L 214.856985 118.917979 
-L 211.730838 118.753031 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <text style="fill: #64748b; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(453.193558 282.532)">do/ 每 5 s heartbeat 续期</text>
+    <text style="fill: #64748b; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(478.279808 292.83425)">(TTL = 60 s)</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="192.177" y="116.3376" transform="rotate(-0 192.177 116.3376)">timeout</text>
-   </g>
-   <g id="patch_9">
-    <path d="M 275.598 56.566002 
-Q 275.598 63.831476 275.598 69.978916 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 276.998 67.178916 
-L 275.598 69.978916 
-L 274.198 67.178916 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <text style="fill: #0f172a; font: 700 12px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="782.750769" y="251.216887" transform="rotate(-0 782.750769 251.216887)">待办接管</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="281.0385" y="64.8576" transform="rotate(-0 281.0385 64.8576)">yield</text>
-   </g>
-   <g id="patch_10">
-    <path d="M 275.598 118.451598 
-Q 275.598 111.186124 275.598 105.038684 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 274.198 107.838684 
-L 275.598 105.038684 
-L 276.998 107.838684 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+    <text style="fill: #475569; font: italic 9.5px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="782.750769" y="267.89345" transform="rotate(-0 782.750769 267.89345)">Takeover-Pending</text>
    </g>
    <g id="text_9">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="281.0385" y="112.2192" transform="rotate(-0 281.0385 112.2192)">clean</text>
+    <text style="fill: #64748b; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(733.699519 282.452062)">do/ 收到 takeoverRequest</text>
+    <text style="fill: #64748b; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(751.713894 293.149187)">保存后 yieldLock</text>
    </g>
-   <g id="patch_11">
-    <path d="M 145.026 103.923077 
-Q 145.026 114.278932 145.026 123.516752 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 146.426 120.716752 
-L 145.026 123.516752 
-L 143.626 120.716752 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   <g id="patch_6">
+    <path d="M 88.166228 264.609 
+Q 111.899004 264.609 134.066531 264.609 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 130.466531 262.809 
+L 134.066531 264.609 
+L 130.466531 266.409 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
    </g>
-   <g id="patch_12">
-    <path d="M 143.025881 126.6336 
-Q 97.876324 126.6336 53.8448 126.6336 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 56.6448 128.0336 
-L 53.8448 126.6336 
-L 56.6448 125.2336 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-   </g>
-   <g id="patch_13">
-    <path d="M 50.724 124.633723 
-Q 50.724 114.277868 50.724 105.040048 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
-    <path d="M 49.324 107.840048 
-L 50.724 105.040048 
-L 52.124 107.840048 
-" style="fill: none; stroke: #475569; stroke-linecap: round"/>
+   <g id="patch_7">
+    <path d="M 299.57727 242.507425 
+Q 352.671003 277.493097 404.457707 243.370754 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 400.46123 243.84843 
+L 404.457707 243.370754 
+L 402.441962 246.85454 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
    </g>
    <g id="text_10">
-    <text style="font-size: 5.5px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #475569" x="97.875" y="132.8112" transform="rotate(-0 97.875 132.8112)">save+release</text>
+    <g id="patch_8">
+     <path d="M 292.088865 194.72725 
+L 413.256365 194.72725 
+Q 415.496365 194.72725 415.496365 192.48725 
+L 415.496365 162.8595 
+Q 415.496365 160.6195 413.256365 160.6195 
+L 292.088865 160.6195 
+Q 289.848865 160.6195 289.848865 162.8595 
+L 289.848865 192.48725 
+Q 289.848865 194.72725 292.088865 194.72725 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(329.84699 169.20075)">acquireLock</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(306.92699 179.82275)">[无活跃锁 ∨ owner=self]</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(292.088865 190.44475)">/ INSERT; expires_at←now+60 s</text>
+   </g>
+   <g id="patch_9">
+    <path d="M 595.704508 242.493492 
+Q 636.453964 268.871453 675.889446 243.343714 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 671.889226 243.788955 
+L 675.889446 243.343714 
+L 673.845507 246.811035 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
    </g>
    <g id="text_11">
-    <text style="font-weight: 700; font-size: 9px; font-family: 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1e293b" x="188.55" y="19.5552" transform="rotate(-0 188.55 19.5552)">Fig. 5 悲观锁状态转换图 / Pessimistic Lock State Machine</text>
+    <g id="patch_10">
+     <path d="M 559.873044 194.938188 
+L 712.329294 194.938188 
+Q 714.569294 194.938188 714.569294 192.698188 
+L 714.569294 162.648563 
+Q 714.569294 160.408563 712.329294 160.408563 
+L 559.873044 160.408563 
+Q 557.633044 160.408563 557.633044 162.648563 
+L 557.633044 192.698188 
+Q 557.633044 194.938188 559.873044 194.938188 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(604.898669 168.989813)">requestTakeover</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(609.428669 179.611812)">[锁被他人持有]</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(559.873044 190.655687)">/ request_user_id←请求者(单槽·后到覆盖)</text>
+   </g>
+   <g id="patch_11">
+    <path d="M 463.434015 222.000356 
+Q 500.732485 286.57652 537.248094 223.35515 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 533.888861 225.572254 
+L 537.248094 223.35515 
+L 537.006238 227.372799 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_12">
+    <g id="patch_12">
+     <path d="M 390.526683 125.247406 
+L 610.937933 125.247406 
+Q 613.177933 125.247406 613.177933 123.007406 
+L 613.177933 93.199344 
+Q 613.177933 90.959344 610.937933 90.959344 
+L 390.526683 90.959344 
+Q 388.286683 90.959344 388.286683 93.199344 
+L 388.286683 123.007406 
+Q 388.286683 125.247406 390.526683 125.247406 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(482.120433 99.540594)">heartbeat</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(438.776683 110.289156)">[owner=self ∧ now ≤ expires_at]</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(390.526683 120.964906)">/ expires_at←now+60 s;  req ≠ null → 置 takeoverRequest</text>
+   </g>
+   <g id="patch_13">
+    <path d="M 677.052263 283.481736 
+Q 636.452682 261.038474 597.22296 282.725564 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 601.24444 282.559139 
+L 597.22296 282.725564 
+L 599.502709 279.408525 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_13">
+    <g id="patch_14">
+     <path d="M 547.139919 361.981625 
+L 725.062419 361.981625 
+Q 727.302419 361.981625 727.302419 359.741625 
+L 727.302419 329.494875 
+Q 727.302419 327.254875 725.062419 327.254875 
+L 547.139919 327.254875 
+Q 544.899919 327.254875 544.899919 329.494875 
+L 544.899919 359.741625 
+Q 544.899919 361.981625 547.139919 361.981625 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(618.248044 335.882375)">yieldLock</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(587.956794 346.677187)">[owner=self ∧ req ≠ null]</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(547.139919 357.699125)">/ holder←请求者; 清 req; expires_at←now+60 s</text>
+   </g>
+   <g id="patch_15">
+    <path d="M 405.616486 283.467775 
+Q 352.672951 253.650198 301.093246 282.699304 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 305.113285 282.501097 
+L 301.093246 282.699304 
+L 303.346704 279.364348 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_14">
+    <g id="patch_16">
+     <path d="M 307.171365 356.357375 
+L 398.173865 356.357375 
+Q 400.413865 356.357375 400.413865 354.117375 
+L 400.413865 335.111625 
+Q 400.413865 332.871625 398.173865 332.871625 
+L 307.171365 332.871625 
+Q 304.931365 332.871625 304.931365 335.111625 
+L 304.931365 354.117375 
+Q 304.931365 356.357375 307.171365 356.357375 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(315.81324 341.506625)">releaseLock(保存后)</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(307.171365 352.128625)">[isLockHolder] / DELETE</text>
+   </g>
+   <g id="patch_17">
+    <path d="M 448.387235 305.08783 
+Q 345.623267 215.216713 244.037547 304.055481 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 247.932408 303.040561 
+L 244.037547 304.055481 
+L 245.562527 300.33064 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_15">
+    <g id="patch_18">
+     <path d="M 298.992154 438.22225 
+L 392.252154 438.22225 
+Q 394.492154 438.22225 394.492154 435.98225 
+L 394.492154 406.30075 
+Q 394.492154 404.06075 392.252154 404.06075 
+L 298.992154 404.06075 
+Q 296.752154 404.06075 296.752154 406.30075 
+L 296.752154 435.98225 
+Q 296.752154 438.22225 298.992154 438.22225 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(330.552154 412.69575)">timeout</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(310.444654 423.31775)">[now &gt; expires_at]</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(298.992154 433.9935)">/ 清理过期行(断线 ≈ 60 s)</text>
+   </g>
+   <g id="patch_19">
+    <path d="M 758.903392 304.790983 
+Q 479.580904 0.473488 201.316843 303.637885 
+" style="fill: none; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 205.077264 302.202882 
+L 201.316843 303.637885 
+L 202.425093 299.768546 
+z
+" style="fill: #475569; stroke: #475569; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_16">
+    <g id="patch_20">
+     <path d="M 441.478558 502.681219 
+L 559.986058 502.681219 
+Q 562.226058 502.681219 562.226058 500.441219 
+L 562.226058 481.035531 
+Q 562.226058 478.795531 559.986058 478.795531 
+L 441.478558 478.795531 
+Q 439.238558 478.795531 439.238558 481.035531 
+L 439.238558 500.441219 
+Q 439.238558 502.681219 441.478558 502.681219 
+z
+" style="fill: #ffffff; stroke: #475569; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(485.662308 487.376781)">timeout</text>
+    <text style="fill: #334155; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(441.478558 498.398719)">[now &gt; expires_at] / 清理过期行</text>
+   </g>
+   <g id="text_17">
+    <text style="fill: #0f172a; font: 700 12px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif; text-anchor: middle" x="465.48" y="35.028" transform="rotate(-0 465.48 35.028)">图 4  悲观锁状态转换图 / Pessimistic Lock State Machine</text>
+   </g>
+   <g id="text_18">
+    <g id="patch_21">
+     <path d="M 84.755077 544.069625 
+L 244.413827 544.069625 
+Q 247.213827 544.069625 247.213827 541.269625 
+L 247.213827 509.723375 
+Q 247.213827 506.923375 244.413827 506.923375 
+L 84.755077 506.923375 
+Q 81.955077 506.923375 81.955077 509.723375 
+L 81.955077 541.269625 
+Q 81.955077 544.069625 84.755077 544.069625 
+z
+" style="fill: #f8fafc; stroke: #cbd5e1; stroke-width: 0.8; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #475569; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(84.755077 516.118375)">● 初始伪状态</text>
+    <text style="fill: #475569; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(84.755077 527.699625)">转移标注: 事件 [守卫] / 动作</text>
+    <text style="fill: #475569; font: 8px 'Microsoft YaHei', 'SimHei', 'Arial', 'DejaVu Sans', sans-serif" transform="translate(84.755077 539.280875)">TTL = 60 s · 心跳 = 5 s · 单槽接管(后到覆盖)</text>
    </g>
   </g>
  </g>
  <defs>
-  <clipPath id="p4ddb5f384a">
-   <rect x="7.2" y="7.2" width="362.7" height="144.144"/>
+  <clipPath id="p7afa32659d">
+   <rect x="7.2" y="7.2" width="916.56" height="556.56"/>
   </clipPath>
  </defs>
 </svg>

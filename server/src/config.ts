@@ -23,4 +23,7 @@ export const config = {
   extractTimeoutMs: Number(process.env.EXTRACT_TIMEOUT_MS ?? 60000),
   // 上传文件根目录(企业 logo 等);默认 server/uploads,可由 UPLOADS_DIR 覆盖
   uploadsDir: process.env.UPLOADS_DIR ?? path.resolve(process.cwd(), 'uploads'),
+  // 媒体发布微服务(Python Playwright)
+  mediaServiceUrl: process.env.MEDIA_SERVICE_URL ?? 'http://localhost:5409',
+  mediaApiKey: process.env.MEDIA_API_KEY ?? '',
 };

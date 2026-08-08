@@ -4,9 +4,10 @@
   "private": true,
   "description": "多部门智能经营系统 - 足浴财务模块(一键启动)",
   "scripts": {
-    "start": "concurrently -n server,web -c cyan,magenta \"cd server && npm run dev\" \"cd web && npm run dev\"",
+    "start": "concurrently -n server,web,media -c cyan,magenta,yellow \"cd server && npm run dev\" \"cd web && npm run dev\" \"cd media-publisher && python app.py\"",
     "setup": "cd server && npm run migrate && npm run seed",
-    "install:all": "cd server && npm install && cd ../web && npm install"
+    "install:all": "cd server && npm install && cd ../web && npm install",
+    "install:media": "cd media-publisher && pip install -r requirements.txt && playwright install chromium"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"

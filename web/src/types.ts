@@ -134,6 +134,53 @@ export interface TiaoliOverview {
   shopRanking: { shopId: number; shopName: string; revenue: number }[];
 }
 
+// ============ 媒体发布模块 ============
+export interface MediaPlatform {
+  type: number;
+  key: string;
+  name: string;
+  features: Record<string, boolean>;
+}
+
+export interface MediaAccount {
+  id: number;
+  type: number;
+  filePath: string;
+  userName: string;
+  status: number; // 0=失效 1=有效
+}
+
+export interface MediaFile {
+  id: number;
+  filename: string;
+  filesize: number;
+  upload_time: string;
+  file_path: string;
+  url: string;
+}
+
+export interface MediaPublishTask {
+  id: number;
+  task_id: string;
+  filename: string;
+  file_id: number | null;
+  account_id: number | string;
+  account_name: string;
+  platform_name: string;
+  platform_type: number;
+  status: string;
+  create_time: string;
+  update_time: string;
+  error_msg: string | null;
+}
+
+export interface MediaTaskPage {
+  records: MediaPublishTask[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface YueziOverview {
   granularity: 'day' | 'week' | 'month' | 'year';
   date: string; rangeStart: string; rangeEnd: string; shopId: number | null;

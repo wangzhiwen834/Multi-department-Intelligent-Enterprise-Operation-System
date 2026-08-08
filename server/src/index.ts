@@ -19,6 +19,7 @@ import { aiRouter } from './ai/ai.routes.js';
 import { posterRouter } from './poster/poster.routes.js';
 import { auditRouter } from './audit/audit.routes.js';
 import { businessRouter } from './business/business.routes.js';
+import { mediaRouter, mediaPreviewHandler } from './media/media.routes.js';
 
 export const app = express();
 // SSE(text/event-stream)不压缩:compression 会缓冲流破坏实时进度推送
@@ -42,6 +43,11 @@ fs.mkdirSync(bizLogosDir, { recursive: true });
 // fallthrough:false -> 文件不存在时直接 404,避免 fallthrough 到 /api 下的 authRequired 返回 401
 app.use('/api/uploads/business-logos', express.static(bizLogosDir, { fallthrough: false }));
 
+// 媒体素材预览: 公开访问(不带鉴权,<img>/<video> 标签不携带 token,同 logos 模式)。
+// 必须在所有 use('/api', router) 之前注册——否则 /api 前缀的 router 内部的 authRequired
+// 会先拦截 /api/media/files/preview/xxx 返回 401(此路由之后由 /api/media/... 提供鉴权 API)。
+app.use('/api/media/files/preview', mediaPreviewHandler);
+
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
@@ -57,6 +63,7 @@ app.use('/api', dashboardRouter);  // /api/dashboard/overview
 app.use('/api', aiRouter);         // /api/ai/chat
 app.use('/api', posterRouter);     // /api/poster/generate, /api/poster/logos
 app.use('/api/audit', auditRouter); // /api/audit/logs (董事长/经理)
+app.use('/api', mediaRouter);       // /api/media/...
 
 // 统一错误处理
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

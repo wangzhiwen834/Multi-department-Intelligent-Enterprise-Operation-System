@@ -36,7 +36,7 @@ C_REV = "#2563eb"
 C_CM, C_CG, C_CW = "#93c5fd", "#fbbf24", "#f87171"
 C_CA, C_CR, C_CD = "#34d399", "#60a5fa", "#c4b5fd"
 
-fig, axes = plt.subplots(1, 3, figsize=(7.2, 2.5))
+fig, axes = plt.subplots(1, 3, figsize=(7.2, 3.0), layout="constrained")
 xt = x[::3]
 xl = [d[5:] for d in dates][::3]
 
@@ -55,7 +55,7 @@ ax.bar(x, cw, bottom=np.nan_to_num(cm)+np.nan_to_num(cg), color=C_CW, label="散
 ax.set_title("b  客流构成", loc="left", fontweight="bold")
 ax.set_ylabel("客流(人)")
 ax.set_xticks(xt); ax.set_xticklabels(xl)
-ax.legend(fontsize=6, ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.18), handlelength=1)
+ax.legend(fontsize=6, ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.12), handlelength=1)
 
 # c 钟数构成
 ax = axes[2]
@@ -65,12 +65,11 @@ ax.bar(x, cd, bottom=np.nan_to_num(ca)+np.nan_to_num(cr), color=C_CD, label="加
 ax.set_title("c  钟数构成", loc="left", fontweight="bold")
 ax.set_ylabel("钟数")
 ax.set_xticks(xt); ax.set_xticklabels(xl)
-ax.legend(fontsize=6, ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.18), handlelength=1)
+ax.legend(fontsize=6, ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.12), handlelength=1)
 
 for ax in axes:
     ax.set_xlabel("日期(2026-07)")
 
-fig.tight_layout()
-fig.savefig("docs/fig2-footbath-eval.png", dpi=300, bbox_inches="tight")
-fig.savefig("docs/fig2-footbath-eval.svg", bbox_inches="tight")
+fig.savefig("docs/fig2-footbath-eval.png", dpi=300)
+fig.savefig("docs/fig2-footbath-eval.svg")
 print("saved docs/fig2-footbath-eval.png + .svg")
