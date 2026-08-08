@@ -5,9 +5,6 @@ import type { MediaPlatform, MediaAccount, MediaFile, MediaPublishTask } from '.
 
 // ===== 标签页 =====
 type TabKey = 'accounts' | 'materials' | 'publish' | 'records';
-// 直连本地 Python 微服务(默认 localhost:5409),绕过服务器 Node 桥接
-const MEDIA_URL = (window as any).__MEDIA_URL__ || 'http://localhost:5409';
-
 const activeTab = ref<TabKey>('accounts');
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'accounts', label: '账号管理' },
@@ -75,10 +72,12 @@ function startLogin() {
   loggingIn.value = true;
   loginStatus.value = '正在启动登录流程...';
 
-  // 直连本地 Python 微服务的 SSE 登录流
-  const url = `${MEDIA_URL}/login/stream?type=${addForm.value.type}&id=${encodeURIComponent(addForm.value.userName)}`;
+  const token = sessionStorage.getItem('token') || '';
+  const url = `/api/media/login/stream?type=${addForm.value.type}&id=${encodeURIComponent(addForm.value.userName)}`;
 
-  fetch(url).then(async resp => {
+  fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  }).then(async resp => {
     if (!resp.ok) {
       loginStatus.value = '启动登录失败: ' + resp.statusText;
       loggingIn.value = false;
@@ -190,8 +189,10 @@ fileInput.addEventListener('change', async () => {
       // 显式传原始文件名,避免 Werkzeug multipart 对中文文件名的 latin-1 误解码
       formData.append('filename', file.name);
 
-      const resp = await fetch(`${MEDIA_URL}/files/upload`, {
+      const token = sessionStorage.getItem('token') || '';
+      const resp = await fetch('/api/media/files/upload', {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
       });
       if (!resp.ok) {
