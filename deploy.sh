@@ -48,7 +48,7 @@ if [ ! -f .env ]; then
 else
     echo "  .env 已存在,跳过生成"
 fi
-npm ci --production 2>/dev/null || npm ci
+npm ci
 npm run build
 npm run migrate
 echo "  后端构建完成"
@@ -57,7 +57,7 @@ echo "  后端构建完成"
 echo ""
 echo "[3/6] 构建前端..."
 cd ../web
-npm ci 2>/dev/null || npm ci
+npm ci
 npm run build
 echo "  前端构建完成"
 

@@ -1,6 +1,8 @@
 import type { Shop, Template, Workbook, WorkbookListItem, BootstrapPayload, LockStatus, ExtractResult, User, DashboardOverview, AuditLogPage, Logo, AiSettings, AiModelKind, Business, HotelOverview, TiaoliOverview, YueziOverview, MediaPlatform, MediaAccount, MediaFile, MediaTaskPage } from './types';
 
 const TOKEN_KEY = 'token';
+// 媒体发布: 直连用户本地的 Python 微服务(localhost:5409)。用户点发布时,本地 Python + Playwright 打开用户电脑 Chrome 执行自动化。
+const MEDIA_BASE = (window as any).__MEDIA_URL__ || 'http://localhost:5409';
 // 用 sessionStorage 而非 localStorage:每个标签页独立登录,支持同一浏览器多标签页登录不同账号(隔离 token,避免互相覆盖)。代价:关闭标签页/浏览器后需重新登录。
 export const getToken = () => sessionStorage.getItem(TOKEN_KEY);
 export const setToken = (t: string) => sessionStorage.setItem(TOKEN_KEY, t);
@@ -166,46 +168,37 @@ export const api = {
   assignAiFeature: (feature: 'chat' | 'poster' | 'extraction', model_id: string) =>
     req<{ ok: boolean }>(`/api/settings/ai/features/${feature}`, { method: 'PUT', body: JSON.stringify({ model_id }) }),
 
-  // ============ 媒体发布 ============
-  mediaPlatforms: () => req<MediaPlatform[]>('/api/media/platforms'),
-  mediaAccounts: (valid = false) => req<MediaAccount[]>(`/api/media/accounts${valid ? '?valid=1' : ''}`),
+  // ============ 媒体发布 (直连本地 Python 微服务) ============
+  mediaPlatforms: () => fetch(`${MEDIA_BASE}/platforms`).then(r => r.json()).then(d => d.data),
+  mediaAccounts: (valid = false): Promise<MediaAccount[]> =>
+    fetch(`${MEDIA_BASE}/accounts${valid ? '?valid=1' : ''}`).then(r => r.json()).then(d => d.data),
   mediaVerifyAccount: (id: number) =>
-    req<{ id: number; valid: boolean; status: number }>(`/api/media/accounts/${id}/verify`, { method: 'POST' }),
+    fetch(`${MEDIA_BASE}/accounts/${id}/verify`, { method: 'POST' }).then(r => r.json()).then(d => d.data),
   mediaDeleteAccount: (id: number) =>
-    req<{ ok: boolean }>(`/api/media/accounts/${id}`, { method: 'DELETE' }),
+    fetch(`${MEDIA_BASE}/accounts/${id}`, { method: 'DELETE' }).then(r => r.json()).then(d => d.data ?? { ok: true }),
 
-  // SSE 登录流
-  mediaLoginStream: (type: number, id: string, onMessage: (data: any) => void): EventSource => {
-    const token = getToken();
-    const url = `/api/media/login/stream?type=${type}&id=${encodeURIComponent(id)}`;
-    const es = new EventSource(url, { withCredentials: false });
-    // 由于 EventSource 不能自定义 header，我们通过 URL 传 token 不太安全
-    // 改用: 后端通过 cookie 或 query 传 token
-    // 简单起见，暂时通过 fetch 方式处理（下面有另一个实现）
-    return es;
-  },
-
-  mediaFiles: () => req<MediaFile[]>('/api/media/files'),
+  mediaFiles: (): Promise<MediaFile[]> =>
+    fetch(`${MEDIA_BASE}/files`).then(r => r.json()).then(d => d.data.map((f: any) => ({ ...f, url: `${MEDIA_BASE}/files/preview/${f.file_path}` }))),
   mediaDeleteFile: (id: number) =>
-    req<{ ok: boolean }>(`/api/media/files/${id}`, { method: 'DELETE' }),
+    fetch(`${MEDIA_BASE}/files/${id}`, { method: 'DELETE' }).then(r => r.json()).then(d => d.data ?? { ok: true }),
 
-  mediaTasks: (params: { page?: number; page_size?: number; status?: string; platform_name?: string; account_name?: string; filename?: string }) => {
+  mediaTasks: (params: { page?: number; page_size?: number; status?: string; platform_name?: string; account_name?: string; filename?: string }): Promise<MediaTaskPage> => {
     const sp = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '' && v !== null) sp.set(k, String(v));
-    return req<MediaTaskPage>(`/api/media/tasks?${sp.toString()}`);
+    return fetch(`${MEDIA_BASE}/tasks?${sp.toString()}`).then(r => r.json()).then(d => d.data);
   },
   mediaCancelTask: (id: number) =>
-    req<{ ok: boolean }>(`/api/media/tasks/${id}/cancel`, { method: 'POST' }),
+    fetch(`${MEDIA_BASE}/tasks/${id}/cancel`, { method: 'POST' }).then(r => r.json()).then(d => d.data ?? { ok: true }),
   mediaRetryTask: (id: number) =>
-    req<{ ok: boolean }>(`/api/media/tasks/${id}/retry`, { method: 'POST' }),
+    fetch(`${MEDIA_BASE}/tasks/${id}/retry`, { method: 'POST' }).then(r => r.json()).then(d => d.data ?? { ok: true }),
   mediaDeleteTask: (id: number) =>
-    req<{ ok: boolean }>(`/api/media/tasks/${id}`, { method: 'DELETE' }),
+    fetch(`${MEDIA_BASE}/tasks/${id}`, { method: 'DELETE' }).then(r => r.json()).then(d => d.data ?? { ok: true }),
 
-  mediaPublishSingle: (params: any) =>
-    req<{ task_id: string; status: string }>('/api/media/publish/single', { method: 'POST', body: JSON.stringify(params) }),
-  mediaPublishBatch: (params: any) =>
-    req<{ task_id: string; result: any; status: string }>('/api/media/publish/batch', { method: 'POST', body: JSON.stringify(params) }),
+  mediaPublishSingle: (params: any): Promise<{ task_id: string; status: string }> =>
+    fetch(`${MEDIA_BASE}/publish/single`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(r => r.json()).then(d => d.data),
+  mediaPublishBatch: (params: any): Promise<{ task_id: string; result: any; status: string }> =>
+    fetch(`${MEDIA_BASE}/publish/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(r => r.json()).then(d => d.data),
 
-  mediaStatsPlatform: () => req<any>('/api/media/stats/platform'),
-  mediaStatsFile: () => req<any>('/api/media/stats/file'),
+  mediaStatsPlatform: () => fetch(`${MEDIA_BASE}/stats/platform`).then(r => r.json()).then(d => d.data),
+  mediaStatsFile: () => fetch(`${MEDIA_BASE}/stats/file`).then(r => r.json()).then(d => d.data),
 };

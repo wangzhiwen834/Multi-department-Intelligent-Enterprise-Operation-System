@@ -171,10 +171,9 @@ const sendToMaterial = async () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('filename', file.name);
-    const token = sessionStorage.getItem('token') || '';
-    const resp = await fetch('/api/media/files/upload', {
+    const mediaUrl = (window as any).__MEDIA_URL__ || 'http://localhost:5409';
+    const resp = await fetch(`${mediaUrl}/files/upload`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
       body: formData,
     });
     if (!resp.ok) {
