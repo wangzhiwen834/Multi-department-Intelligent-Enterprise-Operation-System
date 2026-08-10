@@ -45,6 +45,7 @@ const showAddAccountDialog = ref(false);
 const addForm = ref({ type: 0, userName: '' });
 const loggingIn = ref(false);
 const loginStatus = ref('');
+const qrImage = ref('');
 let loginEventSource: EventSource | null = null;
 
 async function loadAccounts() {
@@ -70,7 +71,8 @@ function startLogin() {
     return;
   }
   loggingIn.value = true;
-  loginStatus.value = '正在启动登录流程...';
+  loginStatus.value = '正在启动浏览器...';
+  qrImage.value = '';
 
   const token = sessionStorage.getItem('token') || '';
   const url = `/api/media/login/stream?type=${addForm.value.type}&id=${encodeURIComponent(addForm.value.userName)}`;
@@ -99,8 +101,11 @@ function startLogin() {
         if (!line) continue;
         try {
           const data = JSON.parse(line.slice(6));
-          loginStatus.value = data.msg || JSON.stringify(data);
+          // 有截图(二维码)则显示
+          if (data.data?.qr) qrImage.value = data.data.qr;
+          if (data.msg) loginStatus.value = data.msg;
           if (data.code === 200 && data.msg?.includes('登录成功')) {
+            qrImage.value = '';
             setTimeout(() => {
               loggingIn.value = false;
               showAddAccountDialog.value = false;
@@ -659,6 +664,7 @@ function nextPage() {
           </div>
           <div v-if="loggingIn || loginStatus" class="login-status">
             <div class="status-title">登录状态</div>
+            <img v-if="qrImage" :src="qrImage" style="max-width:300px;display:block;margin:8px 0;border:1px solid var(--od-border);border-radius:var(--od-radius-md)" />
             <div class="status-text">{{ loginStatus }}</div>
           </div>
         </div>

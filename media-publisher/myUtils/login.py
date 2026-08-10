@@ -35,7 +35,9 @@ async def unified_login_cookie_gen(type, id, status_queue):
         type: 平台类型编号
         id: 账号名
         status_queue: 状态队列，用于返回登录状态
+    新流程：headless打开登录页 → 截图二维码发SSE → 用户扫码 → 检测登录成功
     """
+    import base64, io
     try:
         # 获取平台key
         platform_key = get_platform_key_by_type(int(type))
@@ -56,6 +58,8 @@ async def unified_login_cookie_gen(type, id, status_queue):
         # 创建cookiesFile目录（如果不存在）
         cookie_file_path.parent.mkdir(parents=True, exist_ok=True)
 
+        status_queue.put(f'{{"code": 100, "msg": "正在启动浏览器...", "data": null}}')
+
         # 使用Playwright进行登录
         async with async_playwright() as playwright:
             options = {
@@ -65,62 +69,55 @@ async def unified_login_cookie_gen(type, id, status_queue):
                     '--disable-dev-shm-usage',
                     '--disable-gpu',
                     '--ignore-certificate-errors',
-                    '--start-maximized',
                     '--disable-blink-features=AutomationControlled'
                 ],
-                'headless': False,  # 登录时需要可视化
+                'headless': True,  # 服务器 headless
                 'executable_path': LOCAL_CHROME_PATH,
             }
 
             # 启动浏览器
             browser = await playwright.chromium.launch(**options)
-            # 创建上下文
             context = await browser.new_context()
             context = await set_init_script(context)
-
-            # 创建页面
             page = await context.new_page()
             await page.goto(platform_config["login_url"], wait_until='domcontentloaded', timeout=60000)
 
-            # 等待用户登录完成
-            print(f"请在浏览器中登录{platform_config['platform_name']}账号")
+            # 等待页面渲染完成，截图发给前端（让用户扫码）
+            await asyncio.sleep(3)
+            screenshot = await page.screenshot(type='jpeg', quality=75)
+            qr_b64 = base64.b64encode(screenshot).decode()
+            status_queue.put(f'{{"code": 100, "msg": "请扫码登录", "data": {{"qr":"data:image/jpeg;base64,{qr_b64}"}}}}')
 
-            # 等待登录完成（检测cookie是否包含登录信息或URL是否变化）
-            login_wait_timeout = 300000  # 5分钟登录超时
-            
-            # 获取初始URL，用于后续比较
+            # 发完第一张截图后, 每3秒截一张, 直到登录成功
+            login_wait_timeout = 300000  # 5分钟
             initial_url = page.url
-            
-            # 标记是否检测到登录成功
             login_successful = False
-            
-            # 所有平台使用统一的URL变化事件检测方式
-            print(f"启用URL变化事件检测 - 平台: {platform_key}")
-            
-            # 创建URL变化事件
-            url_changed_event = asyncio.Event()
-            
-            # URL变化处理函数
+
             async def on_url_change(frame):
                 nonlocal login_successful
-                # 只关注主框架的变化
                 if frame == page.main_frame:
                     current_url = page.url
-                    print(f"URL变化: {initial_url} -> {current_url}")
-                    
-                    # 检查是否已登录：如果URL不再包含login，认为登录成功
-                    if "login" not in current_url.lower():
-                        print("检测到URL不再包含login，认为登录成功")
+                    if "login" not in current_url.lower() and "passport" not in current_url.lower():
                         login_successful = True
-                        url_changed_event.set()
-            
-            # 监听页面的framenavigated事件
+
             page.on('framenavigated', on_url_change)
-            
-            try:
-                # 等待URL变化事件或超时
-                print(f"等待URL变化事件，超时时间: {login_wait_timeout}毫秒")
-                await asyncio.wait_for(url_changed_event.wait(), timeout=login_wait_timeout)
+
+            start_time = time.time()
+            last_screenshot = start_time
+            while time.time() - start_time < login_wait_timeout / 1000:
+                if login_successful:
+                    break
+                # 每3秒截一次图供用户刷新确认
+                now = time.time()
+                if now - last_screenshot > 3:
+                    try:
+                        screenshot = await page.screenshot(type='jpeg', quality=60)
+                        qr_b64 = base64.b64encode(screenshot).decode()
+                        status_queue.put(f'{{"code": 100, "msg": "等待扫码中...", "data": {{"qr":"data:image/jpeg;base64,{qr_b64}"}}}}')
+                        last_screenshot = now
+                    except Exception:
+                        pass
+                await asyncio.sleep(1)
             except asyncio.TimeoutError:
                 print("URL变化事件检测超时")
                 login_successful = False
