@@ -104,20 +104,21 @@ async def unified_login_cookie_gen(type, id, status_queue):
 
             start_time = time.time()
             last_screenshot = start_time
-            while time.time() - start_time < login_wait_timeout / 1000:
-                if login_successful:
-                    break
-                # 每3秒截一次图供用户刷新确认
-                now = time.time()
-                if now - last_screenshot > 3:
-                    try:
-                        screenshot = await page.screenshot(type='jpeg', quality=60)
-                        qr_b64 = base64.b64encode(screenshot).decode()
-                        status_queue.put(f'{{"code": 100, "msg": "等待扫码中...", "data": {{"qr":"data:image/jpeg;base64,{qr_b64}"}}}}')
-                        last_screenshot = now
-                    except Exception:
-                        pass
-                await asyncio.sleep(1)
+            try:
+                while time.time() - start_time < login_wait_timeout / 1000:
+                    if login_successful:
+                        break
+                    # 每3秒截一次图供用户刷新确认
+                    now = time.time()
+                    if now - last_screenshot > 3:
+                        try:
+                            screenshot = await page.screenshot(type='jpeg', quality=60)
+                            qr_b64 = base64.b64encode(screenshot).decode()
+                            status_queue.put(f'{{"code": 100, "msg": "等待扫码中...", "data": {{"qr":"data:image/jpeg;base64,{qr_b64}"}}}}')
+                            last_screenshot = now
+                        except Exception:
+                            pass
+                    await asyncio.sleep(1)
             except asyncio.TimeoutError:
                 print("URL变化事件检测超时")
                 login_successful = False
