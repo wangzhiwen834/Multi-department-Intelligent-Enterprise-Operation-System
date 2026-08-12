@@ -46,8 +46,8 @@ const addForm = ref({ type: 0, userName: '' });
 const loggingIn = ref(false);
 const loginStatus = ref('');
 const qrImage = ref('');
-const viewportWidth = ref(1280);
-const viewportHeight = ref(720);
+const viewportWidth = ref(1440);
+const viewportHeight = ref(900);
 const imgNatural = ref({ w: 1280, h: 720 });  // 图片实际尺寸
 const imgDisplay = ref({ w: 300, h: 169 });    // 图片显示尺寸
 const imgRef = ref<HTMLImageElement | null>(null);
@@ -181,6 +181,24 @@ function onBrowserType() {
 
 function onBrowserPress(key: string) {
   sendCommand('press', { key });
+}
+
+function onBrowserResize(factor: number) {
+  const w = Math.round(viewportWidth.value * factor);
+  const h = Math.round(viewportHeight.value * factor);
+  sendCommand('resize', { width: w, height: h });
+}
+
+function onBrowserResizePreset(value: string) {
+  if (!value) return;
+  const [w, h] = value.split('x').map(Number);
+  if (!w || !h) return;
+  sendCommand('resize', { width: w, height: h });
+  // 重置下拉框
+  setTimeout(() => {
+    const sel = document.querySelector('.browser-select') as HTMLSelectElement;
+    if (sel) sel.value = '';
+  }, 500);
 }
 
 function stopLogin() {
@@ -728,10 +746,20 @@ function nextPage() {
             <!-- 交互式浏览器视图 -->
             <div v-if="qrImage" class="browser-view">
               <div class="browser-toolbar">
-                <button class="browser-btn" title="刷新页面" @click="onBrowserRefresh">🔄 刷新</button>
+                <button class="browser-btn" title="刷新页面(二维码过期时用)" @click="onBrowserRefresh">🔄 刷新</button>
+                <span class="browser-sep">|</span>
+                <button class="browser-btn" title="缩小窗口" @click="onBrowserResize(0.75)">🔍-</button>
+                <button class="browser-btn" title="放大窗口" @click="onBrowserResize(1.25)">🔍+</button>
+                <select class="browser-select" @change="onBrowserResizePreset(($event.target as HTMLSelectElement).value)">
+                  <option value="">窗口</option>
+                  <option value="1280x720">1280×720</option>
+                  <option value="1440x900" selected>1440×900</option>
+                  <option value="1920x1080">1920×1080</option>
+                  <option value="2560x1440">2560×1440</option>
+                </select>
+                <span class="browser-sep">|</span>
                 <button class="browser-btn" title="向上滚动" @click="onBrowserScrollUp">⬆</button>
                 <button class="browser-btn" title="向下滚动" @click="onBrowserScrollDown">⬇</button>
-                <button class="browser-btn" title="按 Enter 确认" @click="onBrowserPress('Enter')">↵ Enter</button>
                 <span class="browser-info">{{ viewportWidth }}×{{ viewportHeight }}</span>
               </div>
               <div class="browser-screen" @click="onBrowserClick" title="点击页面进行交互">
@@ -1282,6 +1310,26 @@ function nextPage() {
   font-size: 11px;
   color: rgba(255,255,255,0.4);
   font-family: var(--od-font-mono);
+}
+.browser-sep {
+  color: rgba(255,255,255,0.12);
+  font-size: 14px;
+  user-select: none;
+}
+.browser-select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--od-radius-sm);
+  background: rgba(255,255,255,0.08);
+  color: #ccc;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+.browser-select:focus {
+  border-color: var(--od-primary);
 }
 .browser-screen {
   position: relative;

@@ -79,9 +79,9 @@ async def unified_login_cookie_gen(type, id, status_queue, command_queue=None):
                 'executable_path': LOCAL_CHROME_PATH,
             }
 
-            # 启动浏览器
+            # 启动浏览器(大视口适配抖音创作者中心等宽页面)
             browser = await playwright.chromium.launch(**options)
-            context = await browser.new_context()
+            context = await browser.new_context(viewport={"width": 1440, "height": 900})
             context = await set_init_script(context)
             page = await context.new_page()
             await page.goto(platform_config["login_url"], wait_until='domcontentloaded', timeout=60000)
@@ -157,6 +157,15 @@ async def unified_login_cookie_gen(type, id, status_queue, command_queue=None):
                         await page.mouse.wheel(0, 300)
                     elif action == "scroll_up":
                         await page.mouse.wheel(0, -300)
+                    elif action == "resize":
+                        w = int(cmd.get("width", 1440))
+                        h = int(cmd.get("height", 900))
+                        await page.set_viewport_size({"width": w, "height": h})
+                        viewport = page.viewport_size or {"width": w, "height": h}
+                        status_queue.put(json.dumps({
+                            "code": 100, "msg": f"窗口已调整为 {viewport['width']}×{viewport['height']}",
+                            "data": {"viewport": {"width": viewport["width"], "height": viewport["height"]}}
+                        }))
                     elif action == "goto":
                         url = str(cmd.get("url", ""))
                         if url:
