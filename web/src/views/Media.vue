@@ -52,6 +52,7 @@ const imgNatural = ref({ w: 1280, h: 720 });  // 图片实际尺寸
 const imgDisplay = ref({ w: 300, h: 169 });    // 图片显示尺寸
 const imgRef = ref<HTMLImageElement | null>(null);
 const typeText = ref('');  // 键盘输入文本
+const zoomFit = ref(true);  // true=适应宽度, false=1:1原始大小
 let loginEventSource: EventSource | null = null;
 
 async function loadAccounts() {
@@ -747,9 +748,8 @@ function nextPage() {
             <div v-if="qrImage" class="browser-view">
               <div class="browser-toolbar">
                 <button class="browser-btn" title="刷新页面(二维码过期时用)" @click="onBrowserRefresh">🔄 刷新</button>
+                <button class="browser-btn" title="切换1:1原始大小/适应宽度" @click="zoomFit = !zoomFit">{{ zoomFit ? '📐 1:1' : '📐 适应' }}</button>
                 <span class="browser-sep">|</span>
-                <button class="browser-btn" title="缩小窗口" @click="onBrowserResize(0.75)">🔍-</button>
-                <button class="browser-btn" title="放大窗口" @click="onBrowserResize(1.25)">🔍+</button>
                 <select class="browser-select" @change="onBrowserResizePreset(($event.target as HTMLSelectElement).value)">
                   <option value="">窗口</option>
                   <option value="1280x720">1280×720</option>
@@ -763,8 +763,8 @@ function nextPage() {
                 <span class="browser-info">{{ viewportWidth }}×{{ viewportHeight }}</span>
               </div>
               <div class="browser-screen" @click="onBrowserClick" title="点击页面进行交互">
-                <img ref="imgRef" :src="qrImage" class="browser-img" />
-                <div class="click-hint">👆 点击此区域与页面交互</div>
+                <img ref="imgRef" :src="qrImage" class="browser-img" :class="{ 'zoom-real': !zoomFit }" />
+                <div class="click-hint">👆 点击交互 | {{ zoomFit ? '适应宽度' : '1:1原始大小(可滚动)' }}</div>
               </div>
               <div class="browser-input-row">
                 <input
@@ -1193,8 +1193,8 @@ function nextPage() {
 .dialog {
   background: var(--od-surface);
   border-radius: var(--od-radius-lg);
-  width: 800px;
-  max-width: 98vw;
+  width: 95vw;
+  max-width: 1200px;
   max-height: 95vh;
   display: flex;
   flex-direction: column;
@@ -1336,6 +1336,8 @@ function nextPage() {
   cursor: crosshair;
   background: #000;
   min-height: 100px;
+  max-height: 65vh;
+  overflow: auto;
 }
 .browser-screen:hover .click-hint {
   opacity: 1;
@@ -1343,6 +1345,10 @@ function nextPage() {
 .browser-img {
   width: 100%;
   display: block;
+}
+.browser-img.zoom-real {
+  width: auto;
+  max-width: none;
 }
 .click-hint {
   position: absolute;
