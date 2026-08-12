@@ -1193,9 +1193,9 @@ function nextPage() {
 .dialog {
   background: var(--od-surface);
   border-radius: var(--od-radius-lg);
-  width: 580px;
-  max-width: 95vw;
-  max-height: 90vh;
+  width: 800px;
+  max-width: 98vw;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--od-shadow-lg);

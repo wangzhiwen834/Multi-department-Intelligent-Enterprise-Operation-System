@@ -123,7 +123,7 @@ async def unified_login_cookie_gen(type, id, status_queue, command_queue=None):
 
             async def handle_command(cmd: dict):
                 """执行前端发来的交互命令"""
-                nonlocal screenshot_interval
+                nonlocal screenshot_interval, viewport, last_screenshot
                 try:
                     action = cmd.get("action", "")
                     if action == "click":
@@ -174,6 +174,8 @@ async def unified_login_cookie_gen(type, id, status_queue, command_queue=None):
                                 "code": 100, "msg": f"已跳转: {url[:60]}",
                                 "data": None
                             }))
+                    # 命令执行后立即截一次图，让用户马上看到变化
+                    last_screenshot = 0
                 except Exception as e:
                     status_queue.put(json.dumps({
                         "code": 100, "msg": f"操作失败: {str(e)}",
