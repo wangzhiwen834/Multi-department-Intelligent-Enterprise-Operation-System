@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import sqlite3
 import threading
@@ -30,6 +31,7 @@ CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200MB
 
 active_queues = {}
+active_command_queues = {}
 
 
 # ---------- API Key 鉴权中间件 ----------
@@ -456,11 +458,13 @@ def login_unified():
             delete_account(row['id'])
 
     status_queue = Queue()
+    command_queue = Queue()
     active_queues[account_id] = status_queue
+    active_command_queues[account_id] = command_queue
 
     thread = threading.Thread(
         target=run_unified_login,
-        args=(type_param, account_id, status_queue),
+        args=(type_param, account_id, status_queue, command_queue),
         daemon=True
     )
     thread.start()
@@ -475,6 +479,7 @@ def login_unified():
                     time.sleep(0.1)
         except GeneratorExit:
             active_queues.pop(account_id, None)
+            active_command_queues.pop(account_id, None)
 
     response = Response(generate(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
@@ -482,6 +487,34 @@ def login_unified():
     response.headers['Content-Type'] = 'text/event-stream'
     response.headers['Connection'] = 'keep-alive'
     return response
+
+
+@app.route('/login/command', methods=['POST'])
+@require_api_key
+def login_command():
+    """接收前端交互命令，转发给正在运行的登录线程
+    请求体: {"id": "账号名", "action": "click|refresh|type|scroll_down|scroll_up|goto|press", ...}
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'code': 400, 'msg': 'Missing request body', 'data': None}), 400
+
+        account_id = data.get('id', '')
+        action = data.get('action', '')
+
+        if not account_id or not action:
+            return jsonify({'code': 400, 'msg': 'Missing id or action', 'data': None}), 400
+
+        cmd_queue = active_command_queues.get(account_id)
+        if not cmd_queue:
+            return jsonify({'code': 404, 'msg': '该账号没有正在进行的登录会话', 'data': None}), 404
+
+        cmd_queue.put(data)
+        return jsonify({'code': 200, 'msg': '命令已发送', 'data': {'action': action}}), 200
+
+    except Exception as e:
+        return jsonify({'code': 500, 'msg': str(e), 'data': None}), 500
 
 
 # ==================== Cookie 管理 ====================

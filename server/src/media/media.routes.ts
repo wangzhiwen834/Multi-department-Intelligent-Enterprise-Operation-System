@@ -10,6 +10,7 @@ import {
   verifyAccount,
   deleteAccount,
   getLoginStream,
+  sendLoginCommand,
   getFiles,
   deleteFile,
   getTasks,
@@ -86,6 +87,16 @@ mediaRouter.get('/media/login/stream', async (req, res, next) => {
     // web ReadableStream -> Node.js Readable -> pipe to response
     const nodeStream = Readable.fromWeb(webStream as any);
     nodeStream.pipe(res);
+  } catch (e) { next(e); }
+});
+
+// POST /api/media/login/command — 前端交互命令(点击/刷新/输入等)
+mediaRouter.post('/media/login/command', async (req, res, next) => {
+  try {
+    const { id, action, x, y, text, key, url } = req.body;
+    if (!id || !action) return res.status(400).json({ error: '缺少 id 或 action 参数' });
+    const r = await sendLoginCommand({ id, action, x, y, text, key, url });
+    res.json(r);
   } catch (e) { next(e); }
 });
 

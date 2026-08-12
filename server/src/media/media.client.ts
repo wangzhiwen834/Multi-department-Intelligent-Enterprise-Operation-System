@@ -217,6 +217,24 @@ export function publishBatch(params: PublishBatchParams): Promise<{ code: number
 }
 
 /**
+ * 登录命令（交互）
+ */
+export function sendLoginCommand(params: {
+  id: string;
+  action: string;
+  x?: number;
+  y?: number;
+  text?: string;
+  key?: string;
+  url?: string;
+}): Promise<{ code: number; msg: string; data: unknown }> {
+  return request('/login/command', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+/**
  * 统计
  */
 export function getPlatformStats(): Promise<{ code: number; msg: string; data: unknown }> {

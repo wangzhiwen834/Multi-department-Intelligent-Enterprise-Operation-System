@@ -197,4 +197,6 @@ export const api = {
 
   mediaStatsPlatform: () => req<any>('/api/media/stats/platform'),
   mediaStatsFile: () => req<any>('/api/media/stats/file'),
+  mediaLoginCommand: (params: { id: string; action: string; x?: number; y?: number; text?: string; key?: string; url?: string }) =>
+    req<{ code: number; msg: string; data: any }>('/api/media/login/command', { method: 'POST', body: JSON.stringify(params) }),
 };

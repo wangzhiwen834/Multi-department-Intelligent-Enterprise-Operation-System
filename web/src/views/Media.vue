@@ -46,6 +46,12 @@ const addForm = ref({ type: 0, userName: '' });
 const loggingIn = ref(false);
 const loginStatus = ref('');
 const qrImage = ref('');
+const viewportWidth = ref(1280);
+const viewportHeight = ref(720);
+const imgNatural = ref({ w: 1280, h: 720 });  // 图片实际尺寸
+const imgDisplay = ref({ w: 300, h: 169 });    // 图片显示尺寸
+const imgRef = ref<HTMLImageElement | null>(null);
+const typeText = ref('');  // 键盘输入文本
 let loginEventSource: EventSource | null = null;
 
 async function loadAccounts() {
@@ -73,9 +79,12 @@ function startLogin() {
   loggingIn.value = true;
   loginStatus.value = '正在启动浏览器...';
   qrImage.value = '';
+  viewportWidth.value = 1280;
+  viewportHeight.value = 720;
 
+  const accountId = addForm.value.userName;
   const token = sessionStorage.getItem('token') || '';
-  const url = `/api/media/login/stream?type=${addForm.value.type}&id=${encodeURIComponent(addForm.value.userName)}`;
+  const url = `/api/media/login/stream?type=${addForm.value.type}&id=${encodeURIComponent(accountId)}`;
 
   fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
@@ -101,6 +110,11 @@ function startLogin() {
         if (!line) continue;
         try {
           const data = JSON.parse(line.slice(6));
+          // 记录视口尺寸(用于坐标映射)
+          if (data.data?.viewport) {
+            viewportWidth.value = data.data.viewport.width;
+            viewportHeight.value = data.data.viewport.height;
+          }
           // 有截图(二维码)则显示
           if (data.data?.qr) qrImage.value = data.data.qr;
           if (data.msg) loginStatus.value = data.msg;
@@ -120,6 +134,53 @@ function startLogin() {
     loginStatus.value = '连接错误: ' + err.message;
     loggingIn.value = false;
   });
+}
+
+// ===== 交互命令 =====
+function sendCommand(action: string, extra?: Record<string, any>) {
+  const accountId = addForm.value.userName;
+  if (!accountId) return;
+  api.mediaLoginCommand({ id: accountId, action, ...extra }).catch(e => {
+    console.error('命令发送失败:', e);
+  });
+}
+
+function onBrowserClick(e: MouseEvent) {
+  const img = imgRef.value;
+  if (!img) return;
+  const rect = img.getBoundingClientRect();
+  // 点击位置相对于图片左上角
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+  // 映射到 viewport 坐标
+  const scaleX = viewportWidth.value / rect.width;
+  const scaleY = viewportHeight.value / rect.height;
+  const vpX = Math.round(clickX * scaleX);
+  const vpY = Math.round(clickY * scaleY);
+  sendCommand('click', { x: vpX, y: vpY });
+}
+
+function onBrowserRefresh() {
+  sendCommand('refresh');
+}
+
+function onBrowserScrollDown() {
+  sendCommand('scroll_down');
+}
+
+function onBrowserScrollUp() {
+  sendCommand('scroll_up');
+}
+
+function onBrowserType() {
+  const text = typeText.value.trim();
+  if (!text) return;
+  sendCommand('type', { text });
+  typeText.value = '';
+}
+
+function onBrowserPress(key: string) {
+  sendCommand('press', { key });
 }
 
 function stopLogin() {
@@ -663,8 +724,34 @@ function nextPage() {
             <input v-model="addForm.userName" type="text" class="form-input" placeholder="请输入账号名" :disabled="loggingIn" />
           </div>
           <div v-if="loggingIn || loginStatus" class="login-status">
-            <div class="status-title">登录状态</div>
-            <img v-if="qrImage" :src="qrImage" style="max-width:300px;display:block;margin:8px 0;border:1px solid var(--od-border);border-radius:var(--od-radius-md)" />
+            <div class="status-title">浏览器页面 <span class="status-hint">(可点击交互)</span></div>
+            <!-- 交互式浏览器视图 -->
+            <div v-if="qrImage" class="browser-view">
+              <div class="browser-toolbar">
+                <button class="browser-btn" title="刷新页面" @click="onBrowserRefresh">🔄 刷新</button>
+                <button class="browser-btn" title="向上滚动" @click="onBrowserScrollUp">⬆</button>
+                <button class="browser-btn" title="向下滚动" @click="onBrowserScrollDown">⬇</button>
+                <button class="browser-btn" title="按 Enter 确认" @click="onBrowserPress('Enter')">↵ Enter</button>
+                <span class="browser-info">{{ viewportWidth }}×{{ viewportHeight }}</span>
+              </div>
+              <div class="browser-screen" @click="onBrowserClick" title="点击页面进行交互">
+                <img ref="imgRef" :src="qrImage" class="browser-img" />
+                <div class="click-hint">👆 点击此区域与页面交互</div>
+              </div>
+              <div class="browser-input-row">
+                <input
+                  v-model="typeText"
+                  type="text"
+                  class="browser-text-input"
+                  placeholder="输入文本后点「发送」或按 Enter..."
+                  @keydown.enter.prevent="onBrowserType"
+                  :disabled="!loggingIn"
+                />
+                <button class="browser-btn send" @click="onBrowserType" :disabled="!loggingIn">发送</button>
+                <button class="browser-btn" title="退格" @click="onBrowserPress('Backspace')">⌫</button>
+                <button class="browser-btn" title="Tab" @click="onBrowserPress('Tab')">Tab</button>
+              </div>
+            </div>
             <div class="status-text">{{ loginStatus }}</div>
           </div>
         </div>
@@ -1078,9 +1165,9 @@ function nextPage() {
 .dialog {
   background: var(--od-surface);
   border-radius: var(--od-radius-lg);
-  width: 480px;
-  max-width: 90vw;
-  max-height: 80vh;
+  width: 580px;
+  max-width: 95vw;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--od-shadow-lg);
@@ -1134,10 +1221,119 @@ function nextPage() {
   color: var(--od-text);
   margin-bottom: 8px;
 }
+.status-hint {
+  font-weight: var(--od-weight-normal);
+  color: var(--od-primary);
+  font-size: var(--od-text-xs);
+}
 .status-text {
   font-size: var(--od-text-sm);
   color: var(--od-text-muted);
   word-break: break-all;
   line-height: 1.6;
+  margin-top: 8px;
+}
+
+/* 交互式浏览器视图 */
+.browser-view {
+  border: 1px solid var(--od-border);
+  border-radius: var(--od-radius-md);
+  overflow: hidden;
+  background: #1a1a2e;
+}
+.browser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: #16213e;
+  border-bottom: 1px solid var(--od-border);
+  flex-wrap: wrap;
+}
+.browser-btn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--od-radius-sm);
+  background: rgba(255,255,255,0.08);
+  color: #ccc;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+.browser-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+.browser-btn:disabled { opacity: .4; cursor: not-allowed; }
+.browser-btn.send {
+  background: var(--od-primary);
+  border-color: var(--od-primary);
+  color: #fff;
+}
+.browser-btn.send:hover:not(:disabled) {
+  background: var(--od-primary-hover);
+}
+.browser-info {
+  margin-left: auto;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  font-family: var(--od-font-mono);
+}
+.browser-screen {
+  position: relative;
+  cursor: crosshair;
+  background: #000;
+  min-height: 100px;
+}
+.browser-screen:hover .click-hint {
+  opacity: 1;
+}
+.browser-img {
+  width: 100%;
+  display: block;
+}
+.click-hint {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.6);
+  padding: 2px 8px;
+  border-radius: var(--od-radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.browser-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: #16213e;
+  border-top: 1px solid var(--od-border);
+}
+.browser-text-input {
+  flex: 1;
+  height: 30px;
+  padding: 0 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--od-radius-sm);
+  color: #eee;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s ease;
+}
+.browser-text-input:focus {
+  border-color: var(--od-primary);
+}
+.browser-text-input::placeholder {
+  color: rgba(255,255,255,0.3);
 }
 </style>
